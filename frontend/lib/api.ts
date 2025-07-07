@@ -309,17 +309,16 @@ class ApiClient {
 
   // Application methods
   async createApplication(formData: FormData): Promise<Application> {
-    const response = await fetch(`${API_BASE_URL}/demandes/`, {
+    const response = await fetch(`${API_BASE_URL}/demandes/create/`, {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.token}`,
-      },
       body: formData,
     })
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
+      console.error('API Error Response:', errorData)
+      console.error('Response Status:', response.status)
+      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
     }
     
     return response.json()
@@ -344,7 +343,7 @@ class ApiClient {
   async rejectApplication(id: number, reason?: string): Promise<Application> {
     return this.request<Application>(`/demandes/${id}/reject/`, {
       method: 'POST',
-      body: JSON.stringify({ reason }),
+      body: JSON.stringify({ action: 'reject', raison: reason }),
     })
   }
 

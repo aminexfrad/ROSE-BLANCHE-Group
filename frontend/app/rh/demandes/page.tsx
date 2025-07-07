@@ -25,6 +25,66 @@ import {
   User,
   AlertCircle,
 } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
+import { FaFilePdf, FaFileAlt } from "react-icons/fa";
+
+// FilePreviewCard component for document display
+function FilePreviewCard({ label, url }: { label: string; url?: string }) {
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(false);
+  const isPDF = url && url.toLowerCase().endsWith(".pdf");
+
+  return (
+    <div className="bg-white rounded-lg shadow p-4 mb-4 border">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2 font-semibold text-lg">
+          {isPDF ? <FaFilePdf className="text-red-500" /> : <FaFileAlt className="text-gray-500" />}
+          {label}
+        </div>
+        {url && (
+          <a
+            href={url}
+            download
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-600 underline"
+          >
+            Télécharger
+          </a>
+        )}
+      </div>
+      {url ? (
+        isPDF ? (
+          <div className="relative">
+            {loading && !error && (
+              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-80 z-10">
+                <span className="animate-spin text-2xl">⏳</span>
+              </div>
+            )}
+            <iframe
+              src={url}
+              width="100%"
+              height="350px"
+              title={`${label} Preview`}
+              className="rounded border"
+              onLoad={() => setLoading(false)}
+              onError={() => { setLoading(false); setError(true); }}
+            />
+            {error && (
+              <div className="text-red-500 text-center mt-2">
+                Impossible d'afficher le document.
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="text-gray-500">Aperçu non disponible pour ce type de fichier.</div>
+        )
+      ) : (
+        <div className="text-gray-400 italic">Aucun document fourni.</div>
+      )}
+    </div>
+  );
+}
 
 export default function RHDemandesPage() {
   const { user } = useAuth()
@@ -37,6 +97,8 @@ export default function RHDemandesPage() {
     approved: 0,
     rejected: 0
   })
+  const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
 
   const breadcrumbs = [{ label: "RH", href: "/rh" }, { label: "Demandes de stage" }]
 
@@ -115,6 +177,26 @@ export default function RHDemandesPage() {
     }
   }
 
+  const handleShowDetails = (application: Application) => {
+    setSelectedApplication(application)
+    setDetailsOpen(true)
+  }
+
+  const handleDownloadDocuments = (application: Application) => {
+    // Open all available documents in new tabs (including binôme)
+    const files = [
+      { url: application.cv, name: 'CV.pdf' },
+      { url: application.lettre_motivation, name: 'LettreMotivation.pdf' },
+      { url: application.demande_stage, name: 'DemandeStage.pdf' },
+      { url: application.cv_binome, name: 'CV_Binome.pdf' },
+      { url: application.lettre_motivation_binome, name: 'LettreMotivation_Binome.pdf' },
+      { url: application.demande_stage_binome, name: 'DemandeStage_Binome.pdf' },
+    ].filter(f => f.url)
+    files.forEach(file => {
+      window.open(file.url, '_blank')
+    })
+  }
+
   if (loading) {
     return (
       <DashboardLayout allowedRoles={["rh"]} breadcrumbs={breadcrumbs}>
@@ -141,6 +223,71 @@ export default function RHDemandesPage() {
 
   return (
     <DashboardLayout allowedRoles={["rh"]} breadcrumbs={breadcrumbs}>
+      {/* Details Modal */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Détails de la demande</DialogTitle>
+          </DialogHeader>
+          {selectedApplication && (
+            <div className="space-y-4 mt-2">
+              <div className="space-y-1">
+                <div><b>Nom:</b> {selectedApplication.prenom} {selectedApplication.nom}</div>
+                <div><b>Email:</b> {selectedApplication.email}</div>
+                <div><b>Téléphone:</b> {selectedApplication.telephone}</div>
+                <div><b>Institut:</b> {selectedApplication.institut}</div>
+                <div><b>Spécialité:</b> {selectedApplication.specialite}</div>
+                <div><b>Type de stage:</b> {selectedApplication.type_stage}</div>
+                <div><b>Niveau:</b> {selectedApplication.niveau}</div>
+                <div><b>Période:</b> {new Date(selectedApplication.date_debut).toLocaleDateString()} au {new Date(selectedApplication.date_fin).toLocaleDateString()}</div>
+                <div><b>Statut:</b> {selectedApplication.status}</div>
+              </div>
+
+              {/* Download all documents button */}
+              <button
+                onClick={() => {
+                  const urls = [
+                    selectedApplication.cv,
+                    selectedApplication.lettre_motivation,
+                    selectedApplication.demande_stage,
+                    selectedApplication.cv_binome,
+                    selectedApplication.lettre_motivation_binome,
+                    selectedApplication.demande_stage_binome,
+                  ].filter(Boolean);
+                  urls.forEach(url => {
+                    if (url) window.open(url, '_blank');
+                  });
+                }}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-2"
+              >
+                Télécharger tous les documents
+              </button>
+
+              <hr className="my-4" />
+
+              {/* Documents du candidat principal */}
+              <div>
+                <h3 className="font-bold text-lg mb-2">Documents du candidat principal</h3>
+                <FilePreviewCard label="CV" url={selectedApplication.cv} />
+                <FilePreviewCard label="Lettre de motivation" url={selectedApplication.lettre_motivation} />
+                <FilePreviewCard label="Demande de stage" url={selectedApplication.demande_stage} />
+              </div>
+
+              {selectedApplication.stage_binome && (
+                <>
+                  <hr className="my-4" />
+                  <div>
+                    <h3 className="font-bold text-lg mb-2">Documents du binôme</h3>
+                    <FilePreviewCard label="CV binôme" url={selectedApplication.cv_binome} />
+                    <FilePreviewCard label="Lettre de motivation binôme" url={selectedApplication.lettre_motivation_binome} />
+                    <FilePreviewCard label="Demande de stage binôme" url={selectedApplication.demande_stage_binome} />
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -306,7 +453,7 @@ export default function RHDemandesPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleShowDetails(application)}>
                             <Eye className="mr-2 h-4 w-4" />
                             Voir détails
                           </DropdownMenuItem>
@@ -322,7 +469,7 @@ export default function RHDemandesPage() {
                               </DropdownMenuItem>
                             </>
                           )}
-                          <DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleDownloadDocuments(application)}>
                             <Download className="mr-2 h-4 w-4" />
                             Télécharger documents
                           </DropdownMenuItem>
