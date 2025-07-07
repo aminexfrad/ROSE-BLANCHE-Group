@@ -6,7 +6,49 @@ from .models import Demande
 
 class DemandeSerializer(serializers.ModelSerializer):
     """Serializer for demande de stage"""
-    
+    cv = serializers.SerializerMethodField()
+    lettre_motivation = serializers.SerializerMethodField()
+    demande_stage = serializers.SerializerMethodField()
+    cv_binome = serializers.SerializerMethodField()
+    lettre_motivation_binome = serializers.SerializerMethodField()
+    demande_stage_binome = serializers.SerializerMethodField()
+
+    def get_cv(self, obj):
+        request = self.context.get('request')
+        if obj.cv and hasattr(obj.cv, 'url'):
+            return request.build_absolute_uri(obj.cv.url) if request else obj.cv.url
+        return None
+
+    def get_lettre_motivation(self, obj):
+        request = self.context.get('request')
+        if obj.lettre_motivation and hasattr(obj.lettre_motivation, 'url'):
+            return request.build_absolute_uri(obj.lettre_motivation.url) if request else obj.lettre_motivation.url
+        return None
+
+    def get_demande_stage(self, obj):
+        request = self.context.get('request')
+        if obj.demande_stage and hasattr(obj.demande_stage, 'url'):
+            return request.build_absolute_uri(obj.demande_stage.url) if request else obj.demande_stage.url
+        return None
+
+    def get_cv_binome(self, obj):
+        request = self.context.get('request')
+        if obj.cv_binome and hasattr(obj.cv_binome, 'url'):
+            return request.build_absolute_uri(obj.cv_binome.url) if request else obj.cv_binome.url
+        return None
+
+    def get_lettre_motivation_binome(self, obj):
+        request = self.context.get('request')
+        if obj.lettre_motivation_binome and hasattr(obj.lettre_motivation_binome, 'url'):
+            return request.build_absolute_uri(obj.lettre_motivation_binome.url) if request else obj.lettre_motivation_binome.url
+        return None
+
+    def get_demande_stage_binome(self, obj):
+        request = self.context.get('request')
+        if obj.demande_stage_binome and hasattr(obj.demande_stage_binome, 'url'):
+            return request.build_absolute_uri(obj.demande_stage_binome.url) if request else obj.demande_stage_binome.url
+        return None
+
     class Meta:
         model = Demande
         fields = [
@@ -86,7 +128,7 @@ class DemandeSerializer(serializers.ModelSerializer):
         return self.validate_file_field(value, 'demande de stage binôme')
 
 
-class DemandeListSerializer(serializers.ModelSerializer):
+class DemandeListSerializer(DemandeSerializer):
     """Serializer for listing demandes (RH view)"""
     
     nom_complet = serializers.CharField(read_only=True)
@@ -94,17 +136,18 @@ class DemandeListSerializer(serializers.ModelSerializer):
     duree_stage = serializers.IntegerField(read_only=True)
     is_pfe_stage = serializers.BooleanField(read_only=True)
     
-    class Meta:
-        model = Demande
+    class Meta(DemandeSerializer.Meta):
         fields = [
             'id', 'nom_complet', 'email', 'institut', 'specialite',
             'type_stage', 'niveau', 'pfe_reference', 'date_debut', 'date_fin',
             'duree_stage', 'stage_binome', 'nom_complet_binome',
-            'is_pfe_stage', 'status', 'created_at'
+            'is_pfe_stage', 'status', 'created_at',
+            'cv', 'lettre_motivation', 'demande_stage',
+            'cv_binome', 'lettre_motivation_binome', 'demande_stage_binome',
         ]
 
 
-class DemandeDetailSerializer(serializers.ModelSerializer):
+class DemandeDetailSerializer(DemandeSerializer):
     """Serializer for detailed demande view"""
     
     nom_complet = serializers.CharField(read_only=True)
@@ -112,9 +155,10 @@ class DemandeDetailSerializer(serializers.ModelSerializer):
     duree_stage = serializers.IntegerField(read_only=True)
     is_pfe_stage = serializers.BooleanField(read_only=True)
     
-    class Meta:
-        model = Demande
-        fields = '__all__'
+    class Meta(DemandeSerializer.Meta):
+        fields = DemandeSerializer.Meta.fields + [
+            'nom_complet', 'nom_complet_binome', 'duree_stage', 'is_pfe_stage'
+        ]
 
 
 class DemandeApprovalSerializer(serializers.Serializer):

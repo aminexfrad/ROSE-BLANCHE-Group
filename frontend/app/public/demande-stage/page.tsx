@@ -131,6 +131,23 @@ export default function DemandeStage() {
       submitData.append('date_fin', formData.dateFin)
       submitData.append('stage_binome', formData.stageBinome.toString())
       
+      // Debug: Log the form data
+      console.log('Form data being sent:', {
+        nom: formData.nom,
+        prenom: formData.prenom,
+        email: formData.email,
+        telephone: formData.telephone,
+        cin: formData.cin,
+        institut: formData.institut,
+        specialite: formData.specialite,
+        type_stage: formData.typeStage,
+        niveau: formData.niveau,
+        pfe_reference: formData.pfeReference,
+        date_debut: formData.dateDebut,
+        date_fin: formData.dateFin,
+        stage_binome: formData.stageBinome
+      })
+      
       // Add binôme fields if applicable
       if (formData.stageBinome) {
         submitData.append('nom_binome', formData.nomBinome)
@@ -178,6 +195,10 @@ export default function DemandeStage() {
       }, 2000)
     } catch (error: any) {
       console.error('Error submitting application:', error)
+      // Log the full error response
+      if (error.message) {
+        console.error('Error message:', error.message)
+      }
       toast({
         title: "Erreur",
         description: error.message || "Échec de la soumission de la demande. Veuillez réessayer.",
