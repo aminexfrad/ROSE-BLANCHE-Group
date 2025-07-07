@@ -1,0 +1,30 @@
+Félicitations ! Votre demande de stage a été acceptée
+
+Bonjour {{ demande.prenom }} {{ demande.nom }},
+
+Nous avons le plaisir de vous informer que votre demande de stage a été ACCEPTÉE !
+
+Votre compte stagiaire a été créé sur la plateforme StageBloom. Voici vos identifiants de connexion :
+
+Email : {{ demande.email }}
+Mot de passe : {{ password }}
+
+⚠️ IMPORTANT : Veuillez changer votre mot de passe lors de votre première connexion pour des raisons de sécurité.
+
+PROCHAINES ÉTAPES :
+1. Connectez-vous à votre espace stagiaire avec les identifiants ci-dessus
+2. Modifiez votre mot de passe
+3. Complétez votre profil
+4. Consultez votre planning et vos missions
+
+Pour vous connecter : {{ site_url }}/login
+
+Si vous avez des questions, n'hésitez pas à contacter votre tuteur ou l'équipe RH.
+
+Nous vous souhaitons un excellent stage !
+
+Cordialement,
+L'équipe StageBloom
+
+---
+Cet email a été envoyé automatiquement par StageBloom 

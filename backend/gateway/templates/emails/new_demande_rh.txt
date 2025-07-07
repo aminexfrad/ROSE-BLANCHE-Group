@@ -1,0 +1,30 @@
+Nouvelle demande de stage
+
+Bonjour,
+
+Une nouvelle demande de stage a été soumise sur la plateforme StageBloom.
+
+INFORMATIONS DU CANDIDAT :
+- Nom complet : {{ demande.prenom }} {{ demande.nom }}
+- Email : {{ demande.email }}
+- Téléphone : {{ demande.telephone }}
+- Institut : {{ demande.institut }}
+- Spécialité : {{ demande.specialite }}
+- Type de stage : {{ demande.type_stage }}
+- Niveau : {{ demande.niveau }}
+- Période : Du {{ demande.date_debut|date:"d/m/Y" }} au {{ demande.date_fin|date:"d/m/Y" }}
+
+{% if demande.stage_binome %}
+INFORMATIONS DU BINÔME :
+- Nom complet : {{ demande.prenom_binome }} {{ demande.nom_binome }}
+- Email : {{ demande.email_binome }}
+- Téléphone : {{ demande.telephone_binome }}
+{% endif %}
+
+Pour voir et traiter cette demande, connectez-vous à votre espace RH :
+{{ site_url }}/rh/demandes
+
+Merci de traiter cette demande dans les plus brefs délais.
+
+---
+Cet email a été envoyé automatiquement par StageBloom 

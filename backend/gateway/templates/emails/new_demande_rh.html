@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Nouvelle demande de stage</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #dc2626; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f9fafb; }
+        .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+        .btn { display: inline-block; padding: 12px 24px; background-color: #dc2626; color: white; text-decoration: none; border-radius: 6px; }
+        .info-row { margin-bottom: 10px; }
+        .label { font-weight: bold; color: #374151; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Nouvelle demande de stage</h1>
+        </div>
+        
+        <div class="content">
+            <p>Bonjour,</p>
+            
+            <p>Une nouvelle demande de stage a été soumise sur la plateforme StageBloom.</p>
+            
+            <h3>Informations du candidat :</h3>
+            <div class="info-row">
+                <span class="label">Nom complet :</span> {{ demande.prenom }} {{ demande.nom }}
+            </div>
+            <div class="info-row">
+                <span class="label">Email :</span> {{ demande.email }}
+            </div>
+            <div class="info-row">
+                <span class="label">Téléphone :</span> {{ demande.telephone }}
+            </div>
+            <div class="info-row">
+                <span class="label">Institut :</span> {{ demande.institut }}
+            </div>
+            <div class="info-row">
+                <span class="label">Spécialité :</span> {{ demande.specialite }}
+            </div>
+            <div class="info-row">
+                <span class="label">Type de stage :</span> {{ demande.type_stage }}
+            </div>
+            <div class="info-row">
+                <span class="label">Niveau :</span> {{ demande.niveau }}
+            </div>
+            <div class="info-row">
+                <span class="label">Période :</span> Du {{ demande.date_debut|date:"d/m/Y" }} au {{ demande.date_fin|date:"d/m/Y" }}
+            </div>
+            
+            {% if demande.stage_binome %}
+            <h3>Informations du binôme :</h3>
+            <div class="info-row">
+                <span class="label">Nom complet :</span> {{ demande.prenom_binome }} {{ demande.nom_binome }}
+            </div>
+            <div class="info-row">
+                <span class="label">Email :</span> {{ demande.email_binome }}
+            </div>
+            <div class="info-row">
+                <span class="label">Téléphone :</span> {{ demande.telephone_binome }}
+            </div>
+            {% endif %}
+            
+            <p style="margin-top: 30px;">
+                <a href="{{ site_url }}/rh/demandes" class="btn">Voir la demande</a>
+            </p>
+            
+            <p>Merci de traiter cette demande dans les plus brefs délais.</p>
+        </div>
+        
+        <div class="footer">
+            <p>Cet email a été envoyé automatiquement par StageBloom</p>
+        </div>
+    </div>
+</body>
+</html> 

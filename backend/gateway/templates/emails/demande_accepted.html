@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Demande de stage acceptée</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+        .header { background-color: #059669; color: white; padding: 20px; text-align: center; }
+        .content { padding: 20px; background-color: #f9fafb; }
+        .footer { text-align: center; padding: 20px; color: #6b7280; font-size: 14px; }
+        .btn { display: inline-block; padding: 12px 24px; background-color: #059669; color: white; text-decoration: none; border-radius: 6px; }
+        .credentials { background-color: #f3f4f6; padding: 15px; border-radius: 6px; margin: 20px 0; }
+        .warning { background-color: #fef3c7; border: 1px solid #f59e0b; padding: 15px; border-radius: 6px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎉 Félicitations !</h1>
+            <h2>Votre demande de stage a été acceptée</h2>
+        </div>
+        
+        <div class="content">
+            <p>Bonjour {{ demande.prenom }} {{ demande.nom }},</p>
+            
+            <p>Nous avons le plaisir de vous informer que votre demande de stage a été <strong>acceptée</strong> !</p>
+            
+            <p>Votre compte stagiaire a été créé sur la plateforme StageBloom. Voici vos identifiants de connexion :</p>
+            
+            <div class="credentials">
+                <p><strong>Email :</strong> {{ demande.email }}</p>
+                <p><strong>Mot de passe :</strong> {{ password }}</p>
+            </div>
+            
+            <div class="warning">
+                <p><strong>⚠️ Important :</strong> Veuillez changer votre mot de passe lors de votre première connexion pour des raisons de sécurité.</p>
+            </div>
+            
+            <p>Prochaines étapes :</p>
+            <ol>
+                <li>Connectez-vous à votre espace stagiaire avec les identifiants ci-dessus</li>
+                <li>Modifiez votre mot de passe</li>
+                <li>Complétez votre profil</li>
+                <li>Consultez votre planning et vos missions</li>
+            </ol>
+            
+            <p style="margin-top: 30px;">
+                <a href="{{ site_url }}/login" class="btn">Se connecter maintenant</a>
+            </p>
+            
+            <p>Si vous avez des questions, n'hésitez pas à contacter votre tuteur ou l'équipe RH.</p>
+            
+            <p>Nous vous souhaitons un excellent stage !</p>
+            
+            <p>Cordialement,<br>
+            L'équipe StageBloom</p>
+        </div>
+        
+        <div class="footer">
+            <p>Cet email a été envoyé automatiquement par StageBloom</p>
+        </div>
+    </div>
+</body>
+</html> 

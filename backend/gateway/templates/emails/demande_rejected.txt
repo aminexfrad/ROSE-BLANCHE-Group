@@ -1,0 +1,28 @@
+Réponse à votre demande de stage
+
+Bonjour {{ demande.prenom }} {{ demande.nom }},
+
+Nous vous remercions pour l'intérêt que vous portez à notre entreprise et pour le temps que vous avez consacré à préparer votre candidature.
+
+Après avoir examiné attentivement votre demande de stage, nous regrettons de vous informer que nous ne sommes pas en mesure de vous proposer un stage à ce moment.
+
+{% if raison %}
+RAISON :
+{{ raison }}
+{% endif %}
+
+NOUS VOUS ENCOURAGEONS À :
+- Continuer à développer vos compétences
+- Postuler à d'autres opportunités de stage
+- Nous recontacter pour de futures opportunités
+
+Nous vous souhaitons beaucoup de succès dans vos études et dans votre recherche de stage.
+
+N'hésitez pas à nous recontacter pour de futures opportunités.
+
+Cordialement,
+L'équipe RH
+StageBloom
+
+---
+Cet email a été envoyé automatiquement par StageBloom 
