@@ -34,13 +34,20 @@ class DemandeCreateView(generics.CreateAPIView):
     permission_classes = [AllowAny]
     
     def perform_create(self, serializer):
-        demande = serializer.save()
-        
-        # Generate PDF summary
-        pdf_content = self.generate_pdf_summary(demande)
-        
-        # Send email notification to RH with PDF and attachments
-        self.send_rh_notification(demande, pdf_content)
+        try:
+            demande = serializer.save()
+            
+            # Generate PDF summary
+            pdf_content = self.generate_pdf_summary(demande)
+            
+            # Send email notification to RH with PDF and attachments
+            self.send_rh_notification(demande, pdf_content)
+        except Exception as e:
+            import traceback
+            print('Error in DemandeCreateView.perform_create:', e)
+            traceback.print_exc()
+            from rest_framework.exceptions import APIException
+            raise APIException(f"Erreur lors de la création de la demande: {str(e)}")
     
     def generate_pdf_summary(self, demande):
         """Generate a formatted PDF summary of the demande in the modern layout"""
@@ -86,7 +93,7 @@ class DemandeCreateView(generics.CreateAPIView):
         )
 
         # Data mapping (use placeholders if missing)
-        ref = demande.pfe_reference or demande.reference or 'REF / ...'
+        ref = demande.pfe_reference or 'REF / ...'
         title = getattr(demande, 'pfe_title', None) or getattr(demande, 'sujet', None) or 'Titre du projet'
         description = getattr(demande, 'description', None) or 'Description non fournie.'
         objectifs = getattr(demande, 'objectifs', None) or '- Objectif 1\n- Objectif 2'

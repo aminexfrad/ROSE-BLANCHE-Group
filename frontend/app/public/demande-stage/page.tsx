@@ -65,6 +65,7 @@ export default function DemandeStage() {
   const [pfeProjects, setPfeProjects] = useState<PFEProject[]>([])
   const [loadingPfeProjects, setLoadingPfeProjects] = useState(false)
   const [pfeProjectsError, setPfeProjectsError] = useState<string | null>(null)
+  const [formError, setFormError] = useState<string | null>(null)
   
   // Form data
   const [formData, setFormData] = useState<FormData>({
@@ -199,6 +200,7 @@ export default function DemandeStage() {
   const handleSubmit = async () => {
     try {
       setSubmitting(true)
+      setFormError(null)
       
       // Create FormData for file upload
       const submitData = new FormData()
@@ -267,13 +269,19 @@ export default function DemandeStage() {
       }, 2000)
     } catch (error: any) {
       console.error('Error submitting application:', error)
-      // Log the full error response
-      if (error.message) {
-        console.error('Error message:', error.message)
+      let errorMsg = error.message || "Échec de la soumission de la demande. Veuillez réessayer."
+      // Try to extract detailed validation errors if present
+      if (error.response && typeof error.response === 'object') {
+        if (Array.isArray(error.response)) {
+          errorMsg = error.response.join(' ')
+        } else if (typeof error.response === 'object') {
+          errorMsg = Object.values(error.response).flat().join(' ')
+        }
       }
+      setFormError(errorMsg)
       toast({
         title: "Erreur",
-        description: error.message || "Échec de la soumission de la demande. Veuillez réessayer.",
+        description: errorMsg,
         variant: "destructive",
       })
     } finally {
@@ -298,10 +306,12 @@ export default function DemandeStage() {
         if (isPFEStage) {
           return basicValidation && formData.pfeReference.trim() !== ''
         }
+        // For non-PFE, do NOT require pfeReference
         return basicValidation
       case 3:
         const dateValidation = formData.dateDebut !== '' && formData.dateFin !== ''
         if (!formData.stageBinome) {
+          // For non-binôme, do NOT require binôme fields
           return dateValidation
         }
         // If stage is in binôme, validate binôme fields
@@ -320,6 +330,7 @@ export default function DemandeStage() {
                  validateFile(formData.lettreMotivationBinome) && 
                  validateFile(formData.demandeStageBinome)
         }
+        // For non-binôme, do NOT require binôme documents
         return true
       default:
         return false
@@ -381,6 +392,19 @@ export default function DemandeStage() {
                     Certains champs ont été automatiquement remplis depuis l'offre sélectionnée. 
                     Vous pouvez toujours modifier les autres informations selon vos besoins.
                   </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Error message display */}
+          {formError && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex items-center gap-3">
+                <AlertCircle className="h-5 w-5 text-red-600" />
+                <div>
+                  <h3 className="font-semibold text-red-800">Erreur lors de la soumission</h3>
+                  <p className="text-sm text-red-700">{formError}</p>
                 </div>
               </div>
             </div>

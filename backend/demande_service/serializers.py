@@ -6,48 +6,12 @@ from .models import Demande
 
 class DemandeSerializer(serializers.ModelSerializer):
     """Serializer for demande de stage"""
-    cv = serializers.SerializerMethodField()
-    lettre_motivation = serializers.SerializerMethodField()
-    demande_stage = serializers.SerializerMethodField()
-    cv_binome = serializers.SerializerMethodField()
-    lettre_motivation_binome = serializers.SerializerMethodField()
-    demande_stage_binome = serializers.SerializerMethodField()
-
-    def get_cv(self, obj):
-        request = self.context.get('request')
-        if obj.cv and hasattr(obj.cv, 'url'):
-            return request.build_absolute_uri(obj.cv.url) if request else obj.cv.url
-        return None
-
-    def get_lettre_motivation(self, obj):
-        request = self.context.get('request')
-        if obj.lettre_motivation and hasattr(obj.lettre_motivation, 'url'):
-            return request.build_absolute_uri(obj.lettre_motivation.url) if request else obj.lettre_motivation.url
-        return None
-
-    def get_demande_stage(self, obj):
-        request = self.context.get('request')
-        if obj.demande_stage and hasattr(obj.demande_stage, 'url'):
-            return request.build_absolute_uri(obj.demande_stage.url) if request else obj.demande_stage.url
-        return None
-
-    def get_cv_binome(self, obj):
-        request = self.context.get('request')
-        if obj.cv_binome and hasattr(obj.cv_binome, 'url'):
-            return request.build_absolute_uri(obj.cv_binome.url) if request else obj.cv_binome.url
-        return None
-
-    def get_lettre_motivation_binome(self, obj):
-        request = self.context.get('request')
-        if obj.lettre_motivation_binome and hasattr(obj.lettre_motivation_binome, 'url'):
-            return request.build_absolute_uri(obj.lettre_motivation_binome.url) if request else obj.lettre_motivation_binome.url
-        return None
-
-    def get_demande_stage_binome(self, obj):
-        request = self.context.get('request')
-        if obj.demande_stage_binome and hasattr(obj.demande_stage_binome, 'url'):
-            return request.build_absolute_uri(obj.demande_stage_binome.url) if request else obj.demande_stage_binome.url
-        return None
+    cv = serializers.FileField(required=False, allow_null=True)
+    lettre_motivation = serializers.FileField(required=False, allow_null=True)
+    demande_stage = serializers.FileField(required=False, allow_null=True)
+    cv_binome = serializers.FileField(required=False, allow_null=True)
+    lettre_motivation_binome = serializers.FileField(required=False, allow_null=True)
+    demande_stage_binome = serializers.FileField(required=False, allow_null=True)
 
     class Meta:
         model = Demande
