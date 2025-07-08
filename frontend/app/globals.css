@@ -52,3 +52,30 @@
     @apply bg-white hover:bg-gray-50 text-red-600 border border-red-600 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
   }
 }
+
+/* Custom red scrollbar */
+::-webkit-scrollbar {
+  width: 12px;
+  background: #fff;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(to bottom, #ef4444, #b91c1c); /* Tailwind red-500 to red-800 */
+  border-radius: 8px;
+  border: 2px solid #fff;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(to bottom, #dc2626, #991b1b); /* Slightly darker on hover */
+}
+
+::-webkit-scrollbar-track {
+  background: #fff;
+  border-radius: 8px;
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #ef4444 #fff;
+}
