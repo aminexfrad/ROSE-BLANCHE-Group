@@ -56,18 +56,18 @@ const menuItems = {
     {
       title: "Navigation",
       items: [
-        { title: "Tableau de bord", url: "/stagiaire", icon: Home, badge: null },
-        { title: "Mon Parcours", url: "/stagiaire/parcours", icon: Calendar, badge: "3" },
-        { title: "Documents", url: "/stagiaire/documents", icon: FileText, badge: null },
-        { title: "KPI & Évaluation", url: "/stagiaire/kpi", icon: BarChart3, badge: "Nouveau" },
-        { title: "Témoignages", url: "/stagiaire/temoignages", icon: MessageSquare, badge: null },
+        { title: "Tableau de bord", url: "/stagiaire", icon: Home },
+        { title: "Mon Parcours", url: "/stagiaire/parcours", icon: Calendar },
+        { title: "Documents", url: "/stagiaire/documents", icon: FileText },
+        { title: "KPI & Évaluation", url: "/stagiaire/kpi", icon: BarChart3 },
+        { title: "Témoignages", url: "/stagiaire/temoignages", icon: MessageSquare },
       ],
     },
     {
       title: "Ressources",
       items: [
-        { title: "Rose Blanche", url: "/public/pfe-book", icon: BookOpen, badge: null },
-        { title: "Vidéo 3D", url: "/public/video-3d", icon: Award, badge: "Premium" },
+        { title: "Rose Blanche", url: "/public/pfe-book", icon: BookOpen },
+        { title: "Vidéo 3D", url: "/public/video-3d", icon: Award },
       ],
     },
   ],
@@ -75,17 +75,17 @@ const menuItems = {
     {
       title: "Gestion",
       items: [
-        { title: "Tableau de bord", url: "/tuteur", icon: Home, badge: null },
-        { title: "Mes Stagiaires", url: "/tuteur/stagiaires", icon: Users, badge: "12" },
-        { title: "Évaluations", url: "/tuteur/evaluations", icon: CheckCircle, badge: "5" },
-        { title: "Statistiques", url: "/tuteur/statistiques", icon: BarChart3, badge: null },
+        { title: "Tableau de bord", url: "/tuteur", icon: Home },
+        { title: "Mes Stagiaires", url: "/tuteur/stagiaires", icon: Users },
+        { title: "Évaluations", url: "/tuteur/evaluations", icon: CheckCircle },
+        { title: "Statistiques", url: "/tuteur/statistiques", icon: BarChart3 },
       ],
     },
     {
       title: "Suivi",
       items: [
-        { title: "Planning", url: "/tuteur/planning", icon: Calendar, badge: "2" },
-        { title: "Messages", url: "/tuteur/messages", icon: MessageSquare, badge: "8" },
+        { title: "Planning", url: "/tuteur/planning", icon: Calendar },
+        { title: "Messages", url: "/tuteur/messages", icon: MessageSquare },
       ],
     },
   ],
@@ -93,18 +93,18 @@ const menuItems = {
     {
       title: "Vue d'ensemble",
       items: [
-        { title: "Tableau de bord", url: "/rh", icon: Home, badge: null },
-        { title: "Tous les Stagiaires", url: "/rh/stagiaires", icon: Users, badge: "45" },
-        { title: "KPI Globaux", url: "/rh/kpi-globaux", icon: TrendingUp, badge: "Urgent" },
-        { title: "Statistiques", url: "/rh/statistiques", icon: BarChart3, badge: null },
+        { title: "Tableau de bord", url: "/rh", icon: Home },
+        { title: "Tous les Stagiaires", url: "/rh/stagiaires", icon: Users },
+        { title: "KPI Globaux", url: "/rh/kpi-globaux", icon: TrendingUp },
+        { title: "Statistiques", url: "/rh/statistiques", icon: BarChart3 },
       ],
     },
     {
       title: "Gestion",
       items: [
-        { title: "Témoignages", url: "/rh/temoignages", icon: MessageSquare, badge: "3" },
-        { title: "Demandes de stage", url: "/rh/demandes", icon: FileText, badge: "7" },
-        { title: "Rapports", url: "/rh/rapports", icon: Upload, badge: null },
+        { title: "Témoignages", url: "/rh/temoignages", icon: MessageSquare },
+        { title: "Demandes de stage", url: "/rh/demandes", icon: FileText },
+        { title: "Rapports", url: "/rh/rapports", icon: Upload },
       ],
     },
   ],
@@ -112,20 +112,20 @@ const menuItems = {
     {
       title: "Administration",
       items: [
-        { title: "Tableau de bord", url: "/admin", icon: Home, badge: null },
-        { title: "Utilisateurs", url: "/admin/utilisateurs", icon: Users, badge: "156" },
-        { title: "Offres de Stage", url: "/admin/offres-stage", icon: Briefcase, badge: "Nouveau" },
-        { title: "Rose Blanche", url: "/admin/pfe-book", icon: BookOpen, badge: null },
-        { title: "Configuration", url: "/admin/configuration", icon: Settings, badge: "1" },
+        { title: "Tableau de bord", url: "/admin", icon: Home },
+        { title: "Utilisateurs", url: "/admin/utilisateurs", icon: Users },
+        { title: "Offres de Stage", url: "/admin/offres-stage", icon: Briefcase },
+        { title: "Rose Blanche", url: "/admin/pfe-book", icon: BookOpen },
+        { title: "Configuration", url: "/admin/configuration", icon: Settings },
       ],
     },
     {
       title: "Système",
       items: [
-        { title: "Statistiques", url: "/admin/statistiques", icon: BarChart3, badge: null },
-        { title: "Monitoring", url: "/admin/monitoring", icon: Activity, badge: "OK" },
-        { title: "Sécurité", url: "/admin/security", icon: Shield, badge: "Alerte" },
-        { title: "Base de données", url: "/admin/database", icon: Database, badge: null },
+        { title: "Statistiques", url: "/admin/statistiques", icon: BarChart3 },
+        { title: "Monitoring", url: "/admin/monitoring", icon: Activity },
+        { title: "Sécurité", url: "/admin/security", icon: Shield },
+        { title: "Base de données", url: "/admin/database", icon: Database },
       ],
     },
   ],
@@ -169,9 +169,7 @@ export function AppSidebar() {
             <div className="flex items-center gap-2">
               <RoleIcon className="w-3 h-3 text-gray-500" />
               <p className="text-xs text-gray-500 capitalize font-medium">{user.role}</p>
-              <Badge variant="secondary" className="text-xs px-1.5 py-0.5">
-                Pro
-              </Badge>
+              {/* Pro badge removed as requested */}
             </div>
           </div>
           <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
@@ -238,23 +236,7 @@ export function AppSidebar() {
                               <div className="absolute -bottom-1 left-0 w-full h-0.5 bg-gradient-to-r from-red-400 to-red-600 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></div>
                             )}
                           </div>
-                          {item.badge && (
-                            <Badge
-                              variant={isActive ? "default" : "secondary"}
-                              className={`
-                                text-xs px-2 py-0.5 transition-all duration-300
-                                ${
-                                  isActive
-                                    ? "bg-red-600 text-white shadow-sm"
-                                    : "bg-gray-200 text-gray-600 group-hover:bg-gray-300"
-                                }
-                                ${isHovered ? "animate-bounce" : ""}
-                              `}
-                            >
-                              {item.badge}
-                            </Badge>
-                          )}
-                          {isHovered && <Zap className="w-3 h-3 text-yellow-500 animate-pulse" />}
+                          {/* Zap icon removed as requested */}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>
@@ -272,9 +254,9 @@ export function AppSidebar() {
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <SidebarMenuButton className="w-full justify-between hover:bg-gradient-to-r hover:from-gray-50 hover:to-gray-100/50 transition-all duration-300 rounded-xl p-3 group">
-                  <div className="flex items-center gap-3">
-                    <div className="relative">
-                      <Avatar className="h-10 w-10 ring-2 ring-gray-200 transition-all duration-300 group-hover:ring-red-300">
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex-shrink-0">
+                      <Avatar className="h-9 w-9 ring-2 ring-gray-200 transition-all duration-300 group-hover:ring-red-300">
                         <AvatarFallback
                           className={`bg-gradient-to-br ${roleColors[user.role]} text-white text-sm font-bold`}
                         >
@@ -282,11 +264,11 @@ export function AppSidebar() {
                           {user.nom?.[0]}
                         </AvatarFallback>
                       </Avatar>
-                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full border-2 border-white flex items-center justify-center">
-                        <div className="w-2 h-2 bg-green-600 rounded-full animate-pulse"></div>
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 bg-green-600 rounded-full animate-pulse"></div>
                       </div>
                     </div>
-                    <div className="text-left flex-1">
+                    <div className="text-left flex-1 min-w-0">
                       <p className="text-sm font-bold text-gray-900 truncate">
                         {user.prenom || ''} {user.nom || ''}
                       </p>
@@ -328,13 +310,7 @@ export function AppSidebar() {
                   asChild
                   className="cursor-pointer hover:bg-gray-50 transition-colors duration-200 p-3"
                 >
-                  <Link href="/notifications">
-                    <Bell className="mr-3 h-4 w-4 text-gray-500" />
-                    <span className="font-medium">Notifications</span>
-                    <Badge variant="secondary" className="ml-auto text-xs">
-                      3
-                    </Badge>
-                  </Link>
+                  {/* Notifications removed as requested */}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
