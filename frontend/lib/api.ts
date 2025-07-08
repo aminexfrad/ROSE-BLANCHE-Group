@@ -242,6 +242,33 @@ class ApiClient {
     try {
       const response = await fetch(url, config)
       
+      // Handle 401 Unauthorized - try to refresh token
+      if (response.status === 401 && this.token && typeof window !== 'undefined') {
+        try {
+          await this.refreshToken()
+          // Retry the request with new token
+          config.headers = {
+            ...config.headers,
+            'Authorization': `Bearer ${this.token}`,
+          }
+          const retryResponse = await fetch(url, config)
+          
+          if (!retryResponse.ok) {
+            const errorData = await retryResponse.json().catch(() => ({}))
+            throw new Error(errorData.detail || errorData.message || `HTTP ${retryResponse.status}`)
+          }
+          
+          return await retryResponse.json()
+        } catch (refreshError) {
+          // If refresh fails, clear tokens and throw original error
+          this.token = null
+          localStorage.removeItem('auth_token')
+          localStorage.removeItem('refresh_token')
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
+        }
+      }
+      
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
         throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
@@ -541,12 +568,36 @@ class ApiClient {
 
   // PFE Document methods
   async getPFEDocuments(params: { status?: string; year?: number; speciality?: string } = {}): Promise<{ results: PFEDocument[]; count: number }> {
+    // Use public endpoint for PFE documents
+    return this.getPublicPFEDocuments(params)
+  }
+
+  // Public method for getting PFE documents without authentication
+  async getPublicPFEDocuments(params: { status?: string; year?: number; speciality?: string } = {}): Promise<{ results: PFEDocument[]; count: number }> {
     const queryParams = new URLSearchParams()
     if (params.status) queryParams.append('status', params.status)
     if (params.year) queryParams.append('year', params.year.toString())
     if (params.speciality) queryParams.append('speciality', params.speciality)
     
-    return this.request<{ results: PFEDocument[]; count: number }>(`/pfe-documents/?${queryParams}`)
+    const url = `${API_BASE_URL}/pfe-documents/${queryParams.toString() ? `?${queryParams.toString()}` : ''}`
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Public PFE Documents API request failed:', error)
+      throw error
+    }
   }
 
   async getPFEDocument(id: number): Promise<PFEDocument> {
@@ -695,7 +746,44 @@ class ApiClient {
     if (params.localisation) queryParams.append('localisation', params.localisation)
     if (params.featured) queryParams.append('featured', 'true')
     
-    return this.request<{ results: any[]; count: number }>(`/offres-stage/?${queryParams}`)
+    // Use public endpoint for stage offers
+    return this.getPublicOffresStage(params)
+  }
+
+  // Public method for getting stage offers without authentication
+  async getPublicOffresStage(params: { 
+    search?: string; 
+    specialite?: string; 
+    niveau?: string; 
+    localisation?: string; 
+    featured?: boolean 
+  } = {}): Promise<{ results: any[]; count: number }> {
+    const queryParams = new URLSearchParams()
+    if (params.search) queryParams.append('search', params.search)
+    if (params.specialite) queryParams.append('specialite', params.specialite)
+    if (params.niveau) queryParams.append('niveau', params.niveau)
+    if (params.localisation) queryParams.append('localisation', params.localisation)
+    if (params.featured) queryParams.append('featured', 'true')
+    
+    const url = `${API_BASE_URL}/offres-stage/?${queryParams}`
+    
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Public API request failed:', error)
+      throw error
+    }
   }
 
   async getOffreStage(id: number): Promise<any> {
@@ -732,6 +820,18 @@ class ApiClient {
     search?: string; 
     featured?: boolean 
   } = {}): Promise<{ results: PFEProject[]; count: number }> {
+    // Use public endpoint for PFE projects
+    return this.getPublicPFEProjects(params)
+  }
+
+  // Public method for getting PFE projects without authentication
+  async getPublicPFEProjects(params: { 
+    domain?: string; 
+    status?: string; 
+    academic_year?: string; 
+    search?: string; 
+    featured?: boolean 
+  } = {}): Promise<{ results: PFEProject[]; count: number }> {
     const searchParams = new URLSearchParams()
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
@@ -740,9 +840,25 @@ class ApiClient {
     })
     
     const queryString = searchParams.toString()
-    const url = queryString ? `/pfe-projects/?${queryString}` : '/pfe-projects/'
+    const url = `${API_BASE_URL}/pfe-projects/${queryString ? `?${queryString}` : ''}`
     
-    return this.request(url)
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
+      }
+
+      return await response.json()
+    } catch (error) {
+      console.error('Public PFE API request failed:', error)
+      throw error
+    }
   }
 
   async getPFEProject(id: number): Promise<PFEProject> {

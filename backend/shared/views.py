@@ -419,7 +419,7 @@ class NotificationsMarkAllReadView(APIView):
         return Response({'status': 'success'})
 
 class PFEDocumentsListView(generics.ListAPIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = []  # Public access
     serializer_class = PFEDocumentListSerializer
     pagination_class = PageNumberPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -429,11 +429,8 @@ class PFEDocumentsListView(generics.ListAPIView):
     ordering = ['-year', '-created_at']
 
     def get_queryset(self):
-        # Only show published documents to non-admin users
-        if self.request.user.role == 'admin':
-            return PFEDocument.objects.all()
-        else:
-            return PFEDocument.objects.filter(status='published')
+        # Only show published documents for public access
+        return PFEDocument.objects.filter(status='published')
 
 class PFEDocumentDetailView(generics.RetrieveAPIView):
     permission_classes = [IsAuthenticated]
@@ -681,7 +678,7 @@ class PFEProjectListView(APIView):
     """
     List all PFE projects with filtering and search
     """
-    permission_classes = [IsAuthenticated]
+    permission_classes = []  # Public access
 
     def get(self, request):
         try:
@@ -712,17 +709,21 @@ class PFEProjectListView(APIView):
                     Q(supervisor_name__icontains=search)
                 )
             
-            # Role-based filtering
-            user = request.user
-            if user.role == 'admin':
-                # Admin sees all projects
-                pass
-            elif user.role == 'rh':
-                # RH sees published projects
+            # For public access, only show published projects
+            if not request.user.is_authenticated:
                 queryset = queryset.filter(status='published')
             else:
-                # Other users see only published and available projects
-                queryset = queryset.filter(status='published')
+                # Role-based filtering for authenticated users
+                user = request.user
+                if user.role == 'admin':
+                    # Admin sees all projects
+                    pass
+                elif user.role == 'rh':
+                    # RH sees published projects
+                    queryset = queryset.filter(status='published')
+                else:
+                    # Other users see only published and available projects
+                    queryset = queryset.filter(status='published')
             
             # Order by featured first, then by creation date
             queryset = queryset.order_by('-is_featured', '-created_at')

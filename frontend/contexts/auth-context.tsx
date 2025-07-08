@@ -21,14 +21,24 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshProfile = async () => {
     setLoading(true)
     try {
+      // Only try to get profile if we have a token
       if (apiClient.isAuthenticated()) {
         const profile = await apiClient.getProfile()
         setUser(profile)
       } else {
         setUser(null)
       }
-    } catch (error) {
-      setUser(null)
+    } catch (error: any) {
+      console.error('Profile refresh error:', error)
+      // If token is invalid, clear user state
+      if (error.message?.includes('jeton') || error.message?.includes('token') || error.message?.includes('401')) {
+        setUser(null)
+        // Clear invalid tokens
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('auth_token')
+          localStorage.removeItem('refresh_token')
+        }
+      }
     } finally {
       setLoading(false)
     }
