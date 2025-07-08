@@ -194,24 +194,25 @@ class PFEDocumentCreateSerializer(serializers.ModelSerializer):
 class OffreStageSerializer(serializers.ModelSerializer):
     class Meta:
         model = OffreStage
-        fields = ['reference', 'title', 'description', 'objectifs', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville']
+        fields = ['id', 'reference', 'title', 'description', 'objectifs', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville', 'status', 'type', 'validated']
 
 class OffreStageListSerializer(serializers.ModelSerializer):
     class Meta:
         model = OffreStage
-        fields = ['reference', 'title', 'description', 'objectifs', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville']
+        fields = ['id', 'reference', 'title', 'description', 'objectifs', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville', 'status', 'type', 'validated']
 
 class OffreStageCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = OffreStage
-        fields = ['titre', 'entreprise', 'specialite', 'niveau', 'localisation',
-                 'duree_mois', 'description', 'profil_recherche', 'competences_requises',
-                 'missions', 'avantages', 'conditions', 'remuneration', 'date_debut',
-                 'date_fin_candidature', 'contact_nom', 'contact_email', 'contact_telephone',
-                 'is_featured']
+        fields = [
+            'reference', 'title', 'description', 'objectifs', 'keywords', 'diplome',
+            'specialite', 'nombre_postes', 'ville', 'status', 'type', 'validated'
+        ]
     
     def create(self, validated_data):
-        validated_data['created_by'] = self.context['request'].user
+        validated_data.setdefault('status', 'draft')
+        validated_data.setdefault('type', 'Classique')
+        validated_data.setdefault('validated', False)
         return super().create(validated_data)
 
 class PFEProjectSerializer(serializers.ModelSerializer):

@@ -452,6 +452,21 @@ class OffreStage(models.Model):
     specialite = models.CharField(_('spécialité'), max_length=100, default='Inconnu')
     nombre_postes = models.PositiveIntegerField(_('nombre de postes'), default=1)
     ville = models.CharField(_('ville'), max_length=100, default='Inconnu')
+    STATUS_CHOICES = [
+        ('open', 'Ouverte'),
+        ('closed', 'Fermée'),
+        ('draft', 'Brouillon'),
+        ('expired', 'Expirée'),
+    ]
+    status = models.CharField(_('statut'), max_length=20, choices=STATUS_CHOICES, default='draft')
+
+    TYPE_CHOICES = [
+        ('Classique', 'Classique'),
+        ('PFE', 'PFE'),
+    ]
+    type = models.CharField(_('type'), max_length=20, choices=TYPE_CHOICES, default='Classique')
+
+    validated = models.BooleanField(_('validée'), default=False)
 
     class Meta:
         verbose_name = _('offre de stage')
