@@ -45,7 +45,6 @@ export default function OffresStageAdminPage() {
   const { user } = useAuth()
   const { toast } = useToast()
   const [offres, setOffres] = useState<OffreStage[]>([])
-  const [pfeProjects, setPfeProjects] = useState<PFEProject[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
@@ -70,13 +69,8 @@ export default function OffresStageAdminPage() {
   const fetchData = async () => {
     try {
       setLoading(true)
-      const [offresResponse, pfeProjectsResponse] = await Promise.all([
-        apiClient.getOffresStage(),
-        apiClient.getPFEProjects({ status: 'published' })
-      ])
-      
-      setOffres(offresResponse.results || [])
-      setPfeProjects(pfeProjectsResponse.results || [])
+      const offresResponse = await apiClient.getOffresStage();
+      setOffres(offresResponse.results || []);
     } catch (err: any) {
       console.error('Error fetching data:', err)
       setError(err.message || 'Failed to load data')
@@ -105,8 +99,14 @@ export default function OffresStageAdminPage() {
   }
 
   const handleUpdateOffre = async () => {
-    if (!editingOffre) return
-    
+    if (!editingOffre || typeof editingOffre.id !== 'number' || isNaN(editingOffre.id)) {
+      toast({
+        title: "Erreur",
+        description: "ID de l'offre invalide ou manquant.",
+        variant: "destructive",
+      })
+      return
+    }
     try {
       await apiClient.updateOffreStage(editingOffre.id, formData)
       toast({
@@ -366,7 +366,7 @@ export default function OffresStageAdminPage() {
                     <SelectValue placeholder="Tous les statuts" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tous les statuts</SelectItem>
+                    <SelectItem value="all">Tous les statuts</SelectItem>
                     <SelectItem value="open">Ouverte</SelectItem>
                     <SelectItem value="closed">Fermée</SelectItem>
                     <SelectItem value="draft">Brouillon</SelectItem>
@@ -382,7 +382,7 @@ export default function OffresStageAdminPage() {
                     <SelectValue placeholder="Tous les types" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Tous les types</SelectItem>
+                    <SelectItem value="all">Tous les types</SelectItem>
                     <SelectItem value="Classique">Classique</SelectItem>
                     <SelectItem value="PFE">PFE</SelectItem>
                   </SelectContent>
@@ -465,7 +465,7 @@ export default function OffresStageAdminPage() {
               </TableHeader>
               <TableBody>
                 {filteredOffres.map((offre) => (
-                  <TableRow key={offre.id}>
+                  <TableRow key={offre.id || `${offre.reference}-${offre.title}`}>
                     <TableCell className="font-medium">{offre.reference || '-'}</TableCell>
                     <TableCell>{offre.title || '-'}</TableCell>
                     <TableCell>{offre.specialite || '-'}</TableCell>

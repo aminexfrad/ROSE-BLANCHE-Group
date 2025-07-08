@@ -595,20 +595,24 @@ class OffreStageUpdateView(APIView):
     
     def put(self, request, offre_id):
         try:
+            print(f"[DEBUG] Update request for offre_id: {offre_id}")
             # Check if user has permission
             if request.user.role not in ['admin', 'rh']:
                 return Response(
                     {'error': 'Permission denied'}, 
                     status=status.HTTP_403_FORBIDDEN
                 )
-            
-            offre = get_object_or_404(OffreStage, id=offre_id)
+            try:
+                offre = OffreStage.objects.get(id=offre_id)
+                print(f"[DEBUG] OffreStage found: {offre}")
+            except OffreStage.DoesNotExist:
+                print(f"[DEBUG] OffreStage with id {offre_id} does not exist!")
+                return Response({'error': 'OffreStage not found'}, status=status.HTTP_404_NOT_FOUND)
             serializer = OffreStageSerializer(offre, data=request.data, partial=True)
             if serializer.is_valid():
                 offre = serializer.save()
                 return Response(OffreStageSerializer(offre).data)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-            
         except Exception as e:
             return Response(
                 {'error': f'Error updating internship offer: {str(e)}'}, 
