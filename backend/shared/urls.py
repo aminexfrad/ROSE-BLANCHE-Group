@@ -47,4 +47,11 @@ urlpatterns = [
     path('offres-stage/<int:offre_id>/update/', views.OffreStageUpdateView.as_view(), name='offre-stage-update'),
     path('offres-stage/<int:offre_id>/delete/', views.OffreStageDeleteView.as_view(), name='offre-stage-delete'),
     path('offres-stage/<int:offre_id>/apply/', views.OffreStageApplyView.as_view(), name='offre-stage-apply'),
+    
+    # PFE Projects
+    path('pfe-projects/', views.PFEProjectListView.as_view(), name='pfe-projects-list'),
+    path('pfe-projects/<int:project_id>/', views.PFEProjectDetailView.as_view(), name='pfe-project-detail'),
+    path('pfe-projects/create/', views.PFEProjectCreateView.as_view(), name='pfe-project-create'),
+    path('pfe-projects/<int:project_id>/update/', views.PFEProjectUpdateView.as_view(), name='pfe-project-update'),
+    path('pfe-projects/<int:project_id>/delete/', views.PFEProjectDeleteView.as_view(), name='pfe-project-delete'),
 ] 

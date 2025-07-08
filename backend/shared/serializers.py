@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage
+from admin_service.models import PFEProject
 from auth_service.models import User
 from auth_service.serializers import UserSerializer
 
@@ -191,25 +192,14 @@ class PFEDocumentCreateSerializer(serializers.ModelSerializer):
         return super().create(validated_data) 
 
 class OffreStageSerializer(serializers.ModelSerializer):
-    created_by = UserSerializer(read_only=True)
-    is_active = serializers.ReadOnlyField()
-    
     class Meta:
         model = OffreStage
-        fields = '__all__'
+        fields = ['reference', 'title', 'description', 'objectifs', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville']
 
 class OffreStageListSerializer(serializers.ModelSerializer):
-    created_by = UserSerializer(read_only=True)
-    is_active = serializers.ReadOnlyField()
-    
     class Meta:
         model = OffreStage
-        fields = ['id', 'titre', 'entreprise', 'specialite', 'niveau', 'localisation',
-                 'duree_mois', 'description', 'profil_recherche', 'competences_requises',
-                 'missions', 'avantages', 'conditions', 'remuneration', 'date_debut',
-                 'date_fin_candidature', 'contact_nom', 'contact_email', 'contact_telephone',
-                 'status', 'is_featured', 'vues', 'candidatures', 'created_by', 'is_active',
-                 'created_at']
+        fields = ['reference', 'title', 'description', 'objectifs', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville']
 
 class OffreStageCreateSerializer(serializers.ModelSerializer):
     class Meta:
@@ -219,6 +209,28 @@ class OffreStageCreateSerializer(serializers.ModelSerializer):
                  'missions', 'avantages', 'conditions', 'remuneration', 'date_debut',
                  'date_fin_candidature', 'contact_nom', 'contact_email', 'contact_telephone',
                  'is_featured']
+    
+    def create(self, validated_data):
+        validated_data['created_by'] = self.context['request'].user
+        return super().create(validated_data)
+
+class PFEProjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PFEProject
+        fields = ['reference_id', 'title', 'description', 'objectives', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville']
+
+class PFEProjectListSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PFEProject
+        fields = ['reference_id', 'title', 'description', 'objectives', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville']
+
+class PFEProjectCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PFEProject
+        fields = ['reference_id', 'title', 'description', 'domain',
+                 'supervisor_name', 'supervisor_email', 'supervisor_department',
+                 'objectives', 'requirements', 'deliverables', 'duration_weeks',
+                 'technologies', 'tools', 'max_candidates', 'academic_year']
     
     def create(self, validated_data):
         validated_data['created_by'] = self.context['request'].user

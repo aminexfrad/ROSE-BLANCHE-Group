@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { apiClient } from "@/lib/api"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -14,41 +15,26 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 
 interface OffreStage {
-  id: number
-  titre: string
-  entreprise: string
-  specialite: string
-  niveau: string
-  localisation: string
-  duree_mois: number
-  description: string
-  profil_recherche: string
-  competences_requises: string
-  missions: string
-  avantages: string
-  conditions: string
-  remuneration: string
-  date_debut: string
-  date_fin_candidature: string
-  contact_nom: string
-  contact_email: string
-  contact_telephone: string
-  status: string
-  is_featured: boolean
-  vues: number
-  candidatures: number
-  is_active: boolean
-  created_at: string
+  reference: string;
+  title: string;
+  description: string;
+  objectifs: string;
+  keywords: string;
+  diplome: string;
+  specialite: string;
+  nombre_postes: number;
+  ville: string;
 }
 
 export default function PFEBookPage() {
+  const router = useRouter()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [offers, setOffers] = useState<OffreStage[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [niveauFilter, setNiveauFilter] = useState("all")
   const [specialityFilter, setSpecialityFilter] = useState("all")
-  const [locationFilter, setLocationFilter] = useState("all")
+  const [diplomeFilter, setDiplomeFilter] = useState("all")
+  const [villeFilter, setVilleFilter] = useState("all")
 
   useEffect(() => {
     const fetchData = async () => {
@@ -56,9 +42,9 @@ export default function PFEBookPage() {
         setLoading(true)
         const params = new URLSearchParams()
         if (searchTerm) params.append('search', searchTerm)
-        if (niveauFilter !== "all") params.append('niveau', niveauFilter)
         if (specialityFilter !== "all") params.append('specialite', specialityFilter)
-        if (locationFilter !== "all") params.append('localisation', locationFilter)
+        if (diplomeFilter !== "all") params.append('diplome', diplomeFilter)
+        if (villeFilter !== "all") params.append('ville', villeFilter)
         const response = await apiClient.getOffresStage(Object.fromEntries(params))
         setOffers(response.results || [])
       } catch (err: any) {
@@ -68,41 +54,35 @@ export default function PFEBookPage() {
       }
     }
     fetchData()
-  }, [searchTerm, niveauFilter, specialityFilter, locationFilter])
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case "open":
-        return <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200">Ouverte</Badge>
-      case "closed":
-        return <Badge className="bg-red-100 text-red-800 border-red-200">Fermée</Badge>
-      case "draft":
-        return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">Brouillon</Badge>
-      default:
-        return <Badge variant="secondary">{status}</Badge>
-    }
-  }
+  }, [searchTerm, specialityFilter, diplomeFilter, villeFilter])
 
   const resetFilters = () => {
     setSearchTerm("")
-    setNiveauFilter("all")
     setSpecialityFilter("all")
-    setLocationFilter("all")
+    setDiplomeFilter("all")
+    setVilleFilter("all")
   }
 
-  // Filtered offers for display
-  const filteredOffers = offers
+  const handleApplyToOffer = (offer: OffreStage) => {
+    const params = new URLSearchParams({
+      type: 'PFE',
+      pfeReference: offer.reference,
+      specialite: offer.specialite,
+      diplome: offer.diplome,
+      ville: offer.ville,
+      title: offer.title,
+      description: offer.description,
+      objectifs: offer.objectifs,
+      keywords: offer.keywords,
+      nombre_postes: offer.nombre_postes.toString()
+    })
+    router.push(`/public/demande-stage?${params.toString()}`)
+  }
 
   // Get unique values for filters
-  const niveaux = [...new Set(offers.map(o => o.niveau))].filter(Boolean)
   const specialities = [...new Set(offers.map(o => o.specialite))].filter(Boolean)
-  const locations = [...new Set(offers.map(o => o.localisation))].filter(Boolean)
-
-  // Compute statistics
-  const totalOffers = offers.length
-  const openOffers = offers.filter(o => o.status === "open").length
-  const totalApplications = offers.reduce((sum, o) => sum + (o.candidatures || 0), 0)
-  const totalViews = offers.reduce((sum, o) => sum + (o.vues || 0), 0)
+  const diplomes = [...new Set(offers.map(o => o.diplome))].filter(Boolean)
+  const villes = [...new Set(offers.map(o => o.ville))].filter(Boolean)
 
   if (loading) {
     return (
@@ -182,7 +162,7 @@ export default function PFEBookPage() {
             {[
               {
                 title: "Offres Disponibles",
-                value: totalOffers.toString(),
+                value: offers.length.toString(),
                 icon: BookOpen,
                 color: "from-blue-500 to-blue-600",
                 bgColor: "bg-blue-50",
@@ -190,7 +170,7 @@ export default function PFEBookPage() {
               },
               {
                 title: "Offres Ouvertes",
-                value: openOffers.toString(),
+                value: offers.length.toString(),
                 icon: FileText,
                 color: "from-emerald-500 to-emerald-600",
                 bgColor: "bg-emerald-50",
@@ -198,7 +178,7 @@ export default function PFEBookPage() {
               },
               {
                 title: "Candidatures",
-                value: totalApplications.toString(),
+                value: offers.reduce((sum, o) => sum + (o.nombre_postes || 0), 0).toString(),
                 icon: Users,
                 color: "from-purple-500 to-purple-600",
                 bgColor: "bg-purple-50",
@@ -206,7 +186,7 @@ export default function PFEBookPage() {
               },
               {
                 title: "Vues Total",
-                value: totalViews.toString(),
+                value: offers.reduce((sum, o) => sum + (o.nombre_postes || 0), 0).toString(),
                 icon: Eye,
                 color: "from-orange-500 to-orange-600",
                 bgColor: "bg-orange-50",
@@ -256,17 +236,6 @@ export default function PFEBookPage() {
                     className="pl-12 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-all"
                   />
                 </div>
-                <Select value={niveauFilter} onValueChange={setNiveauFilter}>
-                  <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
-                    <SelectValue placeholder="Niveau d'études" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">Tous les niveaux</SelectItem>
-                    {niveaux.map(niveau => (
-                      <SelectItem key={niveau} value={niveau}>{niveau}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
                 <Select value={specialityFilter} onValueChange={setSpecialityFilter}>
                   <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
                     <SelectValue placeholder="Spécialité" />
@@ -278,14 +247,25 @@ export default function PFEBookPage() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Select value={locationFilter} onValueChange={setLocationFilter}>
+                <Select value={diplomeFilter} onValueChange={setDiplomeFilter}>
                   <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
-                    <SelectValue placeholder="Localisation" />
+                    <SelectValue placeholder="Diplôme" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Toutes les localisations</SelectItem>
-                    {locations.map(location => (
-                      <SelectItem key={location} value={location}>{location}</SelectItem>
+                    <SelectItem value="all">Tous les diplômes</SelectItem>
+                    {diplomes.map(diplome => (
+                      <SelectItem key={diplome} value={diplome}>{diplome}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select value={villeFilter} onValueChange={setVilleFilter}>
+                  <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+                    <SelectValue placeholder="Ville" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Toutes les villes</SelectItem>
+                    {villes.map(ville => (
+                      <SelectItem key={ville} value={ville}>{ville}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -305,95 +285,53 @@ export default function PFEBookPage() {
 
           {/* Liste des offres */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-            {filteredOffers.length > 0 ? (
-              filteredOffers.map((offer, index) => (
+            {offers.length > 0 ? (
+              offers.map((offer, index) => (
                 <Card
-                  key={offer.id}
+                  key={offer.reference}
                   className="group relative overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 bg-white/80 backdrop-blur-sm hover:bg-white"
                 >
-                  {offer.is_featured && (
-                    <div className="absolute top-4 right-4 z-10">
-                      <div className="bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-3 py-1 rounded-full text-xs font-semibold flex items-center gap-1">
-                        <Star className="h-3 w-3" />
-                        Vedette
-                      </div>
-                    </div>
-                  )}
-                  
                   <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 pb-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1 pr-4">
-                        <CardTitle className="text-xl font-bold text-gray-900 line-clamp-2 mb-3 group-hover:text-blue-600 transition-colors">
-                          {offer.titre}
-                        </CardTitle>
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Building2 className="h-4 w-4" />
-                          <span className="font-medium">{offer.entreprise}</span>
-                        </div>
-                      </div>
-                      {getStatusBadge(offer.status)}
-                    </div>
+                    <CardTitle className="text-xl font-bold text-gray-900 line-clamp-2 mb-3 group-hover:text-blue-600 transition-colors">
+                      {offer.title}
+                    </CardTitle>
                   </CardHeader>
-                  
                   <CardContent className="p-6">
-                    <div className="space-y-6">
-                      {offer.description && (
-                        <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
-                          {offer.description}
-                        </p>
-                      )}
-                      
+                    <div className="space-y-4">
+                      <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
+                        {offer.description}
+                      </p>
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div className="flex items-center gap-2 text-gray-500">
-                          <Calendar className="h-4 w-4 text-blue-500" />
-                          <span>{offer.date_debut ? format(new Date(offer.date_debut), 'MMM yyyy', { locale: fr }) : 'N/A'}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-500">
-                          <Clock className="h-4 w-4 text-green-500" />
-                          <span>{offer.duree_mois} mois</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-500">
                           <GraduationCap className="h-4 w-4 text-purple-500" />
-                          <span>{offer.specialite}</span>
+                          <span>{offer.diplome}</span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-500">
-                          <MapPin className="h-4 w-4 text-red-500" />
-                          <span>{offer.localisation}</span>
+                          <span className="font-medium">{offer.specialite}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <span className="font-medium">{offer.ville}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-gray-500">
+                          <span className="font-medium">{offer.nombre_postes} postes</span>
                         </div>
                       </div>
-
-                      {offer.competences_requises && (
-                        <div className="flex flex-wrap gap-2">
-                          {offer.competences_requises.split(',').slice(0, 3).map((skill, idx) => (
-                            <Badge key={idx} variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">
-                              {skill.trim()}
-                            </Badge>
-                          ))}
-                          {offer.competences_requises.split(',').length > 3 && (
-                            <Badge variant="outline" className="text-xs bg-gray-50 border-gray-200 text-gray-600">
-                              +{offer.competences_requises.split(',').length - 3} autres
-                            </Badge>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <div className="flex items-center gap-1">
-                            <Eye className="h-4 w-4" />
-                            <span>{offer.vues || 0}</span>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <Users className="h-4 w-4" />
-                            <span>{offer.candidatures || 0}</span>
-                          </div>
-                        </div>
+                      <div className="flex flex-wrap gap-2">
+                        {offer.keywords.split(',').map((kw, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">
+                            {kw.trim()}
+                          </Badge>
+                        ))}
+                      </div>
+                      <div className="pt-2">
+                        <span className="block text-xs text-gray-400 font-mono">Réf: {offer.reference}</span>
+                      </div>
+                      <div className="pt-4 flex justify-end">
                         <Button 
-                          size="sm" 
-                          className="bg-blue-600 hover:bg-blue-700 text-white group-hover:bg-blue-700 transition-all duration-300"
+                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition-all duration-300"
+                          onClick={() => handleApplyToOffer(offer)}
                         >
-                          <span>Postuler</span>
-                          <ArrowRight className="h-4 w-4 ml-2 group-hover:translate-x-1 transition-transform" />
+                          Postuler
                         </Button>
                       </div>
                     </div>
@@ -401,23 +339,14 @@ export default function PFEBookPage() {
                 </Card>
               ))
             ) : (
-              <div className="col-span-full text-center py-20">
-                <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <BookOpen className="h-12 w-12 text-gray-400" />
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-3">Aucune offre trouvée</h3>
-                <p className="text-gray-600 mb-6 max-w-md mx-auto">
-                  Essayez de modifier vos critères de recherche ou revenez plus tard pour de nouvelles opportunités.
-                </p>
-                <Button onClick={resetFilters} variant="outline" className="border-gray-300 hover:border-blue-500">
-                  Réinitialiser les filtres
-                </Button>
+              <div className="col-span-full text-center text-gray-500 py-12">
+                Aucune offre trouvée.
               </div>
             )}
           </div>
 
           {/* Pagination ou "Voir plus" */}
-          {filteredOffers.length > 0 && (
+          {offers.length > 0 && (
             <div className="text-center mt-16">
               <Button 
                 variant="outline" 

@@ -1,8 +1,8 @@
 "use client"
 
 import type React from "react"
-import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
+import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -10,8 +10,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
 import { Upload, Send, CheckCircle, AlertCircle, Loader2, User, Building, Calendar, FileText, BookOpen, Home, ArrowLeft } from "lucide-react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { apiClient } from "@/lib/api"
 import Link from "next/link"
 
@@ -49,11 +49,22 @@ interface FormData {
   demandeStageBinome: File | null
 }
 
+interface PFEProject {
+  id: number
+  reference_id: string
+  title: string
+}
+
 export default function DemandeStage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { toast } = useToast()
   const [currentStep, setCurrentStep] = useState(1)
   const [submitting, setSubmitting] = useState(false)
+  const [isPrefilledFromOffer, setIsPrefilledFromOffer] = useState(false)
+  const [pfeProjects, setPfeProjects] = useState<PFEProject[]>([])
+  const [loadingPfeProjects, setLoadingPfeProjects] = useState(false)
+  const [pfeProjectsError, setPfeProjectsError] = useState<string | null>(null)
   
   // Form data
   const [formData, setFormData] = useState<FormData>({
@@ -82,15 +93,79 @@ export default function DemandeStage() {
     lettreMotivationBinome: null,
     demandeStageBinome: null,
   })
+  
+  const isPFEStage = formData.typeStage === 'Stage PFE' || formData.typeStage === 'Stage de Fin d\'Études'
+  
+  // Handle URL parameters to pre-fill form data from PFE book
+  useEffect(() => {
+    // Only prefill and lock typeStage and pfeReference from the URL
+    const type = searchParams.get('type')
+    const pfeReference = searchParams.get('pfeReference')
+    if (type === 'PFE' && pfeReference) {
+      setFormData(prev => ({
+        ...prev,
+        typeStage: 'Stage PFE',
+        pfeReference: pfeReference
+      }))
+      setIsPrefilledFromOffer(true)
+      toast({
+        title: "Offre PFE sélectionnée",
+        description: `Vous postulez pour le PFE référence: ${pfeReference}`,
+      })
+      return
+    }
+    // Fallback: old logic for offres with 'offre_id' and 'reference_pfe'
+    const offreId = searchParams.get('offre_id')
+    if (offreId) {
+      const prefillData = {
+        typeStage: searchParams.get('type') === 'PFE' ? 'Stage PFE' : 'Stage d\'Été',
+        pfeReference: searchParams.get('reference_pfe') || '',
+      }
+      setFormData(prev => ({
+        ...prev,
+        ...prefillData
+      }))
+      setIsPrefilledFromOffer(true)
+      toast({
+        title: "Offre sélectionnée",
+        description: `Vous postulez pour: ${searchParams.get('titre')} chez ${searchParams.get('entreprise')}`,
+      })
+    }
+  }, [searchParams, toast])
 
-  const handleInputChange = (field: string, value: any) => {
+  // Fetch PFE projects when Stage PFE is selected and not prefilled
+  useEffect(() => {
+    if (isPFEStage && !isPrefilledFromOffer) {
+      setLoadingPfeProjects(true)
+      setPfeProjectsError(null)
+      
+      fetch("/shared/pfe-projects/", { credentials: 'include' })
+        .then(res => {
+          if (!res.ok) {
+            throw new Error('Failed to fetch PFE projects')
+          }
+          return res.json()
+        })
+        .then(data => {
+          setPfeProjects(data.results || [])
+        })
+        .catch((error) => {
+          console.error('Error fetching PFE projects:', error)
+          setPfeProjectsError('Impossible de charger les projets PFE. Veuillez réessayer.')
+          setPfeProjects([])
+        })
+        .finally(() => setLoadingPfeProjects(false))
+    }
+  }, [isPFEStage, isPrefilledFromOffer])
+
+  const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
   }
 
-  const handleFileChange = (field: string, file: File | null) => {
+  const handleFileChange = (field: keyof FormData, file: File | null) => {
     setFormData(prev => ({
       ...prev,
       [field]: file
@@ -107,6 +182,18 @@ export default function DemandeStage() {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1)
     }
+  }
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email)
+  }
+
+  const validateFile = (file: File | null): boolean => {
+    if (!file) return false
+    if (file.size > 10 * 1024 * 1024) return false // 10MB limit
+    if (file.type !== 'application/pdf') return false
+    return true
   }
 
   const handleSubmit = async () => {
@@ -130,23 +217,6 @@ export default function DemandeStage() {
       submitData.append('date_debut', formData.dateDebut)
       submitData.append('date_fin', formData.dateFin)
       submitData.append('stage_binome', formData.stageBinome.toString())
-      
-      // Debug: Log the form data
-      console.log('Form data being sent:', {
-        nom: formData.nom,
-        prenom: formData.prenom,
-        email: formData.email,
-        telephone: formData.telephone,
-        cin: formData.cin,
-        institut: formData.institut,
-        specialite: formData.specialite,
-        type_stage: formData.typeStage,
-        niveau: formData.niveau,
-        pfe_reference: formData.pfeReference,
-        date_debut: formData.dateDebut,
-        date_fin: formData.dateFin,
-        stage_binome: formData.stageBinome
-      })
       
       // Add binôme fields if applicable
       if (formData.stageBinome) {
@@ -189,6 +259,8 @@ export default function DemandeStage() {
         description: "Votre demande de stage a été soumise avec succès. Un résumé PDF a été envoyé aux RH avec tous vos documents.",
       })
       
+      // Save form data to localStorage for confirmation page
+      localStorage.setItem("demande_confirmation", JSON.stringify(formData));
       // Redirect to confirmation page
       setTimeout(() => {
         router.push('/public/demande-stage/confirmation')
@@ -209,28 +281,50 @@ export default function DemandeStage() {
     }
   }
 
-  const validateStep = (step: number) => {
+  const validateStep = (step: number): boolean => {
     switch (step) {
       case 1:
-        return formData.nom && formData.prenom && formData.email && formData.telephone && formData.cin
+        return formData.nom.trim() !== '' && 
+               formData.prenom.trim() !== '' && 
+               validateEmail(formData.email) && 
+               formData.telephone.trim() !== '' && 
+               formData.cin.trim() !== ''
       case 2:
-        return formData.institut && formData.specialite && formData.typeStage && formData.niveau
+        const basicValidation = formData.institut.trim() !== '' && 
+                               formData.specialite.trim() !== '' && 
+                               formData.typeStage !== '' && 
+                               formData.niveau.trim() !== ''
+        // For PFE stages, PFE reference is required
+        if (isPFEStage) {
+          return basicValidation && formData.pfeReference.trim() !== ''
+        }
+        return basicValidation
       case 3:
-        return formData.dateDebut && formData.dateFin
+        const dateValidation = formData.dateDebut !== '' && formData.dateFin !== ''
+        if (!formData.stageBinome) {
+          return dateValidation
+        }
+        // If stage is in binôme, validate binôme fields
+        return dateValidation && 
+               formData.nomBinome.trim() !== '' && 
+               formData.prenomBinome.trim() !== '' && 
+               validateEmail(formData.emailBinome)
       case 4:
-        return formData.cv && formData.lettreMotivation && formData.demandeStage
+        return validateFile(formData.cv) && 
+               validateFile(formData.lettreMotivation) && 
+               validateFile(formData.demandeStage)
       case 5:
         // Validate binôme documents if stage is in binôme
         if (formData.stageBinome) {
-          return formData.cvBinome && formData.lettreMotivationBinome && formData.demandeStageBinome
+          return validateFile(formData.cvBinome) && 
+                 validateFile(formData.lettreMotivationBinome) && 
+                 validateFile(formData.demandeStageBinome)
         }
         return true
       default:
         return false
     }
   }
-
-  const isPFEStage = formData.typeStage === 'Stage PFE' || formData.typeStage === 'Stage de Fin d\'Études'
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50 relative overflow-hidden">
@@ -275,6 +369,22 @@ export default function DemandeStage() {
               ></div>
             </div>
           </div>
+
+          {/* Pre-filled from offer indicator */}
+          {isPrefilledFromOffer && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+              <div className="flex items-center gap-3">
+                <CheckCircle className="h-5 w-5 text-green-600" />
+                <div>
+                  <h3 className="font-semibold text-green-800">Formulaire pré-rempli</h3>
+                  <p className="text-sm text-green-700">
+                    Certains champs ont été automatiquement remplis depuis l'offre sélectionnée. 
+                    Vous pouvez toujours modifier les autres informations selon vos besoins.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           <Card className="shadow-2xl border-0 bg-white/90 backdrop-blur-sm hover:shadow-3xl transition-all duration-300">
             <CardHeader className="bg-gradient-to-r from-red-50 to-red-100 border-b border-red-200">
@@ -359,8 +469,9 @@ export default function DemandeStage() {
               {/* Step 2: Academic Information */}
               {currentStep === 2 && (
                 <div className="space-y-6">
+                  {/* Institut */}
                   <div>
-                    <Label htmlFor="institut">Établissement *</Label>
+                    <Label htmlFor="institut">Institut *</Label>
                     <Input
                       id="institut"
                       value={formData.institut}
@@ -369,7 +480,7 @@ export default function DemandeStage() {
                       className="border-gray-300 focus:border-red-500 focus:ring-red-500"
                     />
                   </div>
-                  
+                  {/* Spécialité */}
                   <div>
                     <Label htmlFor="specialite">Spécialité *</Label>
                     <Input
@@ -380,10 +491,21 @@ export default function DemandeStage() {
                       className="border-gray-300 focus:border-red-500 focus:ring-red-500"
                     />
                   </div>
-                  
+                  {/* Type de Stage */}
                   <div>
-                    <Label htmlFor="typeStage">Type de Stage *</Label>
-                    <Select value={formData.typeStage} onValueChange={(value) => handleInputChange('typeStage', value)}>
+                    <Label htmlFor="typeStage" className="flex items-center gap-2">
+                      Type de Stage *
+                      {isPrefilledFromOffer && formData.typeStage === 'Stage PFE' && (
+                        <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                          Pré-rempli
+                        </Badge>
+                      )}
+                    </Label>
+                    <Select
+                      value={formData.typeStage}
+                      onValueChange={(value) => handleInputChange('typeStage', value)}
+                      disabled={isPrefilledFromOffer && formData.typeStage === 'Stage PFE'}
+                    >
                       <SelectTrigger className="border-gray-300 focus:border-red-500 focus:ring-red-500">
                         <SelectValue placeholder="Sélectionnez le type de stage" />
                       </SelectTrigger>
@@ -395,7 +517,9 @@ export default function DemandeStage() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
+                  {/* Separator */}
+                  <div className="my-4 border-t border-gray-200"></div>
+                  {/* Niveau */}
                   <div>
                     <Label htmlFor="niveau">Niveau *</Label>
                     <Input
@@ -406,23 +530,65 @@ export default function DemandeStage() {
                       className="border-gray-300 focus:border-red-500 focus:ring-red-500"
                     />
                   </div>
-
+                  {/* Référence PFE */}
                   {isPFEStage && (
                     <div>
                       <Label htmlFor="pfeReference" className="flex items-center gap-2">
-                        <BookOpen className="h-4 w-4 text-red-600" />
                         Référence du Projet PFE *
+                        {isPrefilledFromOffer && formData.pfeReference && (
+                          <Badge variant="secondary" className="text-xs bg-green-100 text-green-800">
+                            Pré-rempli
+                          </Badge>
+                        )}
                       </Label>
+                      {/* Only show dropdown if not prefilled from offer */}
+                      {!isPrefilledFromOffer && (
+                        <div className="mb-2">
+                          <Select
+                            value={formData.pfeReference}
+                            onValueChange={val => handleInputChange('pfeReference', val)}
+                            disabled={loadingPfeProjects || pfeProjects.length === 0}
+                          >
+                            <SelectTrigger className="border-gray-300 focus:border-red-500 focus:ring-red-500">
+                              <SelectValue placeholder={loadingPfeProjects ? 'Chargement...' : 'Choisissez un projet PFE'} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {pfeProjects.map((proj) => (
+                                <SelectItem key={proj.id} value={proj.reference_id}>
+                                  {proj.reference_id} - {proj.title}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {pfeProjectsError && (
+                            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="h-4 w-4 text-red-600" />
+                                <p className="text-sm text-red-700">{pfeProjectsError}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
                       <Input
                         id="pfeReference"
                         value={formData.pfeReference}
                         onChange={(e) => handleInputChange('pfeReference', e.target.value)}
-                        placeholder="Entrez la référence du projet choisi dans le PFE Book"
-                        className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                        placeholder="Ex: PFE-2024-001 (voir PFE Book)"
+                        className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${
+                          isPrefilledFromOffer && formData.pfeReference ? 'bg-gray-50 cursor-not-allowed' : ''
+                        }`}
+                        readOnly={isPrefilledFromOffer && !!formData.pfeReference}
                       />
-                      <p className="text-sm text-gray-500 mt-1">
-                        Consultez le <a href="/public/pfe-book" className="text-red-600 hover:underline font-medium">PFE Book</a> pour choisir votre projet
-                      </p>
+                      {isPrefilledFromOffer && formData.pfeReference ? (
+                        <p className="text-sm text-green-600 mt-1">
+                          ✓ Référence PFE automatiquement remplie depuis l'offre sélectionnée
+                        </p>
+                      ) : (
+                        <p className="text-sm text-gray-500 mt-1">
+                          Trouvez la référence dans le <a href="/public/pfe-book" className="text-red-600 hover:underline font-medium">PFE Book</a> ou sélectionnez un projet ci-dessus.
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -440,6 +606,8 @@ export default function DemandeStage() {
                         value={formData.dateDebut}
                         onChange={(e) => handleInputChange('dateDebut', e.target.value)}
                         className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                        readOnly={false}
+                        disabled={false}
                       />
                     </div>
                     <div>
@@ -450,6 +618,8 @@ export default function DemandeStage() {
                         value={formData.dateFin}
                         onChange={(e) => handleInputChange('dateFin', e.target.value)}
                         className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                        readOnly={false}
+                        disabled={false}
                       />
                     </div>
                   </div>

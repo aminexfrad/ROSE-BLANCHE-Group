@@ -84,6 +84,13 @@ const quickActions = [
     href: "/admin/pfe-book",
     color: "bg-indigo-500",
   },
+  {
+    title: "Offres de Stage",
+    description: "Manage internship offers",
+    icon: FileText,
+    href: "/admin/offres-stage",
+    color: "bg-emerald-500",
+  },
 ]
 
 const systemActions = [

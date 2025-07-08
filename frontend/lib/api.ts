@@ -150,24 +150,34 @@ export interface PFEDocument {
   created_at: string
 }
 
+export interface PFEProject {
+  reference_id: string
+  title: string
+  description: string
+  objectives: string
+  keywords: string
+  diplome: string
+  specialite: string
+  nombre_postes: number
+  ville: string
+}
+
 export interface OffreStage {
   id: number
+  reference: string
   title: string
-  description?: string
-  speciality: string
-  location: string
-  duration: string
-  salary?: string
-  requirements?: string
-  benefits?: string
-  company: string
-  contact_email: string
-  contact_phone?: string
-  status: 'active' | 'inactive' | 'expired'
-  view_count: number
-  application_count: number
-  created_at: string
-  updated_at: string
+  description: string
+  objectives: string
+  keywords: string
+  diplome: string
+  specialite: string
+  nombre_postes: number
+  ville: string
+  status: 'open' | 'closed' | 'draft' | 'expired'
+  type: 'Classique' | 'PFE'
+  validated: boolean
+  created_at?: string
+  updated_at?: string
 }
 
 export interface DashboardStats {
@@ -712,6 +722,55 @@ class ApiClient {
 
   async deleteOffreStage(id: number): Promise<void> {
     return this.request<void>(`/offres-stage/${id}/delete/`, { method: 'DELETE' })
+  }
+
+  // PFE Projects API
+  async getPFEProjects(params: { 
+    domain?: string; 
+    status?: string; 
+    academic_year?: string; 
+    search?: string; 
+    featured?: boolean 
+  } = {}): Promise<{ results: PFEProject[]; count: number }> {
+    const searchParams = new URLSearchParams()
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, value.toString())
+      }
+    })
+    
+    const queryString = searchParams.toString()
+    const url = queryString ? `/pfe-projects/?${queryString}` : '/pfe-projects/'
+    
+    return this.request(url)
+  }
+
+  async getPFEProject(id: number): Promise<PFEProject> {
+    return this.request(`/pfe-projects/${id}/`)
+  }
+
+  async createPFEProject(data: Partial<PFEProject>): Promise<PFEProject> {
+    return this.request('/pfe-projects/create/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+  }
+
+  async updatePFEProject(id: number, data: Partial<PFEProject>): Promise<PFEProject> {
+    return this.request(`/pfe-projects/${id}/update/`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+  }
+
+  async deletePFEProject(id: number): Promise<void> {
+    return this.request(`/pfe-projects/${id}/delete/`, { method: 'DELETE' })
   }
 
   async getDemandes(): Promise<{ results: Demande[]; count: number }> {

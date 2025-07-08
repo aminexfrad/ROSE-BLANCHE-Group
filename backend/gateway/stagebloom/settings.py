@@ -56,6 +56,7 @@ INSTALLED_APPS = [
     'demande_service',
     'rh_service',
     'shared',
+    'admin_service',
 ]
 
 MIDDLEWARE = [

@@ -43,154 +43,123 @@ class DemandeCreateView(generics.CreateAPIView):
         self.send_rh_notification(demande, pdf_content)
     
     def generate_pdf_summary(self, demande):
-        """Generate a formatted PDF summary of the demande"""
+        """Generate a formatted PDF summary of the demande in the modern layout"""
         buffer = io.BytesIO()
         doc = SimpleDocTemplate(buffer, pagesize=A4)
         styles = getSampleStyleSheet()
-        
+
         # Custom styles
         title_style = ParagraphStyle(
             'CustomTitle',
             parent=styles['Heading1'],
-            fontSize=18,
-            spaceAfter=30,
-            alignment=TA_CENTER,
-            textColor=colors.darkblue
+            fontSize=20,
+            spaceAfter=20,
+            alignment=TA_LEFT,
+            textColor=colors.black,
+            fontName='Helvetica-Bold'
         )
-        
-        heading_style = ParagraphStyle(
-            'CustomHeading',
+        ref_style = ParagraphStyle(
+            'RefStyle',
+            parent=styles['Normal'],
+            fontSize=12,
+            textColor=colors.black,
+            spaceAfter=10,
+            fontName='Helvetica-Bold'
+        )
+        section_header = ParagraphStyle(
+            'SectionHeader',
             parent=styles['Heading2'],
-            fontSize=14,
-            spaceAfter=12,
-            spaceBefore=20,
-            textColor=colors.darkblue
+            fontSize=13,
+            textColor=colors.HexColor('#b71c3a'),
+            alignment=TA_CENTER,
+            fontName='Helvetica-BoldOblique',
+            spaceAfter=8,
+            spaceBefore=16
         )
-        
         normal_style = styles['Normal']
-        
-        # Build PDF content
-        story = []
-        
-        # Title
-        story.append(Paragraph("DEMANDE DE STAGE - RÉSUMÉ", title_style))
-        story.append(Spacer(1, 20))
-        
-        # Candidate Information
-        story.append(Paragraph("INFORMATIONS DU CANDIDAT", heading_style))
-        candidate_data = [
-            ['Nom complet:', f"{demande.prenom} {demande.nom}"],
-            ['Email:', demande.email],
-            ['Téléphone:', demande.telephone],
-            ['CIN:', demande.cin],
-            ['Institut:', demande.institut],
-            ['Spécialité:', demande.specialite],
-            ['Type de stage:', demande.type_stage],
-            ['Niveau:', demande.niveau],
+        bullet_style = ParagraphStyle(
+            'Bullet',
+            parent=styles['Normal'],
+            leftIndent=16,
+            bulletIndent=8,
+            spaceAfter=2
+        )
+
+        # Data mapping (use placeholders if missing)
+        ref = demande.pfe_reference or demande.reference or 'REF / ...'
+        title = getattr(demande, 'pfe_title', None) or getattr(demande, 'sujet', None) or 'Titre du projet'
+        description = getattr(demande, 'description', None) or 'Description non fournie.'
+        objectifs = getattr(demande, 'objectifs', None) or '- Objectif 1\n- Objectif 2'
+        keywords = getattr(demande, 'keywords', None) or 'Mots clés non fournis.'
+        diplome = getattr(demande, 'diplome', None) or "Diplôme d'Ingénieur"
+        specialite = demande.specialite or 'Spécialité'
+        nombre_postes = getattr(demande, 'nombre_postes', None) or '1'
+        ville = getattr(demande, 'ville', None) or 'Sousse'
+
+        # Left column (simulate with a table)
+        left_data = [
+            [Paragraph('<b>%s</b>' % diplome, normal_style)],
+            [Paragraph('<b>%s</b>' % specialite, normal_style)],
+            [Paragraph('<b>%s</b>' % nombre_postes, normal_style)],
+            [Paragraph('<b>%s</b>' % ville, normal_style)],
         ]
-        
-        if demande.pfe_reference:
-            candidate_data.append(['Référence PFE:', demande.pfe_reference])
-        
-        candidate_data.extend([
-            ['Date de début:', demande.date_debut.strftime('%d/%m/%Y')],
-            ['Date de fin:', demande.date_fin.strftime('%d/%m/%Y')],
-            ['Durée:', f"{demande.duree_stage} jours"],
-        ])
-        
-        candidate_table = Table(candidate_data, colWidths=[2*inch, 4*inch])
-        candidate_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        left_table = Table(left_data, colWidths=[1.8*inch], rowHeights=0.5*inch)
+        left_table.setStyle(TableStyle([
             ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
+            ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+            ('FONTSIZE', (0, 0), (-1, -1), 11),
+            ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
         ]))
-        story.append(candidate_table)
-        
-        # Binôme Information (if applicable)
-        if demande.stage_binome:
-            story.append(Spacer(1, 20))
-            story.append(Paragraph("INFORMATIONS DU BINÔME", heading_style))
-            binome_data = [
-                ['Nom complet:', f"{demande.prenom_binome} {demande.nom_binome}"],
-                ['Email:', demande.email_binome],
-                ['Téléphone:', demande.telephone_binome],
-                ['CIN:', demande.cin_binome],
-            ]
-            
-            binome_table = Table(binome_data, colWidths=[2*inch, 4*inch])
-            binome_table.setStyle(TableStyle([
-                ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                ('FONTSIZE', (0, 0), (-1, 0), 12),
-                ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-                ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-                ('GRID', (0, 0), (-1, -1), 1, colors.black)
-            ]))
-            story.append(binome_table)
-        
-        # Documents Information
+
+        # Main content
+        story = []
+        # Top: Reference and Title
+        story.append(Paragraph(ref, ref_style))
+        story.append(Paragraph(title, title_style))
+        story.append(Spacer(1, 10))
+
+        # Two-column layout: left (table), right (content)
+        # We'll use a table with two columns
+        main_data = [
+            [left_table, '']
+        ]
+        main_table = Table(main_data, colWidths=[2*inch, 4.5*inch])
+        main_table.setStyle(TableStyle([
+            ('VALIGN', (0, 0), (-1, -1), 'TOP'),
+            ('LEFTPADDING', (0, 0), (-1, -1), 0),
+            ('RIGHTPADDING', (0, 0), (-1, -1), 12),
+        ]))
+        story.append(main_table)
         story.append(Spacer(1, 20))
-        story.append(Paragraph("DOCUMENTS FOURNIS", heading_style))
-        
-        documents_data = [['Document', 'Candidat', 'Binôme']]
-        
-        # Check which documents are provided
-        candidate_docs = []
-        binome_docs = []
-        
-        if demande.cv:
-            candidate_docs.append("✓ CV")
-        if demande.lettre_motivation:
-            candidate_docs.append("✓ Lettre de motivation")
-        if demande.demande_stage:
-            candidate_docs.append("✓ Demande de stage")
-            
-        if demande.stage_binome:
-            if demande.cv_binome:
-                binome_docs.append("✓ CV")
-            if demande.lettre_motivation_binome:
-                binome_docs.append("✓ Lettre de motivation")
-            if demande.demande_stage_binome:
-                binome_docs.append("✓ Demande de stage")
-        
-        documents_data.extend([
-            ['CV', '\n'.join([d for d in candidate_docs if 'CV' in d]) or 'Non fourni', 
-             '\n'.join([d for d in binome_docs if 'CV' in d]) or 'Non fourni' if demande.stage_binome else 'N/A'],
-            ['Lettre de motivation', '\n'.join([d for d in candidate_docs if 'Lettre' in d]) or 'Non fourni',
-             '\n'.join([d for d in binome_docs if 'Lettre' in d]) or 'Non fourni' if demande.stage_binome else 'N/A'],
-            ['Demande de stage', '\n'.join([d for d in candidate_docs if 'Demande' in d]) or 'Non fourni',
-             '\n'.join([d for d in binome_docs if 'Demande' in d]) or 'Non fourni' if demande.stage_binome else 'N/A'],
-        ])
-        
-        documents_table = Table(documents_data, colWidths=[2*inch, 2*inch, 2*inch])
-        documents_table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        story.append(documents_table)
-        
+
+        # Description section
+        story.append(Paragraph('Description', section_header))
+        story.append(Paragraph(description, normal_style))
+        story.append(Spacer(1, 10))
+
+        # Objectifs section
+        story.append(Paragraph('Objectifs', section_header))
+        # Support both string and list for objectifs
+        if isinstance(objectifs, str):
+            objectifs_list = [o.strip('- ') for o in objectifs.split('\n') if o.strip()]
+        else:
+            objectifs_list = objectifs
+        for obj in objectifs_list:
+            story.append(Paragraph(f'• {obj}', bullet_style))
+        story.append(Spacer(1, 10))
+
+        # Mots clés section
+        story.append(Paragraph('Mots clés', section_header))
+        story.append(Paragraph(keywords, normal_style))
+
         # Footer
         story.append(Spacer(1, 30))
         story.append(Paragraph(f"Généré le {demande.created_at.strftime('%d/%m/%Y à %H:%M')}", normal_style))
-        
+
         # Build PDF
         doc.build(story)
         pdf_content = buffer.getvalue()
         buffer.close()
-        
         return pdf_content
     
     def send_rh_notification(self, demande, pdf_content):

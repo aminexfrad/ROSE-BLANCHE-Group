@@ -443,107 +443,21 @@ class PFEDocument(models.Model):
         self.save(update_fields=['download_count'])
 
 class OffreStage(models.Model):
-    """
-    Offre de Stage model for internship offers that candidates can browse and apply for
-    """
-    class Status(models.TextChoices):
-        OPEN = 'open', _('Ouverte')
-        CLOSED = 'closed', _('Fermée')
-        DRAFT = 'draft', _('Brouillon')
-        EXPIRED = 'expired', _('Expirée')
-    
-    class Niveau(models.TextChoices):
-        LICENCE = 'licence', _('Licence')
-        MASTER = 'master', _('Master')
-        INGENIEUR = 'ingenieur', _('Ingénieur')
-        DOCTORAT = 'doctorat', _('Doctorat')
-    
-    # Basic information
-    titre = models.CharField(_('titre'), max_length=200)
-    entreprise = models.CharField(_('entreprise'), max_length=200)
-    specialite = models.CharField(_('spécialité'), max_length=200)
-    niveau = models.CharField(
-        _('niveau'),
-        max_length=20,
-        choices=Niveau.choices,
-        default=Niveau.LICENCE
-    )
-    
-    # Location and duration
-    localisation = models.CharField(_('localisation'), max_length=200)
-    duree_mois = models.IntegerField(_('durée en mois'), default=3)
-    
-    # Description and requirements
-    description = models.TextField(_('description'))
-    profil_recherche = models.TextField(_('profil recherché'))
-    competences_requises = models.TextField(_('compétences requises'))
-    missions = models.TextField(_('missions'))
-    
-    # Benefits and conditions
-    avantages = models.TextField(_('avantages'), blank=True)
-    conditions = models.TextField(_('conditions'), blank=True)
-    remuneration = models.CharField(_('rémunération'), max_length=100, blank=True)
-    
-    # Dates
-    date_debut = models.DateField(_('date de début'))
-    date_fin_candidature = models.DateField(_('date limite de candidature'))
-    
-    # Contact information
-    contact_nom = models.CharField(_('nom du contact'), max_length=100)
-    contact_email = models.EmailField(_('email du contact'))
-    contact_telephone = models.CharField(_('téléphone du contact'), max_length=20, blank=True)
-    
-    # Status and visibility
-    status = models.CharField(
-        _('statut'),
-        max_length=20,
-        choices=Status.choices,
-        default=Status.OPEN
-    )
-    is_featured = models.BooleanField(_('mise en avant'), default=False)
-    
-    # Statistics
-    vues = models.IntegerField(_('nombre de vues'), default=0)
-    candidatures = models.IntegerField(_('nombre de candidatures'), default=0)
-    
-    # Created by
-    created_by = models.ForeignKey(
-        User, 
-        on_delete=models.CASCADE, 
-        related_name='offres_created',
-        null=True,
-        blank=True
-    )
-    
-    # Timestamps
-    created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
-    updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
-    
+    reference = models.CharField(_('référence'), max_length=50, unique=True, default='Inconnu')
+    title = models.CharField(_('titre'), max_length=200, default='Inconnu')
+    description = models.TextField(_('description'), default='Inconnu')
+    objectifs = models.TextField(_('objectifs'), blank=True, default='Inconnu')
+    keywords = models.TextField(_('mots clés'), blank=True, default='Inconnu')
+    diplome = models.CharField(_('diplôme'), max_length=100, default='Inconnu')
+    specialite = models.CharField(_('spécialité'), max_length=100, default='Inconnu')
+    nombre_postes = models.PositiveIntegerField(_('nombre de postes'), default=1)
+    ville = models.CharField(_('ville'), max_length=100, default='Inconnu')
+
     class Meta:
         verbose_name = _('offre de stage')
         verbose_name_plural = _('offres de stage')
         db_table = 'offre_stage'
-        ordering = ['-is_featured', '-created_at']
-    
+        ordering = ['-id']
+
     def __str__(self):
-        return f"{self.titre} - {self.entreprise}"
-    
-    @property
-    def is_active(self):
-        """Check if the offer is still active (not expired and open)"""
-        from django.utils import timezone
-        today = timezone.now().date()
-        return (
-            self.status == self.Status.OPEN and 
-            self.date_fin_candidature >= today
-        )
-    
-    def increment_views(self):
-        """Increment view count"""
-        self.vues += 1
-        self.save(update_fields=['vues'])
-    
-    def increment_applications(self):
-        """Increment application count"""
-        self.candidatures += 1
-        self.save(update_fields=['candidatures'])
+        return f"{self.reference} - {self.title}"

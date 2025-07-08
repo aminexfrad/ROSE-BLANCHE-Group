@@ -11,6 +11,7 @@ from datetime import datetime, timedelta
 from django.shortcuts import get_object_or_404
 
 from .models import Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage
+from admin_service.models import PFEProject
 from .serializers import (
     StageSerializer, StageListSerializer, StepSerializer, StepListSerializer,
     DocumentSerializer, DocumentListSerializer, DocumentUploadSerializer,
@@ -18,7 +19,8 @@ from .serializers import (
     TestimonialSerializer, TestimonialCreateSerializer, TestimonialModerationSerializer,
     NotificationSerializer, NotificationListSerializer,
     PFEDocumentSerializer, PFEDocumentListSerializer, PFEDocumentCreateSerializer,
-    OffreStageSerializer, OffreStageListSerializer, OffreStageCreateSerializer
+    OffreStageSerializer, OffreStageListSerializer, OffreStageCreateSerializer,
+    PFEProjectSerializer, PFEProjectListSerializer, PFEProjectCreateSerializer
 )
 from auth_service.models import User
 from auth_service.serializers import UserSerializer
@@ -470,53 +472,64 @@ class PFEDocumentUpdateView(generics.UpdateAPIView):
 
 class OffreStageListView(APIView):
     """
-    List all active internship offers with filtering and search
+    List all internship offers with optional filtering on existing fields only
     """
     permission_classes = []  # Public access
-    
+
     def get(self, request):
         try:
-            # Get query parameters
+            # Get query parameters for existing fields only
             specialite = request.query_params.get('specialite')
-            niveau = request.query_params.get('niveau')
-            localisation = request.query_params.get('localisation')
+            diplome = request.query_params.get('diplome')
+            ville = request.query_params.get('ville')
+            keywords = request.query_params.get('keywords')
+            title = request.query_params.get('title')
+            reference = request.query_params.get('reference')
+            description = request.query_params.get('description')
+            objectifs = request.query_params.get('objectifs')
+            nombre_postes = request.query_params.get('nombre_postes')
             search = request.query_params.get('search')
-            featured = request.query_params.get('featured', 'false').lower() == 'true'
-            
-            # Start with active offers
-            queryset = OffreStage.objects.filter(status='open')
-            
-            # Apply filters
+
+            queryset = OffreStage.objects.all()
+
             if specialite:
                 queryset = queryset.filter(specialite__icontains=specialite)
-            if niveau:
-                queryset = queryset.filter(niveau=niveau)
-            if localisation:
-                queryset = queryset.filter(localisation__icontains=localisation)
-            if featured:
-                queryset = queryset.filter(is_featured=True)
+            if diplome:
+                queryset = queryset.filter(diplome__icontains=diplome)
+            if ville:
+                queryset = queryset.filter(ville__icontains=ville)
+            if keywords:
+                queryset = queryset.filter(keywords__icontains=keywords)
+            if title:
+                queryset = queryset.filter(title__icontains=title)
+            if reference:
+                queryset = queryset.filter(reference__icontains=reference)
+            if description:
+                queryset = queryset.filter(description__icontains=description)
+            if objectifs:
+                queryset = queryset.filter(objectifs__icontains=objectifs)
+            if nombre_postes:
+                queryset = queryset.filter(nombre_postes=nombre_postes)
             if search:
                 queryset = queryset.filter(
-                    Q(titre__icontains=search) |
-                    Q(entreprise__icontains=search) |
+                    Q(title__icontains=search) |
+                    Q(reference__icontains=search) |
                     Q(description__icontains=search) |
-                    Q(specialite__icontains=search)
+                    Q(objectifs__icontains=search) |
+                    Q(specialite__icontains=search) |
+                    Q(diplome__icontains=search) |
+                    Q(ville__icontains=search) |
+                    Q(keywords__icontains=search)
                 )
-            
-            # Order by featured first, then by creation date
-            queryset = queryset.order_by('-is_featured', '-created_at')
-            
-            # Serialize
+
             serializer = OffreStageListSerializer(queryset, many=True)
-            
             return Response({
                 'results': serializer.data,
                 'count': queryset.count()
             })
-            
         except Exception as e:
             return Response(
-                {'error': f'Error fetching internship offers: {str(e)}'}, 
+                {'error': f'Error fetching internship offers: {str(e)}'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -660,5 +673,201 @@ class OffreStageApplyView(APIView):
         except Exception as e:
             return Response(
                 {'error': f'Error applying for internship offer: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PFEProjectListView(APIView):
+    """
+    List all PFE projects with filtering and search
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # Get query parameters
+            domain = request.query_params.get('domain')
+            status = request.query_params.get('status')
+            academic_year = request.query_params.get('academic_year')
+            search = request.query_params.get('search')
+            featured = request.query_params.get('featured')
+            
+            # Start with all projects
+            queryset = PFEProject.objects.all()
+            
+            # Apply filters
+            if domain:
+                queryset = queryset.filter(domain=domain)
+            if status:
+                queryset = queryset.filter(status=status)
+            if academic_year:
+                queryset = queryset.filter(academic_year=academic_year)
+            if featured == 'true':
+                queryset = queryset.filter(is_featured=True)
+            if search:
+                queryset = queryset.filter(
+                    Q(title__icontains=search) |
+                    Q(description__icontains=search) |
+                    Q(reference_id__icontains=search) |
+                    Q(supervisor_name__icontains=search)
+                )
+            
+            # Role-based filtering
+            user = request.user
+            if user.role == 'admin':
+                # Admin sees all projects
+                pass
+            elif user.role == 'rh':
+                # RH sees published projects
+                queryset = queryset.filter(status='published')
+            else:
+                # Other users see only published and available projects
+                queryset = queryset.filter(status='published')
+            
+            # Order by featured first, then by creation date
+            queryset = queryset.order_by('-is_featured', '-created_at')
+            
+            # Serialize
+            serializer = PFEProjectListSerializer(queryset, many=True)
+            
+            return Response({
+                'results': serializer.data,
+                'count': queryset.count()
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PFEProjectDetailView(APIView):
+    """
+    Get details of a specific PFE project
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, project_id):
+        try:
+            project = get_object_or_404(PFEProject, id=project_id)
+            
+            # Check permissions
+            user = request.user
+            if user.role not in ['admin', 'rh'] and project.status != 'published':
+                return Response(
+                    {'error': 'Project not found'},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+            
+            serializer = PFEProjectSerializer(project)
+            return Response(serializer.data)
+            
+        except PFEProject.DoesNotExist:
+            return Response(
+                {'error': 'Project not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PFEProjectCreateView(APIView):
+    """
+    Create a new PFE project (admin only)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            # Check permissions
+            if request.user.role not in ['admin', 'rh']:
+                return Response(
+                    {'error': 'Permission denied'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            serializer = PFEProjectCreateSerializer(data=request.data, context={'request': request})
+            if serializer.is_valid():
+                project = serializer.save()
+                return Response(
+                    PFEProjectSerializer(project).data,
+                    status=status.HTTP_201_CREATED
+                )
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PFEProjectUpdateView(APIView):
+    """
+    Update a PFE project (admin only)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request, project_id):
+        try:
+            # Check permissions
+            if request.user.role not in ['admin', 'rh']:
+                return Response(
+                    {'error': 'Permission denied'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            project = get_object_or_404(PFEProject, id=project_id)
+            serializer = PFEProjectSerializer(project, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                project = serializer.save()
+                return Response(PFEProjectSerializer(project).data)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            
+        except PFEProject.DoesNotExist:
+            return Response(
+                {'error': 'Project not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class PFEProjectDeleteView(APIView):
+    """
+    Delete a PFE project (admin only)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def delete(self, request, project_id):
+        try:
+            # Check permissions
+            if request.user.role not in ['admin', 'rh']:
+                return Response(
+                    {'error': 'Permission denied'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            project = get_object_or_404(PFEProject, id=project_id)
+            project.delete()
+            
+            return Response({'message': 'Project deleted successfully'})
+            
+        except PFEProject.DoesNotExist:
+            return Response(
+                {'error': 'Project not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
