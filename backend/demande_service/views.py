@@ -26,6 +26,7 @@ from .serializers import (
     DemandeApprovalSerializer
 )
 from auth_service.models import User
+from shared.utils import MailService
 
 
 class DemandeCreateView(generics.CreateAPIView):
@@ -172,55 +173,62 @@ class DemandeCreateView(generics.CreateAPIView):
     def send_rh_notification(self, demande, pdf_content):
         """Send email notification to RH with PDF summary and attachments"""
         try:
-            subject = f'Nouvelle demande de stage - {demande.nom_complet}'
+            # Prepare attachments list
+            attachments = []
             
-            context = {
-                'demande': demande,
-                'site_url': settings.SITE_URL if hasattr(settings, 'SITE_URL') else 'http://localhost:8000'
-            }
+            # Add candidate documents
+            if demande.cv:
+                with open(demande.cv.path, 'rb') as f:
+                    attachments.append({
+                        'filename': f'CV_{demande.nom}_{demande.prenom}.pdf',
+                        'content': f.read(),
+                        'content_type': 'application/pdf'
+                    })
             
-            html_message = render_to_string('emails/new_demande_rh.html', context)
-            plain_message = render_to_string('emails/new_demande_rh.txt', context)
+            if demande.lettre_motivation:
+                with open(demande.lettre_motivation.path, 'rb') as f:
+                    attachments.append({
+                        'filename': f'LettreMotivation_{demande.nom}_{demande.prenom}.pdf',
+                        'content': f.read(),
+                        'content_type': 'application/pdf'
+                    })
             
-            # Get RH users
-            rh_users = User.objects.filter(role='rh', is_active=True)
-            rh_emails = [user.email for user in rh_users]
+            if demande.demande_stage:
+                with open(demande.demande_stage.path, 'rb') as f:
+                    attachments.append({
+                        'filename': f'DemandeStage_{demande.nom}_{demande.prenom}.pdf',
+                        'content': f.read(),
+                        'content_type': 'application/pdf'
+                    })
             
-            if rh_emails:
-                # Create email with attachments
-                email = EmailMessage(
-                    subject=subject,
-                    body=html_message,
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    to=rh_emails,
-                )
-                email.content_subtype = "html"
+            # Add binôme documents if applicable
+            if demande.stage_binome:
+                if demande.cv_binome:
+                    with open(demande.cv_binome.path, 'rb') as f:
+                        attachments.append({
+                            'filename': f'CV_Binome_{demande.nom_binome}_{demande.prenom_binome}.pdf',
+                            'content': f.read(),
+                            'content_type': 'application/pdf'
+                        })
                 
-                # Attach PDF summary
-                email.attach(
-                    f'resume_demande_{demande.id}.pdf',
-                    pdf_content,
-                    'application/pdf'
-                )
+                if demande.lettre_motivation_binome:
+                    with open(demande.lettre_motivation_binome.path, 'rb') as f:
+                        attachments.append({
+                            'filename': f'LettreMotivation_Binome_{demande.nom_binome}_{demande.prenom_binome}.pdf',
+                            'content': f.read(),
+                            'content_type': 'application/pdf'
+                        })
                 
-                # Attach candidate documents
-                if demande.cv:
-                    email.attach_file(demande.cv.path)
-                if demande.lettre_motivation:
-                    email.attach_file(demande.lettre_motivation.path)
-                if demande.demande_stage:
-                    email.attach_file(demande.demande_stage.path)
-                
-                # Attach binôme documents if applicable
-                if demande.stage_binome:
-                    if demande.cv_binome:
-                        email.attach_file(demande.cv_binome.path)
-                    if demande.lettre_motivation_binome:
-                        email.attach_file(demande.lettre_motivation_binome.path)
-                    if demande.demande_stage_binome:
-                        email.attach_file(demande.demande_stage_binome.path)
-                
-                email.send()
+                if demande.demande_stage_binome:
+                    with open(demande.demande_stage_binome.path, 'rb') as f:
+                        attachments.append({
+                            'filename': f'DemandeStage_Binome_{demande.nom_binome}_{demande.prenom_binome}.pdf',
+                            'content': f.read(),
+                            'content_type': 'application/pdf'
+                        })
+            
+            # Send email using centralized service
+            MailService.send_rh_notification(demande, pdf_content, attachments)
                 
         except Exception as e:
             print(f"Error sending RH notification: {e}")
@@ -294,7 +302,7 @@ def approve_demande(request, pk):
         demande.approve(user_created=user)
         
         # Send acceptance email
-        send_acceptance_email(demande, password)
+        MailService.send_acceptance_email(demande, password)
         
         return Response({
             'message': 'Demande approuvée avec succès',
@@ -306,6 +314,9 @@ def approve_demande(request, pk):
         }, status=status.HTTP_200_OK)
         
     except Exception as e:
+        import traceback
+        print("DEBUG ERROR in approve_demande:", e)
+        traceback.print_exc()
         return Response(
             {'error': f'Erreur lors de l\'approbation: {str(e)}'}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -338,66 +349,20 @@ def reject_demande(request, pk):
         demande.reject(raison=serializer.validated_data.get('raison'))
         
         # Send rejection email
-        send_rejection_email(demande, serializer.validated_data.get('raison'))
+        MailService.send_rejection_email(demande, serializer.validated_data.get('raison'))
         
         return Response({
             'message': 'Demande rejetée avec succès'
         }, status=status.HTTP_200_OK)
         
     except Exception as e:
+        import traceback
+        print("DEBUG ERROR in reject_demande:", e)
+        traceback.print_exc()
         return Response(
             {'error': f'Erreur lors du rejet: {str(e)}'}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
 
-def send_acceptance_email(demande, password):
-    """Send acceptance email to candidate"""
-    try:
-        subject = 'Félicitations ! Votre demande de stage a été acceptée'
-        
-        context = {
-            'demande': demande,
-            'password': password,
-            'site_url': settings.SITE_URL if hasattr(settings, 'SITE_URL') else 'http://localhost:3000'
-        }
-        
-        html_message = render_to_string('emails/demande_accepted.html', context)
-        plain_message = render_to_string('emails/demande_accepted.txt', context)
-        
-        send_mail(
-            subject=subject,
-            message=plain_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[demande.email],
-            html_message=html_message,
-            fail_silently=False,
-        )
-    except Exception as e:
-        print(f"Error sending acceptance email: {e}")
 
-
-def send_rejection_email(demande, raison):
-    """Send rejection email to candidate"""
-    try:
-        subject = 'Réponse à votre demande de stage'
-        
-        context = {
-            'demande': demande,
-            'raison': raison,
-            'site_url': settings.SITE_URL if hasattr(settings, 'SITE_URL') else 'http://localhost:3000'
-        }
-        
-        html_message = render_to_string('emails/demande_rejected.html', context)
-        plain_message = render_to_string('emails/demande_rejected.txt', context)
-        
-        send_mail(
-            subject=subject,
-            message=plain_message,
-            from_email=settings.DEFAULT_FROM_EMAIL,
-            recipient_list=[demande.email],
-            html_message=html_message,
-            fail_silently=False,
-        )
-    except Exception as e:
-        print(f"Error sending rejection email: {e}")
