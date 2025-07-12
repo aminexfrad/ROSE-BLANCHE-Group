@@ -7,6 +7,13 @@ urlpatterns = [
     path('stagiaires/<int:pk>/', views.RHStagiaireDetailView.as_view(), name='rh-stagiaire-detail'),
     path('stagiaires/<int:pk>/stages/', views.RHStagiaireStagesView.as_view(), name='rh-stagiaire-stages'),
     
+    # Tuteur assignment
+    path('tuteurs-disponibles/', views.RHTuteursDisponiblesView.as_view(), name='rh-tuteurs-disponibles'),
+    path('stagiaires/<int:stagiaire_id>/assigner-tuteur/', views.RHAssignerTuteurView.as_view(), name='rh-assigner-tuteur'),
+    
+    # Stagiaire creation
+    path('creer-stagiaire/', views.RHCreerStagiaireView.as_view(), name='rh-creer-stagiaire'),
+    
     # Stage management
     path('stages/', views.RHStagesView.as_view(), name='rh-stages'),
     path('stages/<int:pk>/', views.RHStageDetailView.as_view(), name='rh-stage-detail'),

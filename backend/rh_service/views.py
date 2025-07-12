@@ -7,7 +7,7 @@ from django.db.models import Count, Avg, Q
 from django.utils import timezone
 from datetime import timedelta
 
-from demande_service.models import Demande
+from demande_service.models import Demande as DemandeModel
 from shared.models import Stage, User, Testimonial, Evaluation, Notification
 from auth_service.serializers import UserSerializer
 
@@ -784,4 +784,271 @@ class RHNotificationReadView(APIView):
     permission_classes = [IsAuthenticated]
     def post(self, request, pk):
         return Response({'detail': 'RHNotificationReadView not implemented'}, status=501)
+
+class RHCreerStagiaireView(APIView):
+    """
+    Vue pour créer directement un stagiaire depuis l'interface RH
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            # Vérifier que l'utilisateur est RH ou admin
+            if request.user.role not in ['rh', 'admin']:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Récupérer les données du formulaire
+            data = request.data
+            
+            # Validation des champs obligatoires
+            required_fields = ['prenom', 'nom', 'email', 'institut', 'specialite', 'niveau', 'type_stage', 'date_debut', 'date_fin']
+            for field in required_fields:
+                if not data.get(field):
+                    return Response(
+                        {'error': f'Le champ {field} est obligatoire'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Vérifier si l'email existe déjà
+            if User.objects.filter(email=data['email']).exists():
+                return Response(
+                    {'error': 'Un utilisateur avec cet email existe déjà'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Générer un mot de passe aléatoire
+            import secrets
+            import string
+            password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+            
+            # Créer l'utilisateur stagiaire
+            stagiaire = User.objects.create_user(
+                email=data['email'],
+                password=password,
+                prenom=data['prenom'],
+                nom=data['nom'],
+                telephone=data.get('telephone', ''),
+                institut=data['institut'],
+                specialite=data['specialite'],
+                role='stagiaire'
+            )
+            
+            # Créer une demande de stage approuvée
+            demande = DemandeModel.objects.create(
+                nom=data['nom'],
+                prenom=data['prenom'],
+                email=data['email'],
+                telephone=data.get('telephone', ''),
+                cin=f"CIN{stagiaire.id:06d}",
+                institut=data['institut'],
+                specialite=data['specialite'],
+                niveau=data['niveau'],
+                type_stage=data['type_stage'],
+                date_debut=data['date_debut'],
+                date_fin=data['date_fin'],
+                stage_binome=False,
+                status='approved',
+                user_created=stagiaire
+            )
+            
+            # Créer un stage pour ce stagiaire
+            stage = Stage.objects.create(
+                demande=demande,
+                stagiaire=stagiaire,
+                title=f"Stage {data['type_stage']} - {data['prenom']} {data['nom']}",
+                description=data.get('description', ''),
+                company="Entreprise à définir",
+                location="Localisation à définir",
+                start_date=data['date_debut'],
+                end_date=data['date_fin'],
+                status='active',
+                progress=0
+            )
+            
+            # Envoyer un email de bienvenue avec les identifiants
+            try:
+                from shared.utils import MailService
+                MailService.send_acceptance_email(demande, password)
+            except Exception as e:
+                print(f"Erreur lors de l'envoi de l'email: {e}")
+            
+            return Response({
+                'message': 'Stagiaire créé avec succès',
+                'stagiaire': {
+                    'id': stagiaire.id,
+                    'email': stagiaire.email,
+                    'password': password,
+                    'nom': stagiaire.nom,
+                    'prenom': stagiaire.prenom
+                },
+                'stage': {
+                    'id': stage.id,
+                    'title': stage.title
+                }
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la création du stagiaire: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class RHTuteursDisponiblesView(APIView):
+    """
+    Vue pour récupérer la liste des tuteurs disponibles
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # Vérifier que l'utilisateur est RH ou admin
+            if request.user.role not in ['rh', 'admin']:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Récupérer tous les tuteurs
+            tuteurs = User.objects.filter(role='tuteur').order_by('prenom', 'nom')
+            
+            tuteurs_data = []
+            for tuteur in tuteurs:
+                # Compter le nombre de stagiaires actuellement assignés
+                stagiaires_assignes = Stage.objects.filter(
+                    tuteur=tuteur, 
+                    status='active'
+                ).count()
+                
+                tuteur_data = {
+                    "id": tuteur.id,
+                    "first_name": tuteur.prenom,
+                    "last_name": tuteur.nom,
+                    "email": tuteur.email,
+                    "telephone": tuteur.telephone,
+                    "departement": tuteur.departement,
+                    "stagiaires_assignes": stagiaires_assignes,
+                    "disponible": stagiaires_assignes < 5  # Limite de 5 stagiaires par tuteur
+                }
+                tuteurs_data.append(tuteur_data)
+            
+            return Response({
+                "results": tuteurs_data,
+                "count": len(tuteurs_data)
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la récupération des tuteurs: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class RHAssignerTuteurView(APIView):
+    """
+    Vue pour assigner un tuteur à un stagiaire
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, stagiaire_id):
+        try:
+            # Vérifier que l'utilisateur est RH ou admin
+            if request.user.role not in ['rh', 'admin']:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Récupérer le stagiaire
+            stagiaire = get_object_or_404(User, id=stagiaire_id, role='stagiaire')
+            
+            # Récupérer l'ID du tuteur depuis la requête
+            tuteur_id = request.data.get('tuteur_id')
+            if not tuteur_id:
+                return Response(
+                    {'error': 'ID du tuteur requis'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Récupérer le tuteur
+            tuteur = get_object_or_404(User, id=tuteur_id, role='tuteur')
+            
+            # Vérifier que le tuteur n'a pas trop de stagiaires assignés
+            stagiaires_assignes = Stage.objects.filter(
+                tuteur=tuteur, 
+                status='active'
+            ).count()
+            
+            if stagiaires_assignes >= 5:
+                return Response(
+                    {'error': 'Ce tuteur a déjà le maximum de stagiaires assignés (5)'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Récupérer le stage actif du stagiaire
+            stage_actif = Stage.objects.filter(
+                stagiaire=stagiaire, 
+                status='active'
+            ).first()
+            
+            if not stage_actif:
+                return Response(
+                    {'error': 'Aucun stage actif trouvé pour ce stagiaire'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Assigner le tuteur au stage
+            stage_actif.tuteur = tuteur
+            stage_actif.save()
+            
+            # Créer une notification pour le tuteur
+            Notification.objects.create(
+                recipient=tuteur,
+                title="Nouveau stagiaire assigné",
+                message=f"Vous avez été assigné comme tuteur pour {stagiaire.prenom} {stagiaire.nom}",
+                notification_type="info",
+                related_stage=stage_actif
+            )
+            
+            # Créer une notification pour le stagiaire
+            Notification.objects.create(
+                recipient=stagiaire,
+                title="Tuteur assigné",
+                message=f"Un tuteur a été assigné à votre stage : {tuteur.prenom} {tuteur.nom}",
+                notification_type="success",
+                related_stage=stage_actif
+            )
+            
+            return Response({
+                'message': 'Tuteur assigné avec succès',
+                'stagiaire': {
+                    'id': stagiaire.id,
+                    'first_name': stagiaire.prenom,
+                    'last_name': stagiaire.nom,
+                    'email': stagiaire.email
+                },
+                'tuteur': {
+                    'id': tuteur.id,
+                    'first_name': tuteur.prenom,
+                    'last_name': tuteur.nom,
+                    'email': tuteur.email
+                },
+                'stage': {
+                    'id': stage_actif.id,
+                    'title': stage_actif.title,
+                    'company': stage_actif.company
+                }
+            }, status=status.HTTP_200_OK)
+            
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'Utilisateur non trouvé'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de l\'assignation: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 # --- END MISSING VIEWS STUBS ---

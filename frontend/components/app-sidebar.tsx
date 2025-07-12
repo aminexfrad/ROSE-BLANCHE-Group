@@ -49,6 +49,7 @@ import {
   Star,
   Zap,
   Briefcase,
+  UserPlus,
 } from "lucide-react"
 
 const menuItems = {
@@ -105,6 +106,8 @@ const menuItems = {
         { title: "Témoignages", url: "/rh/temoignages", icon: MessageSquare },
         { title: "Demandes de stage", url: "/rh/demandes", icon: FileText },
         { title: "Rapports", url: "/rh/rapports", icon: Upload },
+        { title: "Assignation Tuteurs", url: "/rh/assignation-tuteurs", icon: UserPlus },
+        { title: "Ajouter Stagiaire", url: "/rh/ajouter-stagiaire", icon: UserPlus },
       ],
     },
   ],

@@ -74,7 +74,7 @@ class Stage(models.Model):
     
     def save(self, *args, **kwargs):
         # Auto-calculate progress if not set
-        if self.progress == 0:
+        if self.pk and self.progress == 0:
             self.progress = self.calculate_progress()
         super().save(*args, **kwargs)
 

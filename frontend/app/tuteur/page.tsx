@@ -283,14 +283,14 @@ export default function TuteurDashboard() {
                   <div key={internship.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
                     <div className="flex items-center gap-4">
                       <Avatar className="h-12 w-12">
-                        <AvatarImage src={internship.stagiaire.avatar} />
+                        <AvatarImage src={internship.stagiaire?.avatar || undefined} />
                         <AvatarFallback>
-                          {(internship.stagiaire.prenom?.charAt(0) || '')}{(internship.stagiaire.nom?.charAt(0) || '')}
+                          {(internship.stagiaire?.prenom?.charAt(0) || '')}{(internship.stagiaire?.nom?.charAt(0) || '')}
                         </AvatarFallback>
                       </Avatar>
                       <div>
                         <h4 className="font-semibold">
-                          {internship.stagiaire.prenom || ''} {internship.stagiaire.nom || ''}
+                          {internship.stagiaire?.prenom || ''} {internship.stagiaire?.nom || ''}
                         </h4>
                         <p className="text-sm text-gray-600">{internship.title}</p>
                         <p className="text-xs text-gray-500">
@@ -357,7 +357,7 @@ export default function TuteurDashboard() {
                   </div>
                   <div className="flex-1">
                     <div className="font-medium">
-                      Nouveau document de {internship.stagiaire.prenom || ''} {internship.stagiaire.nom || ''}
+                      Nouveau document de {internship.stagiaire?.prenom || ''} {internship.stagiaire?.nom || ''}
                     </div>
                     <div className="text-sm text-gray-600">
                       Rapport de progression téléversé

@@ -255,7 +255,7 @@ class ApiClient {
           
           if (!retryResponse.ok) {
             const errorData = await retryResponse.json().catch(() => ({}))
-            throw new Error(errorData.detail || errorData.message || `HTTP ${retryResponse.status}`)
+            throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${retryResponse.status}`)
           }
           
           return await retryResponse.json()
@@ -265,13 +265,13 @@ class ApiClient {
           localStorage.removeItem('auth_token')
           localStorage.removeItem('refresh_token')
           const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
+          throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
         }
       }
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
+        throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
       }
 
       return await response.json()
@@ -457,7 +457,7 @@ class ApiClient {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
+      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
     }
     
     return response.json()
@@ -537,7 +537,7 @@ class ApiClient {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
+      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
     }
     
     return response.json()
@@ -590,7 +590,7 @@ class ApiClient {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
+        throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
       }
 
       return await response.json()
@@ -615,15 +615,23 @@ class ApiClient {
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
+      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
     }
     
     return response.json()
   }
 
   // Tuteur-specific methods
-  async getTuteurStages(): Promise<{ results: Stage[]; count: number }> {
-    return this.request<{ results: Stage[]; count: number }>('/tuteur/stages/')
+  async getTuteurStages(): Promise<any> {
+    return this.request<any>('/tuteur/stagiaires/', {
+      method: 'GET',
+    })
+  }
+
+  async getTuteurStagiaireDetail(stagiaireId: number): Promise<any> {
+    return this.request<any>(`/tuteur/stagiaires/${stagiaireId}/`, {
+      method: 'GET',
+    })
   }
 
   async getTuteurStageDetail(stageId: number): Promise<{ stage: Stage; student: User; steps: Step[] }> {
@@ -708,6 +716,30 @@ class ApiClient {
     return this.request<{ results: Notification[]; count: number }>('/rh/notifications/')
   }
 
+  async getRHTuteursDisponibles(): Promise<{ results: any[]; count: number }> {
+    return this.request<{ results: any[]; count: number }>('/rh/tuteurs-disponibles/')
+  }
+
+  async assignerTuteur(stagiaireId: number, tuteurId: number): Promise<any> {
+    return this.request<any>(`/rh/stagiaires/${stagiaireId}/assigner-tuteur/`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ tuteur_id: tuteurId }),
+    })
+  }
+
+  async creerStagiaire(data: any): Promise<any> {
+    return this.request<any>('/rh/creer-stagiaire/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(data),
+    })
+  }
+
   async getRHReports(reportType?: string): Promise<any> {
     const queryParams = new URLSearchParams()
     if (reportType) queryParams.append('type', reportType)
@@ -776,7 +808,7 @@ class ApiClient {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
+        throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
       }
 
       return await response.json()
@@ -851,7 +883,7 @@ class ApiClient {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}`)
+        throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
       }
 
       return await response.json()

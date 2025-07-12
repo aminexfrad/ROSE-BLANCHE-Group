@@ -26,6 +26,8 @@ import {
   Clock,
   CheckCircle,
   AlertCircle,
+  Building,
+  GraduationCap,
 } from "lucide-react"
 
 interface StagiaireData extends Stage {
@@ -103,10 +105,10 @@ export default function TuteurStagiairesPage() {
 
   const filteredStagiaires = stagiaires.filter(
     (stagiaire) =>
-      `${stagiaire.stagiaire.prenom || ''} ${stagiaire.stagiaire.nom || ''}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      stagiaire.stagiaire.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (stagiaire.stagiaire.institut || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (stagiaire.stagiaire.specialite || '').toLowerCase().includes(searchTerm.toLowerCase()),
+      `${stagiaire.stagiaire?.prenom || ''} ${stagiaire.stagiaire?.nom || ''}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      stagiaire.stagiaire?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (stagiaire.stagiaire?.institut || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (stagiaire.stagiaire?.specialite || '').toLowerCase().includes(searchTerm.toLowerCase()),
   )
 
   if (loading) {
@@ -187,7 +189,7 @@ export default function TuteurStagiairesPage() {
             },
             {
               title: "Progression Moyenne",
-              value: `${Math.round(stagiaires.reduce((acc, s) => acc + s.progress, 0) / stagiaires.length)}%`,
+              value: `${Math.round(stagiaires.reduce((acc, s) => acc + (s.progress || 0), 0) / stagiaires.length)}%`,
               icon: TrendingUp,
               color: "from-green-500 to-green-600",
               description: "Performance globale",
@@ -248,35 +250,30 @@ export default function TuteurStagiairesPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center space-x-4">
                       <Avatar className="h-16 w-16 ring-2 ring-gray-200">
-                        <AvatarImage src={stagiaire.stagiaire.avatar} />
+                        <AvatarImage src={stagiaire.stagiaire?.avatar || undefined} />
                         <AvatarFallback className="text-lg font-semibold">
-                          {(stagiaire.stagiaire.prenom?.charAt(0) || '')}{(stagiaire.stagiaire.nom?.charAt(0) || '')}
+                          {(stagiaire.stagiaire?.prenom?.charAt(0) || '')}{(stagiaire.stagiaire?.nom?.charAt(0) || '')}
                         </AvatarFallback>
                       </Avatar>
                       <div className="space-y-1">
                         <h3 className="text-xl font-semibold text-gray-900">
-                          {stagiaire.stagiaire.prenom || ''} {stagiaire.stagiaire.nom || ''}
+                          {stagiaire.stagiaire?.prenom || ''} {stagiaire.stagiaire?.nom || ''}
                         </h3>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <div className="flex items-center space-x-1">
-                            <Mail className="h-4 w-4" />
-                            <span>{stagiaire.stagiaire.email}</span>
-                          </div>
-                          {stagiaire.stagiaire.telephone && (
-                            <div className="flex items-center space-x-1">
-                              <Phone className="h-4 w-4" />
+                        <div className="space-y-1">
+                          <span>{stagiaire.stagiaire?.email || ''}</span>
+                          {stagiaire.stagiaire?.telephone && (
+                            <div className="flex items-center gap-1">
+                              <Phone className="h-3 w-3 text-gray-400" />
                               <span>{stagiaire.stagiaire.telephone}</span>
                             </div>
                           )}
-                        </div>
-                        <div className="flex items-center space-x-4 text-sm text-gray-600">
-                          <div className="flex items-center space-x-1">
-                            <MapPin className="h-4 w-4" />
-                            <span>{stagiaire.stagiaire.institut || 'Non spécifié'}</span>
+                          <div className="flex items-center gap-1">
+                            <Building className="h-3 w-3 text-gray-400" />
+                            <span>{stagiaire.stagiaire?.institut || 'Non spécifié'}</span>
                           </div>
-                          <div className="flex items-center space-x-1">
-                            <Calendar className="h-4 w-4" />
-                            <span>{stagiaire.stagiaire.specialite || 'Non spécifié'}</span>
+                          <div className="flex items-center gap-1">
+                            <GraduationCap className="h-3 w-3 text-gray-400" />
+                            <span>{stagiaire.stagiaire?.specialite || 'Non spécifié'}</span>
                           </div>
                         </div>
                       </div>

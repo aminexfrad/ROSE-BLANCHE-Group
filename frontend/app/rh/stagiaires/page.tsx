@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { AssignTuteurModal } from "@/components/assign-tuteur-modal"
 import {
   Users,
   Search,
@@ -24,7 +25,9 @@ import {
   Building,
   Calendar,
   AlertCircle,
+  UserPlus,
 } from "lucide-react"
+import Link from "next/link"
 
 interface StagiaireWithStage extends User {
   active_stage?: Stage
@@ -45,54 +48,65 @@ export default function RHStagiairesPage() {
     termine: 0,
     alerte: 0
   })
+  const [assignModalOpen, setAssignModalOpen] = useState(false)
+  const [selectedStagiaire, setSelectedStagiaire] = useState<StagiaireWithStage | null>(null)
 
   const breadcrumbs = [{ label: "RH", href: "/rh" }, { label: "Tous les Stagiaires" }]
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        const [stagiairesResponse, stagesResponse, statsResponse] = await Promise.all([
-          apiClient.getRHStagiaires(),
-          apiClient.getRHStages(),
-          apiClient.getDashboardStats()
-        ])
+  const fetchData = async () => {
+    try {
+      setLoading(true)
+      const [stagiairesResponse, stagesResponse, statsResponse] = await Promise.all([
+        apiClient.getRHStagiaires(),
+        apiClient.getRHStages(),
+        apiClient.getDashboardStats()
+      ])
+      
+      // Combine stagiaires with their active stages
+      const stagiairesWithStages = (stagiairesResponse.results || []).map((stagiaire: User) => {
+        const activeStage = (stagesResponse.results || []).find((stage: Stage) => 
+          stage.stagiaire.id === stagiaire.id && stage.status === 'active'
+        )
         
-        // Combine stagiaires with their active stages
-        const stagiairesWithStages = (stagiairesResponse.results || []).map((stagiaire: User) => {
-          const activeStage = (stagesResponse.results || []).find((stage: Stage) => 
-            stage.stagiaire.id === stagiaire.id && stage.status === 'active'
-          )
-          
-          return {
-            ...stagiaire,
-            active_stage: activeStage,
-            progression: activeStage?.progress || 0,
-            statut: activeStage ? 'en_cours' : 'termine',
-            dateDebut: activeStage?.start_date || '',
-            dateFin: activeStage?.end_date || ''
-          }
-        })
-        
-        setStagiaires(stagiairesWithStages)
-        setStats({
-          total: stagiairesResponse.count || 0,
-          en_cours: stagiairesWithStages.filter(s => s.statut === 'en_cours').length,
-          termine: stagiairesWithStages.filter(s => s.statut === 'termine').length,
-          alerte: stagiairesWithStages.filter(s => s.progression < 30).length
-        })
-      } catch (err: any) {
-        console.error('Error fetching stagiaires:', err)
-        setError(err.message || 'Failed to load stagiaires')
-      } finally {
-        setLoading(false)
-      }
+        return {
+          ...stagiaire,
+          active_stage: activeStage,
+          progression: activeStage?.progress || 0,
+          statut: activeStage ? 'en_cours' : 'termine',
+          dateDebut: activeStage?.start_date || '',
+          dateFin: activeStage?.end_date || ''
+        }
+      })
+      
+      setStagiaires(stagiairesWithStages)
+      setStats({
+        total: stagiairesResponse.count || 0,
+        en_cours: stagiairesWithStages.filter(s => s.statut === 'en_cours').length,
+        termine: stagiairesWithStages.filter(s => s.statut === 'termine').length,
+        alerte: stagiairesWithStages.filter(s => s.progression < 30).length
+      })
+    } catch (err: any) {
+      console.error('Error fetching stagiaires:', err)
+      setError(err.message || 'Failed to load stagiaires')
+    } finally {
+      setLoading(false)
     }
+  }
 
+  useEffect(() => {
     if (user) {
       fetchData()
     }
   }, [user])
+
+  const handleAssignTuteur = (stagiaire: StagiaireWithStage) => {
+    setSelectedStagiaire(stagiaire)
+    setAssignModalOpen(true)
+  }
+
+  const handleAssignSuccess = () => {
+    fetchData() // Rafraîchir les données après assignation
+  }
 
   const getStatutBadge = (statut: string) => {
     const colors = {
@@ -162,10 +176,12 @@ export default function RHStagiairesPage() {
               <Download className="mr-2 h-4 w-4" />
               Exporter
             </Button>
-            <Button className="bg-red-600 hover:bg-red-700">
-              <Users className="mr-2 h-4 w-4" />
-              Ajouter stagiaire
-            </Button>
+            <Link href="/rh/ajouter-stagiaire">
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <UserPlus className="mr-2 h-4 w-4" />
+                Ajouter stagiaire
+              </Button>
+            </Link>
           </div>
         </div>
 
@@ -329,6 +345,12 @@ export default function RHStagiairesPage() {
                             <Edit className="mr-2 h-4 w-4" />
                             Modifier
                           </DropdownMenuItem>
+                          {!stagiaire.active_stage?.tuteur && (
+                            <DropdownMenuItem onClick={() => handleAssignTuteur(stagiaire)}>
+                              <UserPlus className="mr-2 h-4 w-4" />
+                              Assigner un tuteur
+                            </DropdownMenuItem>
+                          )}
                           <DropdownMenuItem>
                             <CheckCircle className="mr-2 h-4 w-4" />
                             Valider étape
@@ -347,6 +369,14 @@ export default function RHStagiairesPage() {
           </CardContent>
         </Card>
       </div>
+      {selectedStagiaire && (
+        <AssignTuteurModal
+          isOpen={assignModalOpen}
+          onClose={() => setAssignModalOpen(false)}
+          stagiaire={selectedStagiaire}
+          onSuccess={handleAssignSuccess}
+        />
+      )}
     </DashboardLayout>
   )
 }

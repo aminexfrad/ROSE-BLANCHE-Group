@@ -272,17 +272,17 @@ export default function TuteurEvaluationsPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={evaluation.stagiaire.avatar} />
+                          <AvatarImage src={evaluation.stagiaire?.avatar || undefined} />
                           <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-600 text-white">
-                            {evaluation.stagiaire.nom.split(" ").map((n) => n[0]).join("")}
+                            {evaluation.stagiaire?.nom?.split(" ").map((n) => n[0]).join("") || ''}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{evaluation.stagiaire.nom}</h3>
+                          <h3 className="text-lg font-semibold text-gray-900">{evaluation.stagiaire?.nom || ''}</h3>
                           <div className="flex items-center space-x-4 text-sm text-gray-600">
                             <span className="flex items-center space-x-1">
                               <Mail className="h-4 w-4" />
-                              <span>{evaluation.stagiaire.email}</span>
+                              <span>{evaluation.stagiaire?.email || ''}</span>
                             </span>
                             <span className="flex items-center space-x-1">
                               <Calendar className="h-4 w-4" />
@@ -346,17 +346,17 @@ export default function TuteurEvaluationsPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-4">
                         <Avatar className="h-12 w-12">
-                          <AvatarImage src={evaluation.stagiaire.avatar} />
+                          <AvatarImage src={evaluation.stagiaire?.avatar || undefined} />
                           <AvatarFallback className="bg-gradient-to-br from-green-500 to-green-600 text-white">
-                            {evaluation.stagiaire.nom.split(" ").map((n) => n[0]).join("")}
+                            {evaluation.stagiaire?.nom?.split(" ").map((n) => n[0]).join("") || ''}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">{evaluation.stagiaire.nom}</h3>
+                          <h3 className="text-lg font-semibold text-gray-900">{evaluation.stagiaire?.nom || ''}</h3>
                           <div className="flex items-center space-x-4 text-sm text-gray-600">
                             <span className="flex items-center space-x-1">
                               <Mail className="h-4 w-4" />
-                              <span>{evaluation.stagiaire.email}</span>
+                              <span>{evaluation.stagiaire?.email || ''}</span>
                             </span>
                             <span className="flex items-center space-x-1">
                               <Star className="h-4 w-4 text-yellow-500" />
