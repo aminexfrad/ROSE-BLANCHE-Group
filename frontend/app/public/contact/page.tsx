@@ -22,9 +22,20 @@ export default function ContactPage() {
   })
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
+  const [errors, setErrors] = useState({ nom: false, email: false, message: false })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    // Validate required fields
+    const newErrors = {
+      nom: formData.nom.trim() === "",
+      email: formData.email.trim() === "",
+      message: formData.message.trim() === "",
+    }
+    setErrors(newErrors)
+    if (Object.values(newErrors).some(Boolean)) {
+      return
+    }
     setIsSubmitting(true)
 
     try {
@@ -51,6 +62,7 @@ export default function ContactPage() {
       ...prev,
       [e.target.name]: e.target.value,
     }))
+    setErrors((prev) => ({ ...prev, [e.target.name]: false }))
   }
 
   return (
@@ -120,7 +132,7 @@ export default function ContactPage() {
                       value={formData.nom}
                       onChange={handleChange}
                       placeholder="Votre nom et prénom"
-                      className="mt-1 h-12 border-gray-300 focus:border-red-500 focus:ring-red-500 cursor-text"
+                      className={`mt-1 h-12 border-gray-300 focus:border-red-500 focus:ring-red-500 cursor-text ${errors.nom ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                     />
                   </div>
 
@@ -136,7 +148,7 @@ export default function ContactPage() {
                       value={formData.email}
                       onChange={handleChange}
                       placeholder="votre.email@exemple.com"
-                      className="mt-1 h-12 border-gray-300 focus:border-red-500 focus:ring-red-500 cursor-text"
+                      className={`mt-1 h-12 border-gray-300 focus:border-red-500 focus:ring-red-500 cursor-text ${errors.email ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                     />
                   </div>
 
@@ -152,7 +164,7 @@ export default function ContactPage() {
                       onChange={handleChange}
                       placeholder="Décrivez votre demande ou votre question..."
                       rows={6}
-                      className="mt-1 border-gray-300 focus:border-red-500 focus:ring-red-500 resize-none cursor-text"
+                      className={`mt-1 border-gray-300 focus:border-red-500 focus:ring-red-500 resize-none cursor-text ${errors.message ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                     />
                   </div>
 

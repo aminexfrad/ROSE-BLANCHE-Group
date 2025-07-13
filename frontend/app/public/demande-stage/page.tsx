@@ -50,9 +50,15 @@ interface FormData {
 }
 
 interface PFEProject {
-  id: number
   reference_id: string
   title: string
+  description: string
+  objectives: string
+  keywords: string
+  diplome: string
+  specialite: string
+  nombre_postes: number
+  ville: string
 }
 
 export default function DemandeStage() {
@@ -140,13 +146,7 @@ export default function DemandeStage() {
       setLoadingPfeProjects(true)
       setPfeProjectsError(null)
       
-      fetch("/shared/pfe-projects/", { credentials: 'include' })
-        .then(res => {
-          if (!res.ok) {
-            throw new Error('Failed to fetch PFE projects')
-          }
-          return res.json()
-        })
+      apiClient.getPublicPFEProjects()
         .then(data => {
           setPfeProjects(data.results || [])
         })
@@ -159,11 +159,25 @@ export default function DemandeStage() {
     }
   }, [isPFEStage, isPrefilledFromOffer])
 
+  const [errors, setErrors] = useState({
+    nom: false,
+    prenom: false,
+    email: false,
+    telephone: false,
+    cin: false,
+    institut: false,
+    specialite: false,
+    typeStage: false,
+    niveau: false,
+    pfeReference: false,
+  })
+
   const handleInputChange = (field: keyof FormData, value: any) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
     }))
+    setErrors(prev => ({ ...prev, [field]: false }))
   }
 
   const handleFileChange = (field: keyof FormData, file: File | null) => {
@@ -174,6 +188,38 @@ export default function DemandeStage() {
   }
 
   const nextStep = () => {
+    if (currentStep === 1) {
+      const newErrors = {
+        nom: formData.nom.trim() === '',
+        prenom: formData.prenom.trim() === '',
+        email: formData.email.trim() === '',
+        telephone: formData.telephone.trim() === '',
+        cin: formData.cin.trim() === '',
+        institut: false,
+        specialite: false,
+        typeStage: false,
+        niveau: false,
+        pfeReference: false,
+      }
+      setErrors(newErrors)
+      if (Object.values(newErrors).some(Boolean)) return
+    }
+    if (currentStep === 2) {
+      const newErrors = {
+        nom: false,
+        prenom: false,
+        email: false,
+        telephone: false,
+        cin: false,
+        institut: formData.institut.trim() === '',
+        specialite: formData.specialite.trim() === '',
+        typeStage: formData.typeStage === '',
+        niveau: formData.niveau.trim() === '',
+        pfeReference: isPFEStage && formData.pfeReference.trim() === '',
+      }
+      setErrors(newErrors)
+      if (Object.values(newErrors).some(Boolean)) return
+    }
     if (currentStep < 5) {
       setCurrentStep(currentStep + 1)
     }
@@ -443,7 +489,7 @@ export default function DemandeStage() {
                       value={formData.nom}
                       onChange={(e) => handleInputChange('nom', e.target.value)}
                       placeholder="Entrez votre nom de famille"
-                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                      className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${errors.nom ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                     />
                   </div>
                   <div>
@@ -453,7 +499,7 @@ export default function DemandeStage() {
                       value={formData.prenom}
                       onChange={(e) => handleInputChange('prenom', e.target.value)}
                       placeholder="Entrez votre prénom"
-                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                      className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${errors.prenom ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                     />
                   </div>
                   <div>
@@ -464,7 +510,7 @@ export default function DemandeStage() {
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       placeholder="Entrez votre adresse email"
-                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                      className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${errors.email ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                     />
                   </div>
                   <div>
@@ -474,7 +520,7 @@ export default function DemandeStage() {
                       value={formData.telephone}
                       onChange={(e) => handleInputChange('telephone', e.target.value)}
                       placeholder="Entrez votre numéro de téléphone"
-                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                      className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${errors.telephone ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                     />
                   </div>
                   <div>
@@ -484,7 +530,7 @@ export default function DemandeStage() {
                       value={formData.cin}
                       onChange={(e) => handleInputChange('cin', e.target.value)}
                       placeholder="Entrez votre numéro CIN"
-                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                      className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${errors.cin ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                     />
                   </div>
                 </div>
@@ -501,7 +547,7 @@ export default function DemandeStage() {
                       value={formData.institut}
                       onChange={(e) => handleInputChange('institut', e.target.value)}
                       placeholder="Entrez le nom de votre établissement"
-                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                      className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${errors.institut ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                     />
                   </div>
                   {/* Spécialité */}
@@ -512,7 +558,7 @@ export default function DemandeStage() {
                       value={formData.specialite}
                       onChange={(e) => handleInputChange('specialite', e.target.value)}
                       placeholder="Entrez votre spécialité"
-                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                      className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${errors.specialite ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                     />
                   </div>
                   {/* Type de Stage */}
@@ -530,7 +576,7 @@ export default function DemandeStage() {
                       onValueChange={(value) => handleInputChange('typeStage', value)}
                       disabled={isPrefilledFromOffer && formData.typeStage === 'Stage PFE'}
                     >
-                      <SelectTrigger className="border-gray-300 focus:border-red-500 focus:ring-red-500">
+                      <SelectTrigger className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${errors.typeStage ? 'border-red-500 ring-2 ring-red-200' : ''}`}>
                         <SelectValue placeholder="Sélectionnez le type de stage" />
                       </SelectTrigger>
                       <SelectContent>
@@ -551,7 +597,7 @@ export default function DemandeStage() {
                       value={formData.niveau}
                       onChange={(e) => handleInputChange('niveau', e.target.value)}
                       placeholder="Entrez votre niveau (ex: Licence 3, Master 1, etc.)"
-                      className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                      className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${errors.niveau ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                     />
                   </div>
                   {/* Référence PFE */}
@@ -578,7 +624,7 @@ export default function DemandeStage() {
                             </SelectTrigger>
                             <SelectContent>
                               {pfeProjects.map((proj) => (
-                                <SelectItem key={proj.id} value={proj.reference_id}>
+                                <SelectItem key={proj.reference_id} value={proj.reference_id}>
                                   {proj.reference_id} - {proj.title}
                                 </SelectItem>
                               ))}
@@ -599,9 +645,7 @@ export default function DemandeStage() {
                         value={formData.pfeReference}
                         onChange={(e) => handleInputChange('pfeReference', e.target.value)}
                         placeholder="Ex: PFE-2024-001 (voir PFE Book)"
-                        className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${
-                          isPrefilledFromOffer && formData.pfeReference ? 'bg-gray-50 cursor-not-allowed' : ''
-                        }`}
+                        className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${errors.pfeReference ? 'border-red-500 ring-2 ring-red-200' : ''} ${isPrefilledFromOffer && formData.pfeReference ? 'bg-gray-50 cursor-not-allowed' : ''}`}
                         readOnly={isPrefilledFromOffer && !!formData.pfeReference}
                       />
                       {isPrefilledFromOffer && formData.pfeReference ? (

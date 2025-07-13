@@ -1,5 +1,17 @@
 // API Client for StageBloom Backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
+import { validateEnvironment, sanitizeInput } from './security'
+import { api as apiConfig, isProduction } from './env'
+
+// Validate environment variables only on client side
+if (typeof window !== 'undefined') {
+  try {
+    validateEnvironment()
+  } catch (error) {
+    console.warn('Environment validation failed:', error)
+  }
+}
+
+const API_BASE_URL = apiConfig.baseUrl
 
 export interface User {
   id: number
@@ -226,6 +238,7 @@ class ApiClient {
     const config: RequestInit = {
       headers: {
         'Content-Type': 'application/json',
+        'X-Requested-With': 'XMLHttpRequest', // CSRF protection
         ...options.headers,
       },
       ...options,
@@ -239,8 +252,17 @@ class ApiClient {
       }
     }
 
+    // Add timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), apiConfig.timeout)
+    
     try {
-      const response = await fetch(url, config)
+      const response = await fetch(url, {
+        ...config,
+        signal: controller.signal,
+      })
+      
+      clearTimeout(timeoutId)
       
       // Handle 401 Unauthorized - try to refresh token
       if (response.status === 401 && this.token && typeof window !== 'undefined') {
@@ -275,7 +297,19 @@ class ApiClient {
       }
 
       return await response.json()
-    } catch (error) {
+    } catch (error: any) {
+      clearTimeout(timeoutId)
+      
+      // Handle timeout errors
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout')
+      }
+      
+      // Handle network errors
+      if (error instanceof TypeError) {
+        throw new Error('Network error - please check your connection')
+      }
+      
       console.error('API request failed:', error)
       throw error
     }
@@ -283,9 +317,13 @@ class ApiClient {
 
   // Authentication methods
   async login(email: string, password: string): Promise<{ access: string; refresh: string; user: User }> {
+    // Sanitize inputs
+    const sanitizedEmail = sanitizeInput(email)
+    const sanitizedPassword = sanitizeInput(password)
+    
     const response = await this.request<{ access: string; refresh: string; user: User }>('/auth/login/', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email: sanitizedEmail, password: sanitizedPassword }),
     })
     
     this.token = response.access

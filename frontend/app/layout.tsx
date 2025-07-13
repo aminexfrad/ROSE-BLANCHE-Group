@@ -5,13 +5,56 @@ import "./globals.css"
 import { AuthProvider } from "@/contexts/auth-context"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
+import { ErrorBoundary } from "@/components/error-boundary"
 
 const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Rosario - StageBloom",
-  description: "Plateforme de gestion des stages",
-  generator: 'v0.dev'
+  title: {
+    default: "StageBloom - Plateforme de gestion des stages",
+    template: "%s | StageBloom"
+  },
+  description: "Plateforme moderne de gestion des stages et stages PFE. Simplifiez la gestion de vos stages avec StageBloom.",
+  keywords: ["stage", "PFE", "gestion", "étudiant", "entreprise", "tuteur", "RH"],
+  authors: [{ name: "StageBloom Team" }],
+  creator: "StageBloom",
+  publisher: "StageBloom",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'),
+  alternates: {
+    canonical: '/',
+  },
+  openGraph: {
+    title: "StageBloom - Plateforme de gestion des stages",
+    description: "Plateforme moderne de gestion des stages et stages PFE",
+    url: '/',
+    siteName: 'StageBloom',
+    locale: 'fr_FR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "StageBloom - Plateforme de gestion des stages",
+    description: "Plateforme moderne de gestion des stages et stages PFE",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {
+    google: process.env.GOOGLE_SITE_VERIFICATION,
+  },
 }
 
 export default function RootLayout({
@@ -21,18 +64,28 @@ export default function RootLayout({
 }) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className={`${inter.className} min-h-screen`} suppressHydrationWarning>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="light"
-          enableSystem
-          disableTransitionOnChange
-        >
-          <AuthProvider>
-            {children}
-            <Toaster />
-          </AuthProvider>
-        </ThemeProvider>
+      <head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+        <meta name="theme-color" content="#dc2626" />
+        <meta name="color-scheme" content="light dark" />
+        <link rel="icon" href="/favicon.ico" />
+        <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+        <link rel="manifest" href="/manifest.json" />
+      </head>
+      <body className={`${inter.className} min-h-screen antialiased`} suppressHydrationWarning>
+        <ErrorBoundary>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <AuthProvider>
+              {children}
+              <Toaster />
+            </AuthProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   )
