@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from shared.security import SecurityValidator
+from shared.utils import FileUploadValidator
 from .models import Demande
 
 
@@ -26,6 +28,155 @@ class DemandeSerializer(serializers.ModelSerializer):
             'status', 'raison_refus', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'status', 'raison_refus', 'created_at', 'updated_at']
+    
+    def validate_nom(self, value):
+        """Validate and sanitize nom field"""
+        try:
+            return SecurityValidator.validate_name(value, "nom")
+        except ValidationError as e:
+            raise serializers.ValidationError(str(e))
+    
+    def validate_prenom(self, value):
+        """Validate and sanitize prenom field"""
+        try:
+            return SecurityValidator.validate_name(value, "prénom")
+        except ValidationError as e:
+            raise serializers.ValidationError(str(e))
+    
+    def validate_email(self, value):
+        """Validate and sanitize email field"""
+        try:
+            return SecurityValidator.validate_email(value)
+        except ValidationError as e:
+            raise serializers.ValidationError(str(e))
+    
+    def validate_telephone(self, value):
+        """Validate and sanitize telephone field"""
+        try:
+            return SecurityValidator.validate_phone(value)
+        except ValidationError as e:
+            raise serializers.ValidationError(str(e))
+    
+    def validate_cin(self, value):
+        """Validate and sanitize CIN field"""
+        if value:
+            try:
+                return SecurityValidator.validate_text(value, max_length=20, allow_html=False)
+            except ValidationError as e:
+                raise serializers.ValidationError(str(e))
+        return value
+    
+    def validate_institut(self, value):
+        """Validate and sanitize institut field"""
+        try:
+            return SecurityValidator.validate_text(value, max_length=200, allow_html=False)
+        except ValidationError as e:
+            raise serializers.ValidationError(str(e))
+    
+    def validate_specialite(self, value):
+        """Validate and sanitize specialite field"""
+        try:
+            return SecurityValidator.validate_text(value, max_length=200, allow_html=False)
+        except ValidationError as e:
+            raise serializers.ValidationError(str(e))
+    
+    def validate_pfe_reference(self, value):
+        """Validate and sanitize PFE reference field"""
+        if value:
+            try:
+                return SecurityValidator.validate_text(value, max_length=100, allow_html=False)
+            except ValidationError as e:
+                raise serializers.ValidationError(str(e))
+        return value
+    
+    def validate_nom_binome(self, value):
+        """Validate and sanitize nom_binome field"""
+        if value:
+            try:
+                return SecurityValidator.validate_name(value, "nom du binôme")
+            except ValidationError as e:
+                raise serializers.ValidationError(str(e))
+        return value
+    
+    def validate_prenom_binome(self, value):
+        """Validate and sanitize prenom_binome field"""
+        if value:
+            try:
+                return SecurityValidator.validate_name(value, "prénom du binôme")
+            except ValidationError as e:
+                raise serializers.ValidationError(str(e))
+        return value
+    
+    def validate_email_binome(self, value):
+        """Validate and sanitize email_binome field"""
+        if value:
+            try:
+                return SecurityValidator.validate_email(value)
+            except ValidationError as e:
+                raise serializers.ValidationError(str(e))
+        return value
+    
+    def validate_telephone_binome(self, value):
+        """Validate and sanitize telephone_binome field"""
+        if value:
+            try:
+                return SecurityValidator.validate_phone(value)
+            except ValidationError as e:
+                raise serializers.ValidationError(str(e))
+        return value
+    
+    def validate_cin_binome(self, value):
+        """Validate and sanitize cin_binome field"""
+        if value:
+            try:
+                return SecurityValidator.validate_text(value, max_length=20, allow_html=False)
+            except ValidationError as e:
+                raise serializers.ValidationError(str(e))
+        return value
+    
+    def validate_file_field(self, value, field_name):
+        """Generic file validation for PDF files only"""
+        if value:
+            # Validate file size and type
+            allowed_types = ['application/pdf']
+            max_size = 10 * 1024 * 1024  # 10MB
+            
+            try:
+                FileUploadValidator.validate_file(value, allowed_types, max_size)
+            except ValidationError as e:
+                raise serializers.ValidationError(str(e))
+            
+            # Validate filename safety
+            if not FileUploadValidator.is_safe_filename(value.name):
+                raise serializers.ValidationError(
+                    f'Le nom du fichier {field_name} contient des caractères dangereux.'
+                )
+        
+        return value
+    
+    def validate_cv(self, value):
+        """Validate CV file"""
+        return self.validate_file_field(value, 'CV')
+    
+    def validate_lettre_motivation(self, value):
+        """Validate lettre de motivation file"""
+        return self.validate_file_field(value, 'lettre de motivation')
+    
+    def validate_demande_stage(self, value):
+        """Validate demande stage file"""
+        return self.validate_file_field(value, 'demande de stage')
+    
+    def validate_cv_binome(self, value):
+        """Validate binôme CV file"""
+        return self.validate_file_field(value, 'CV binôme')
+    
+    def validate_lettre_motivation_binome(self, value):
+        """Validate binôme lettre de motivation file"""
+        return self.validate_file_field(value, 'lettre de motivation binôme')
+    
+    def validate_demande_stage_binome(self, value):
+        """Validate binôme demande stage file"""
+        return self.validate_file_field(value, 'demande de stage binôme')
     
     def validate(self, data):
         """Validate demande data"""
@@ -53,43 +204,6 @@ class DemandeSerializer(serializers.ModelSerializer):
                     )
         
         return data
-    
-    def validate_file_field(self, value, field_name):
-        """Generic file validation for PDF files only"""
-        if value:
-            if value.size > 10 * 1024 * 1024:  # 10MB
-                raise serializers.ValidationError(
-                    f'Le fichier {field_name} ne doit pas dépasser 10MB.'
-                )
-            if not value.name.lower().endswith('.pdf'):
-                raise serializers.ValidationError(
-                    f'Le fichier {field_name} doit être au format PDF uniquement.'
-                )
-        return value
-    
-    def validate_cv(self, value):
-        """Validate CV file"""
-        return self.validate_file_field(value, 'CV')
-    
-    def validate_lettre_motivation(self, value):
-        """Validate lettre de motivation file"""
-        return self.validate_file_field(value, 'lettre de motivation')
-    
-    def validate_demande_stage(self, value):
-        """Validate demande stage file"""
-        return self.validate_file_field(value, 'demande de stage')
-    
-    def validate_cv_binome(self, value):
-        """Validate binôme CV file"""
-        return self.validate_file_field(value, 'CV binôme')
-    
-    def validate_lettre_motivation_binome(self, value):
-        """Validate binôme lettre de motivation file"""
-        return self.validate_file_field(value, 'lettre de motivation binôme')
-    
-    def validate_demande_stage_binome(self, value):
-        """Validate binôme demande stage file"""
-        return self.validate_file_field(value, 'demande de stage binôme')
 
 
 class DemandeListSerializer(DemandeSerializer):
@@ -135,6 +249,15 @@ class DemandeApprovalSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 'L\'action doit être "approve" ou "reject".'
             )
+        return value
+    
+    def validate_raison(self, value):
+        """Validate and sanitize raison field"""
+        if value:
+            try:
+                return SecurityValidator.validate_text(value, max_length=500, allow_html=False)
+            except ValidationError as e:
+                raise serializers.ValidationError(str(e))
         return value
     
     def validate(self, data):

@@ -2,9 +2,46 @@ import logging
 from django.core.mail import send_mail, EmailMessage
 from django.template.loader import render_to_string
 from django.conf import settings
+from django.core.exceptions import ValidationError
+from rest_framework.views import exception_handler
+from rest_framework.response import Response
+from rest_framework import status
 from typing import List, Optional, Dict, Any
+import traceback
 
 logger = logging.getLogger(__name__)
+
+
+def custom_exception_handler(exc, context):
+    """
+    Custom exception handler for DRF that provides better error messages
+    and logs security-related exceptions.
+    """
+    # Call DRF's default exception handler first
+    response = exception_handler(exc, context)
+    
+    if response is not None:
+        # Log the exception for debugging
+        logger.error(f"API Exception: {exc} - {context}")
+        
+        # Add additional context for security-related errors
+        if hasattr(exc, 'detail') and isinstance(exc.detail, dict):
+            # Handle validation errors
+            if 'non_field_errors' in exc.detail:
+                response.data['message'] = 'Erreur de validation des données.'
+            elif 'detail' in exc.detail:
+                response.data['message'] = exc.detail['detail']
+            else:
+                response.data['message'] = 'Une erreur est survenue.'
+        else:
+            response.data['message'] = str(exc)
+        
+        # Ensure we don't expose sensitive information in production
+        if not settings.DEBUG:
+            if response.status_code >= 500:
+                response.data['message'] = 'Une erreur interne est survenue.'
+    
+    return response
 
 
 class MailService:
@@ -41,6 +78,26 @@ class MailService:
             bool: True if email was sent successfully, False otherwise
         """
         try:
+            # Validate inputs
+            if not subject or not recipient_list or not template_name:
+                logger.error("Missing required email parameters")
+                return False
+            
+            # Validate email addresses
+            from shared.security import SecurityValidator
+            validated_recipients = []
+            for email in recipient_list:
+                try:
+                    validated_email = SecurityValidator.validate_email(email)
+                    validated_recipients.append(validated_email)
+                except ValidationError as e:
+                    logger.error(f"Invalid email address: {email} - {e}")
+                    continue
+            
+            if not validated_recipients:
+                logger.error("No valid email addresses provided")
+                return False
+            
             # Set default from email
             if not from_email:
                 from_email = settings.DEFAULT_FROM_EMAIL
@@ -58,7 +115,7 @@ class MailService:
                     subject=subject,
                     body=html_message or plain_message,
                     from_email=from_email,
-                    to=recipient_list,
+                    to=validated_recipients,
                 )
                 
                 if html_message:
@@ -66,11 +123,12 @@ class MailService:
                 
                 # Add attachments
                 for attachment in attachments:
-                    email.attach(
-                        attachment['filename'],
-                        attachment['content'],
-                        attachment['content_type']
-                    )
+                    if isinstance(attachment, dict) and all(k in attachment for k in ['filename', 'content', 'content_type']):
+                        email.attach(
+                            attachment['filename'],
+                            attachment['content'],
+                            attachment['content_type']
+                        )
                 
                 email.send()
             else:
@@ -79,12 +137,12 @@ class MailService:
                     subject=subject,
                     message=plain_message,
                     from_email=from_email,
-                    recipient_list=recipient_list,
+                    recipient_list=validated_recipients,
                     html_message=html_message,
                     fail_silently=fail_silently,
                 )
             
-            logger.info(f"Email sent successfully to {recipient_list}")
+            logger.info(f"Email sent successfully to {validated_recipients}")
             return True
             
         except Exception as e:
@@ -228,4 +286,119 @@ class MailService:
             
         except Exception as e:
             logger.error(f"Email configuration test failed: {str(e)}")
-            return False 
+            return False
+
+
+class FileUploadValidator:
+    """
+    Utility class for validating file uploads.
+    """
+    
+    @staticmethod
+    def validate_file(file_obj, allowed_types: List[str] = None, max_size: int = None) -> bool:
+        """
+        Validate file upload with security checks.
+        
+        Args:
+            file_obj: File object to validate
+            allowed_types: List of allowed MIME types
+            max_size: Maximum file size in bytes
+            
+        Returns:
+            bool: True if file is valid
+            
+        Raises:
+            ValidationError: If file is invalid
+        """
+        from shared.security import SecurityValidator
+        
+        if not file_obj:
+            return True
+        
+        # Use security validator
+        return SecurityValidator.validate_file_upload(file_obj, allowed_types, max_size)
+    
+    @staticmethod
+    def get_file_extension(filename: str) -> str:
+        """
+        Get file extension from filename.
+        
+        Args:
+            filename: Filename to extract extension from
+            
+        Returns:
+            str: File extension (lowercase)
+        """
+        if not filename:
+            return ""
+        
+        return filename.lower().split('.')[-1] if '.' in filename else ""
+    
+    @staticmethod
+    def is_safe_filename(filename: str) -> bool:
+        """
+        Check if filename is safe (no path traversal, etc.).
+        
+        Args:
+            filename: Filename to check
+            
+        Returns:
+            bool: True if filename is safe
+        """
+        import os
+        
+        # Check for path traversal attempts
+        dangerous_patterns = ['..', '/', '\\', ':', '*', '?', '"', '<', '>', '|']
+        
+        for pattern in dangerous_patterns:
+            if pattern in filename:
+                return False
+        
+        # Check if filename is too long
+        if len(filename) > 255:
+            return False
+        
+        # Check if filename is empty or only whitespace
+        if not filename.strip():
+            return False
+        
+        return True
+
+
+class RateLimitDecorator:
+    """
+    Decorator for rate limiting API endpoints.
+    """
+    
+    def __init__(self, max_requests: int = 100, window_seconds: int = 3600):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+    
+    def __call__(self, func):
+        def wrapper(request, *args, **kwargs):
+            from shared.security import rate_limiter
+            
+            # Get client IP
+            client_ip = self._get_client_ip(request)
+            
+            # Check rate limit
+            if not rate_limiter.is_allowed(client_ip, self.max_requests, self.window_seconds):
+                return Response(
+                    {'error': 'Trop de requêtes. Veuillez réessayer plus tard.'},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS
+                )
+            
+            return func(request, *args, **kwargs)
+        
+        return wrapper
+    
+    def _get_client_ip(self, request):
+        """
+        Get client IP address from request.
+        """
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip 

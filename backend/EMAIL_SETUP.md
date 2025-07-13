@@ -1,5 +1,14 @@
 # 📧 Email Configuration & RH Decision Workflow
 
+## 🧑‍💻 Tech Stack / Dependencies
+- **Framework**: Django 4.2.7
+- **Email**: Django Email Backend, Mailtrap (dev), SMTP (prod)
+- **Environment**: python-decouple
+- **Task Queue**: Celery 5.3+ with Redis 5+
+- **File Storage**: Django Storages, Pillow
+- **Security**: Environment variables, CSRF, XSS, password hashing
+- **Testing**: Django Test, pytest (optional)
+
 This document explains how to set up and test the email functionality for the RH decision workflow using Mailtrap.
 
 ## 🎯 Overview

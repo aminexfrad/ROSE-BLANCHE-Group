@@ -1,5 +1,20 @@
 # StageBloom Frontend Setup Guide
 
+## 🧑‍💻 Tech Stack
+- **Framework**: Next.js 15.2.4 (React 18+)
+- **Language**: TypeScript 5
+- **Styling**: Tailwind CSS 3.4.17
+- **UI Components**: Radix UI, Lucide React
+- **State Management**: React Context API
+- **Forms**: React Hook Form, Zod
+- **Charts**: Recharts 2.15.0
+- **Animations**: Framer Motion 12.20.1
+- **Notifications**: Sonner 1.7.1
+- **Security**: Input sanitization, CSRF, XSS, JWT, environment variables
+- **Performance**: Code splitting, lazy loading, memoization, image optimization
+- **Testing**: Jest, React Testing Library
+- **Linting/Formatting**: ESLint, Prettier
+
 ## Environment Variables Setup
 
 Create a `.env.local` file in the frontend directory with the following variables:

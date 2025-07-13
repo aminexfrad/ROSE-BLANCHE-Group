@@ -86,25 +86,35 @@ StageBloom/
 - **Framework**: Django 4.2.7
 - **API**: Django REST Framework 3.14.0
 - **Authentication**: JWT (djangorestframework-simplejwt)
-- **Database**: MySQL
-- **Task Queue**: Celery + Redis
+- **Database**: MySQL 8+
+- **Task Queue**: Celery 5.3+ with Redis 5+
+- **File Storage**: Django Storages, Pillow
+- **Email**: Django Email Backend, Mailtrap (dev), SMTP (prod)
 - **Documentation**: drf-yasg (Swagger/OpenAPI)
-- **File Storage**: Django Storages + Pillow
+- **Security**: python-decouple (env vars), CSRF, XSS, SQLi protection, CORS, password hashing, rate limiting
+- **Testing**: Django Test, pytest (optional)
+- **Other**: django-cors-headers, django-filter, drf-yasg, python-decouple
 
 ### Frontend
-- **Framework**: Next.js 15.2.4
+- **Framework**: Next.js 15.2.4 (React 18+)
 - **Language**: TypeScript 5
 - **Styling**: Tailwind CSS 3.4.17
-- **UI Components**: Radix UI
+- **UI Components**: Radix UI, Lucide React, custom components
 - **State Management**: React Context API
-- **Forms**: React Hook Form + Zod
+- **Forms**: React Hook Form, Zod
 - **Charts**: Recharts 2.15.0
 - **Animations**: Framer Motion 12.20.1
+- **Notifications**: Sonner 1.7.1
+- **Security**: Input sanitization, CSRF, XSS, JWT, environment variables
+- **Performance**: Code splitting, lazy loading, memoization, image optimization
+- **Testing**: Jest, React Testing Library
+- **Linting/Formatting**: ESLint, Prettier
 
-### DevOps & Tools
+### DevOps & Tooling
 - **Version Control**: Git
-- **Package Managers**: npm/pnpm (frontend), pip (backend)
+- **Package Managers**: npm, pnpm (frontend), pip (backend)
 - **Environment**: Python 3.8+, Node.js 18+
+- **CI/CD**: (add your pipeline/tool if used)
 
 ## 🚀 Quick Start
 

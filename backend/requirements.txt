@@ -1,15 +1,48 @@
+# Core Django and REST Framework
 Django==4.2.7
 djangorestframework==3.14.0
 djangorestframework-simplejwt==5.3.0
+
+# Security and CORS
 django-cors-headers==4.3.1
 django-filter==23.3
+
+# API Documentation
 drf-yasg==1.21.7
+
+# File handling and media
 Pillow==10.1.0
-python-decouple==3.8
-mysqlclient==2.2.0
 django-storages==1.14.2
+
+# Environment and configuration
+python-decouple==3.8
+
+# Database
+mysqlclient==2.2.0
+
+# Background tasks and caching
 celery==5.3.4
 redis==5.0.1
 django-celery-beat==2.5.0
 django-celery-results==2.5.1
-reportlab==4.0.4 
+django-redis==5.4.0
+
+# PDF generation
+reportlab==4.0.4
+
+# Security and validation
+bleach==6.1.0
+django-ratelimit==4.1.0
+
+# Development and testing
+django-debug-toolbar==4.2.0
+pytest==7.4.3
+pytest-django==4.7.0
+
+# Code quality and linting
+black==23.11.0
+flake8==6.1.0
+isort==5.12.0
+
+# Monitoring and logging
+sentry-sdk==1.38.0 

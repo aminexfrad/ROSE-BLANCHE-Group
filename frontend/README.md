@@ -17,19 +17,25 @@ A modern, secure, and high-performance web application built with Next.js 15, Ty
 - **Security**: Comprehensive security measures including input sanitization, CSRF protection, and rate limiting
 - **Performance**: Optimized for speed with code splitting, lazy loading, and image optimization
 
-## 🛠️ Tech Stack
+## 🧑‍💻 Full Technology Stack
 
-- **Framework**: Next.js 15.2.4
+### Frontend
+- **Framework**: Next.js 15.2.4 (React 18+)
 - **Language**: TypeScript 5
 - **Styling**: Tailwind CSS 3.4.17
-- **UI Components**: Radix UI
+- **UI Components**: Radix UI, Lucide React, custom components
 - **State Management**: React Context API
-- **Forms**: React Hook Form + Zod
+- **Forms**: React Hook Form, Zod
 - **Charts**: Recharts 2.15.0
 - **Animations**: Framer Motion 12.20.1
 - **Notifications**: Sonner 1.7.1
-- **Icons**: Lucide React 0.454.0
-- **Security**: Custom security utilities with input sanitization and validation
+- **Security**: Input sanitization, CSRF, XSS, JWT, environment variables
+- **Performance**: Code splitting, lazy loading, memoization, image optimization
+- **Testing**: Jest, React Testing Library
+- **Linting/Formatting**: ESLint, Prettier
+
+### Backend (see project root README for details)
+- Django, DRF, Celery, Redis, MySQL, python-decouple, drf-yasg, etc.
 
 ## 📁 Project Structure
 
