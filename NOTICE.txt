@@ -19,6 +19,6 @@ PROTECTED COMPONENTS:
 - Business Logic and Algorithms
 - Documentation and Configuration
 
-For licensing inquiries, contact: [Your Contact Information]
+For licensing inquiries, contact: frad.amine@gmail.com
 
 This notice serves as a formal declaration of copyright ownership and legal protection. 
