@@ -1,4 +1,10 @@
 """
+© 2025 Mohamed Amine FRAD. All rights reserved.
+Unauthorized use, reproduction, or modification of this code is strictly prohibited.
+Intellectual Property – Protected by international copyright law.
+"""
+
+"""
 URL configuration for stagebloom project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:

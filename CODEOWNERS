@@ -1,0 +1,52 @@
+# Code Owners for StageBloom Project
+# This file defines who is responsible for different parts of the codebase
+
+# Global ownership - Mohamed Amine FRAD
+* @mohamedaminefrad
+
+# Backend ownership
+/backend/ @mohamedaminefrad
+/backend/*/ @mohamedaminefrad
+
+# Frontend ownership  
+/frontend/ @mohamedaminefrad
+/frontend/*/ @mohamedaminefrad
+
+# Security and authentication
+/backend/auth_service/ @mohamedaminefrad
+/backend/shared/security.py @mohamedaminefrad
+/frontend/lib/security.ts @mohamedaminefrad
+
+# Database and models
+/backend/*/models.py @mohamedaminefrad
+/backend/shared/models.py @mohamedaminefrad
+
+# API and views
+/backend/*/views.py @mohamedaminefrad
+/backend/*/serializers.py @mohamedaminefrad
+/backend/*/urls.py @mohamedaminefrad
+
+# Frontend components and pages
+/frontend/app/ @mohamedaminefrad
+/frontend/components/ @mohamedaminefrad
+/frontend/contexts/ @mohamedaminefrad
+/frontend/hooks/ @mohamedaminefrad
+/frontend/lib/ @mohamedaminefrad
+
+# Configuration files
+/backend/gateway/stagebloom/settings.py @mohamedaminefrad
+/frontend/next.config.mjs @mohamedaminefrad
+/frontend/tailwind.config.ts @mohamedaminefrad
+/frontend/tsconfig.json @mohamedaminefrad
+
+# Documentation
+/docs/ @mohamedaminefrad
+*.md @mohamedaminefrad
+
+# Legal and licensing
+LICENSE @mohamedaminefrad
+NOTICE.txt @mohamedaminefrad
+CODEOWNERS @mohamedaminefrad
+
+# All other files
+* @mohamedaminefrad 

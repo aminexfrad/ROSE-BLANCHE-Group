@@ -1,3 +1,9 @@
+/**
+ * © 2025 Mohamed Amine FRAD. All rights reserved.
+ * Unauthorized use, reproduction, or modification of this code is strictly prohibited.
+ * Intellectual Property – Protected by international copyright law.
+ */
+
 "use client"
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"

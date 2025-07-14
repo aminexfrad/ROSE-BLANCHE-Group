@@ -1,0 +1,24 @@
+NOTICE OF INTELLECTUAL PROPERTY RIGHTS
+
+© 2025 Mohamed Amine FRAD. All rights reserved.
+
+This software and its source code are the exclusive intellectual property of Mohamed Amine FRAD.
+
+LEGAL NOTICE:
+- No part of this software may be copied, modified, published, distributed, sublicensed, or used in any form without the prior written permission of the author.
+- This includes but is not limited to: source code, documentation, design, architecture, algorithms, and any derivative works.
+- Violation of these terms may lead to legal consequences under international intellectual property laws.
+- Unauthorized use is strictly prohibited and may result in legal action.
+
+PROTECTED COMPONENTS:
+- Backend API (Django/Python)
+- Frontend Application (Next.js/React/TypeScript)
+- Database Schema and Models
+- Security Implementations
+- UI/UX Design and Components
+- Business Logic and Algorithms
+- Documentation and Configuration
+
+For licensing inquiries, contact: [Your Contact Information]
+
+This notice serves as a formal declaration of copyright ownership and legal protection. 

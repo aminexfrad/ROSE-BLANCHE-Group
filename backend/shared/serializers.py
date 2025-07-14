@@ -1,3 +1,9 @@
+"""
+© 2025 Mohamed Amine FRAD. All rights reserved.
+Unauthorized use, reproduction, or modification of this code is strictly prohibited.
+Intellectual Property – Protected by international copyright law.
+"""
+
 from rest_framework import serializers
 from .models import Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage
 from admin_service.models import PFEProject

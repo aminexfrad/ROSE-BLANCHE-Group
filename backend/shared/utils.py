@@ -1,3 +1,9 @@
+"""
+© 2025 Mohamed Amine FRAD. All rights reserved.
+Unauthorized use, reproduction, or modification of this code is strictly prohibited.
+Intellectual Property – Protected by international copyright law.
+"""
+
 import logging
 from django.core.mail import send_mail, EmailMessage
 from django.template.loader import render_to_string

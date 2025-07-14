@@ -1,3 +1,9 @@
+"""
+© 2025 Mohamed Amine FRAD. All rights reserved.
+Unauthorized use, reproduction, or modification of this code is strictly prohibited.
+Intellectual Property – Protected by international copyright law.
+"""
+
 from rest_framework import serializers
 from django.contrib.auth import authenticate
 from django.contrib.auth.password_validation import validate_password

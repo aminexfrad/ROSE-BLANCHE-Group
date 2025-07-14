@@ -1,0 +1,83 @@
+# Git attributes for StageBloom Project
+# This file controls how Git handles different file types
+
+# Text files - normalize line endings
+*.py text eol=lf
+*.js text eol=lf
+*.ts text eol=lf
+*.tsx text eol=lf
+*.jsx text eol=lf
+*.css text eol=lf
+*.scss text eol=lf
+*.html text eol=lf
+*.md text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.txt text eol=lf
+*.sql text eol=lf
+*.xml text eol=lf
+*.svg text eol=lf
+
+# Binary files - don't modify
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.zip binary
+*.tar binary
+*.gz binary
+*.rar binary
+*.7z binary
+
+# Executable files
+*.exe binary
+*.dll binary
+*.so binary
+*.dylib binary
+
+# Database files
+*.db binary
+*.sqlite binary
+*.sqlite3 binary
+
+# Log files
+*.log text eol=lf
+
+# Configuration files
+.env* text eol=lf
+.env.local text eol=lf
+.env.example text eol=lf
+
+# Documentation
+*.md text eol=lf
+LICENSE text eol=lf
+NOTICE.txt text eol=lf
+CODEOWNERS text eol=lf
+
+# Package files
+package.json text eol=lf
+package-lock.json text eol=lf
+pnpm-lock.yaml text eol=lf
+requirements.txt text eol=lf
+Pipfile text eol=lf
+Pipfile.lock text eol=lf
+
+# IDE and editor files
+.vscode/* text eol=lf
+.idea/* text eol=lf
+*.swp binary
+*.swo binary
+*~ binary
+
+# OS generated files
+.DS_Store binary
+Thumbs.db binary
+desktop.ini binary
+
+# Copyright protection - ensure these files are tracked
+LICENSE text eol=lf
+NOTICE.txt text eol=lf
+CODEOWNERS text eol=lf 

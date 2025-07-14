@@ -1,3 +1,9 @@
+"""
+© 2025 Mohamed Amine FRAD. All rights reserved.
+Unauthorized use, reproduction, or modification of this code is strictly prohibited.
+Intellectual Property – Protected by international copyright law.
+"""
+
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 from django.utils.translation import gettext_lazy as _

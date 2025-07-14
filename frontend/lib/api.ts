@@ -1,3 +1,9 @@
+/**
+ * © 2025 Mohamed Amine FRAD. All rights reserved.
+ * Unauthorized use, reproduction, or modification of this code is strictly prohibited.
+ * Intellectual Property – Protected by international copyright law.
+ */
+
 // API Client for StageBloom Backend
 import { validateEnvironment, sanitizeInput } from './security'
 import { api as apiConfig, isProduction } from './env'

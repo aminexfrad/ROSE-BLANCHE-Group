@@ -1,3 +1,9 @@
+"""
+© 2025 Mohamed Amine FRAD. All rights reserved.
+Unauthorized use, reproduction, or modification of this code is strictly prohibited.
+Intellectual Property – Protected by international copyright law.
+"""
+
 from django.shortcuts import render
 from rest_framework import status, generics, filters
 from rest_framework.views import APIView

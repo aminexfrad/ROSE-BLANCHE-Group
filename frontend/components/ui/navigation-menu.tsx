@@ -1,3 +1,9 @@
+/**
+ * © 2025 Mohamed Amine FRAD. All rights reserved.
+ * Unauthorized use, reproduction, or modification of this code is strictly prohibited.
+ * Intellectual Property – Protected by international copyright law.
+ */
+
 import * as React from "react"
 import * as NavigationMenuPrimitive from "@radix-ui/react-navigation-menu"
 import { cva } from "class-variance-authority"
