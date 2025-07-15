@@ -42,19 +42,18 @@ export function Navbar({ isPublic = false }: NavbarProps) {
     <nav
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
         isScrolled
-          ? "bg-white/90 backdrop-blur-md shadow-md border-b border-gray-200"
-          : "bg-white/60 backdrop-blur-md"
+          ? "bg-white/70 shadow-md border-b border-gray-200 backdrop-blur-sm"
+          : "bg-white/50 backdrop-blur-sm"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo Simple */}
-          <Link href="/public" className="flex items-center gap-3 group">
+          <Link href="/public" className="flex items-center h-full group">
             <img
               src="/RoseBlancheLOGO.png"
               alt="Rose Blanche Logo"
-              className="w-12 h-12 rounded-lg bg-white object-contain group-hover:scale-110 transition-all duration-300"
-              style={{ background: 'white' }}
+              className="h-10 w-auto object-contain rounded-lg group-hover:scale-105 transition-all duration-300"
             />
           </Link>
 

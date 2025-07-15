@@ -191,30 +191,13 @@ export default function PublicHomePage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50 relative overflow-hidden cursor-default">
-      {/* Enhanced Animated Background Elements */}
-      <div className="absolute inset-0 opacity-10">
-        <div 
-          className="absolute top-20 left-20 w-64 h-64 bg-gradient-to-br from-red-200 to-red-300 rounded-full blur-3xl animate-pulse"
-          style={parallaxStyle(0.1)}
-        ></div>
-        <div 
-          className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-br from-red-100 to-red-200 rounded-full blur-3xl animate-pulse delay-1000"
-          style={parallaxStyle(-0.05)}
-        ></div>
-        <div 
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-gradient-to-br from-red-50 to-red-100 rounded-full blur-3xl animate-pulse delay-500"
-          style={parallaxStyle(0.02)}
-        ></div>
-        
-        {/* Additional floating elements for storytelling */}
-        <div 
-          className="absolute top-1/4 right-1/4 w-32 h-32 bg-gradient-to-br from-red-300 to-red-400 rounded-full blur-2xl opacity-30 animate-pulse delay-700"
-          style={parallaxStyle(0.03)}
-        ></div>
-        <div 
-          className="absolute bottom-1/3 left-1/3 w-24 h-24 bg-gradient-to-br from-red-200 to-red-300 rounded-full blur-xl opacity-40 animate-pulse delay-300"
-          style={parallaxStyle(-0.02)}
-        ></div>
+      {/* Hero section full background image */}
+      <div className="absolute top-0 left-0 w-full h-[calc(100vh-4rem)] z-0 pointer-events-none">
+        <img
+          src="/junior-agricultural-scientists-researching-plants-diseases-greenhouse-with-parsley.jpg"
+          alt="Junior Agricultural Scientists Researching Plants"
+          className="w-full h-full object-cover"
+        />
       </div>
 
       <Navbar isPublic />
@@ -226,7 +209,7 @@ export default function PublicHomePage() {
       <section 
         ref={heroRef} 
         data-section="hero"
-        className="bg-transparent py-16 sm:py-20 lg:py-32 relative min-h-screen flex items-center"
+        className="bg-transparent py-16 sm:py-20 lg:py-32 relative min-h-screen flex items-center z-10"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full">
           <div className="text-center">
@@ -307,12 +290,12 @@ export default function PublicHomePage() {
       <section 
         ref={statsRef}
         data-section="stats" 
-        className="py-20 bg-transparent relative"
+        className="py-10 bg-transparent relative"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           {/* Section Introduction */}
           <div 
-            className="text-center mb-16"
+            className="text-center mb-8"
             style={fadeInUp(sectionVisibility.stats, 0)}
           >
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
@@ -399,7 +382,7 @@ export default function PublicHomePage() {
       <section 
         ref={aboutRef}
         data-section="about"
-        className="py-20 bg-transparent relative"
+        className="py-10 bg-transparent relative"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           {/* Floating Quote */}
@@ -420,7 +403,7 @@ export default function PublicHomePage() {
             </div>
 
             <div className="text-center mb-12 relative z-10">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">L'Histoire de Rose Blanche</h2>
+              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">L'Histoire de Rose Blanche</h2>
               <p className="text-xl text-gray-600 max-w-3xl mx-auto">
                 De Sousse à la Tunisie entière, une success story qui continue de s'écrire
               </p>
@@ -490,10 +473,10 @@ export default function PublicHomePage() {
       <section 
         ref={processRef}
         data-section="process"
-        className="py-20 bg-white relative"
+        className="py-10 bg-white relative"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-16" style={fadeInUp(sectionVisibility.process, 0)}>
+          <div className="text-center mb-8" style={fadeInUp(sectionVisibility.process, 0)}>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Votre Parcours de Stage</h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               Un voyage structuré et accompagné pour transformer votre potentiel en excellence
@@ -583,10 +566,10 @@ export default function PublicHomePage() {
       <section 
         ref={testimonialsRef}
         data-section="testimonials"
-        className="py-20 bg-transparent relative"
+        className="py-10 bg-transparent relative"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-16" style={fadeInUp(sectionVisibility.testimonials, 0)}>
+          <div className="text-center mb-8" style={fadeInUp(sectionVisibility.testimonials, 0)}>
             <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Les Héros de Notre Histoire</h2>
             <p className="text-xl text-gray-600">Découvrez l'expérience de ceux qui nous ont fait confiance</p>
             <div className="w-32 h-1 bg-gradient-to-r from-red-500 to-red-700 mx-auto rounded-full mt-6"></div>
