@@ -85,3 +85,19 @@
   scrollbar-width: thin;
   scrollbar-color: #ef4444 #fff;
 }
+
+@keyframes bgZoom {
+  0% {
+    transform: scale(1.08);
+  }
+  50% {
+    transform: scale(1.13);
+  }
+  100% {
+    transform: scale(1.08);
+  }
+}
+
+.animate-bgZoom {
+  animation: bgZoom 18s ease-in-out infinite;
+}
