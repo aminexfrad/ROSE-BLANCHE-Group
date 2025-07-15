@@ -50,12 +50,12 @@ export function Navbar({ isPublic = false }: NavbarProps) {
         <div className="flex justify-between items-center h-16">
           {/* Logo Simple */}
           <Link href="/public" className="flex items-center gap-3 group">
-            <div className="w-10 h-10 bg-red-600 rounded-lg flex items-center justify-center group-hover:bg-red-700 transition-colors">
-              <Sparkles className="h-6 w-6 text-white" />
-            </div>
-            <span className="text-2xl font-bold text-gray-900 group-hover:text-red-600 transition-colors">
-              StageBloom
-            </span>
+            <img
+              src="/RoseBlancheLOGO.png"
+              alt="Rose Blanche Logo"
+              className="w-12 h-12 rounded-lg bg-white object-contain group-hover:scale-110 transition-all duration-300"
+              style={{ background: 'white' }}
+            />
           </Link>
 
           {/* Desktop Navigation */}

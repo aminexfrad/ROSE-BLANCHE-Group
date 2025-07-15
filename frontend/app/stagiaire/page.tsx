@@ -112,6 +112,14 @@ export default function StagiaireDashboard() {
     }
   }
 
+  // Role badge color mapping
+  const roleInfo = {
+    rh: { label: "Responsable RH", color: "bg-gradient-to-r from-orange-500 to-red-600 text-white" },
+    stagiaire: { label: "Stagiaire", color: "bg-gradient-to-r from-blue-500 to-cyan-600 text-white" },
+    tuteur: { label: "Tuteur", color: "bg-gradient-to-r from-green-500 to-emerald-600 text-white" },
+    admin: { label: "Administrateur", color: "bg-gradient-to-r from-purple-500 to-pink-600 text-white" },
+  }[user?.role || "stagiaire"]
+
   if (typeof window === 'undefined') return null;
 
   if (loading) {
@@ -184,9 +192,9 @@ export default function StagiaireDashboard() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-3">
             <h1 className="text-3xl font-bold text-gray-900">Bon retour, {user?.prenom} !</h1>
-            <p className="text-gray-600">Voici un aperçu de votre stage</p>
+            <Badge className={roleInfo.color}>{roleInfo.label}</Badge>
           </div>
           <Badge className={getStatusColor(internship.status)}>
             {internship.status === 'active' ? 'Actif' : internship.status}

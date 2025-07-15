@@ -168,20 +168,12 @@ export function AppSidebar() {
     <Sidebar variant="inset" className="border-r border-gray-200/50 backdrop-blur-sm">
       <SidebarHeader className="border-b border-gray-200/50 p-4 bg-gradient-to-r from-white to-gray-50/50">
         <div className="flex items-center gap-3 group">
-          <div
-            className={`w-10 h-10 bg-gradient-to-br ${roleColors[user.role]} rounded-xl flex items-center justify-center shadow-lg transform transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}
-          >
-            <span className="text-white font-bold text-sm">SB</span>
-          </div>
-          <div className="flex-1">
-            <h2 className="font-bold text-gray-900 text-lg tracking-tight">StageBloom</h2>
-            <div className="flex items-center gap-2">
-              <RoleIcon className="w-3 h-3 text-gray-500" />
-              <p className="text-xs text-gray-500 capitalize font-medium">{user.role}</p>
-              {/* Pro badge removed as requested */}
-            </div>
-          </div>
-          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+          <img
+            src="/RoseBlancheLOGO.png"
+            alt="Rose Blanche Logo"
+            className="h-16 w-auto max-h-20 object-contain mx-auto"
+            style={{ flex: 1, background: 'white' }}
+          />
         </div>
       </SidebarHeader>
 
