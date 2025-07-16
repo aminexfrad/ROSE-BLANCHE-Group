@@ -34,7 +34,11 @@ import {
   Sparkles,
   ArrowUpRight,
   Play,
-  Pause
+  Pause,
+  MapPin,
+  Phone,
+  Mail,
+  ExternalLink
 } from "lucide-react"
 
 export default function PublicHomePage() {
@@ -42,6 +46,7 @@ export default function PublicHomePage() {
   const [scrollY, setScrollY] = useState(0)
   const [activeSection, setActiveSection] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
   
   const heroRef = useRef<HTMLDivElement>(null)
   const statsRef = useRef<HTMLDivElement>(null)
@@ -83,8 +88,16 @@ export default function PublicHomePage() {
       })
     }
 
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({ x: e.clientX, y: e.clientY })
+    }
+
     window.addEventListener('scroll', handleScroll)
-    return () => window.removeEventListener('scroll', handleScroll)
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => {
+      window.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('mousemove', handleMouseMove)
+    }
   }, [])
 
   // Intersection Observer setup
@@ -115,29 +128,29 @@ export default function PublicHomePage() {
     return () => observer.disconnect()
   }, [])
 
-  // Animation utilities
+  // Refined animation utilities
   const fadeInUp = (isVisible: boolean, delay: number = 0) => ({
     opacity: isVisible ? 1 : 0,
-    transform: isVisible ? 'translateY(0)' : 'translateY(50px)',
-    transition: `all 0.8s ease-out ${delay}s`
+    transform: isVisible ? 'translateY(0)' : 'translateY(20px)',
+    transition: `all 0.6s ease-out ${delay}s`
   })
 
   const fadeInLeft = (isVisible: boolean, delay: number = 0) => ({
     opacity: isVisible ? 1 : 0,
-    transform: isVisible ? 'translateX(0)' : 'translateX(-50px)',
-    transition: `all 0.8s ease-out ${delay}s`
+    transform: isVisible ? 'translateX(0)' : 'translateX(-30px)',
+    transition: `all 0.6s ease-out ${delay}s`
   })
 
   const fadeInRight = (isVisible: boolean, delay: number = 0) => ({
     opacity: isVisible ? 1 : 0,
-    transform: isVisible ? 'translateX(0)' : 'translateX(50px)',
-    transition: `all 0.8s ease-out ${delay}s`
+    transform: isVisible ? 'translateX(0)' : 'translateX(30px)',
+    transition: `all 0.6s ease-out ${delay}s`
   })
 
   const scaleIn = (isVisible: boolean, delay: number = 0) => ({
     opacity: isVisible ? 1 : 0,
-    transform: isVisible ? 'scale(1)' : 'scale(0.8)',
-    transition: `all 0.6s ease-out ${delay}s`
+    transform: isVisible ? 'scale(1)' : 'scale(0.95)',
+    transition: `all 0.5s ease-out ${delay}s`
   })
 
   const staggerDelay = (index: number, baseDelay: number = 0.1) => ({
@@ -149,113 +162,158 @@ export default function PublicHomePage() {
     transform: `translateY(${scrollY * speed}px)`
   })
 
-  // Story progression indicator
+  // Mouse parallax effect
+  const mouseParallaxStyle = (speed: number = 0.01) => ({
+    transform: `translate(${mousePosition.x * speed}px, ${mousePosition.y * speed}px)`
+  })
+
+  // Refined story progression indicator
   const StoryProgress = () => (
-    <div className="fixed right-8 top-1/2 transform -translate-y-1/2 z-50 hidden lg:block">
-      <div className="flex flex-col items-center space-y-4">
-        {['hero', 'stats', 'about', 'process', 'testimonials'].map((section, index) => (
+    <div className="fixed right-4 top-1/2 transform -translate-y-1/2 z-50 hidden lg:block">
+      <div className="flex flex-col items-center space-y-3">
+        {[
+          { key: 'hero', label: 'Accueil' },
+          { key: 'stats', label: 'Chiffres' },
+          { key: 'about', label: 'À propos' },
+          { key: 'process', label: 'Processus' },
+          { key: 'testimonials', label: 'Témoignages' }
+        ].map((section, index) => (
           <button
-            key={section}
+            key={section.key}
             onClick={() => {
-              const element = document.querySelector(`[data-section="${section}"]`)
+              const element = document.querySelector(`[data-section="${section.key}"]`)
               element?.scrollIntoView({ behavior: 'smooth' })
             }}
-            className={`w-3 h-3 rounded-full transition-all duration-300 ${
+            className={`group relative transition-all duration-300 ${
               activeSection === index 
-                ? 'bg-red-600 scale-125 shadow-lg shadow-red-200' 
-                : 'bg-gray-300 hover:bg-red-400'
+                ? 'scale-110' 
+                : 'hover:scale-105'
             }`}
             title={`Section ${index + 1}`}
-          />
+          >
+            <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+              activeSection === index 
+                ? 'bg-red-500 shadow-sm shadow-red-200' 
+                : 'bg-gray-300 hover:bg-red-400'
+            }`} />
+            <div className={`absolute right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap ${
+              activeSection === index ? 'opacity-100' : ''
+            }`}>
+              {section.label}
+            </div>
+          </button>
         ))}
       </div>
     </div>
   )
 
-  // Floating quote component
+  // Refined floating quote component
   const FloatingQuote = ({ text, author, delay = 0 }: { text: string; author: string; delay?: number }) => (
     <div 
-      className="absolute opacity-20 text-center max-w-xs"
+      className="absolute opacity-10 text-center max-w-xs"
       style={{
         ...fadeInUp(sectionVisibility.about, delay),
         left: '5%',
         top: '20%',
-        transform: `rotate(-5deg) translateY(${scrollY * 0.02}px)`
+        transform: `rotate(-3deg) translateY(${scrollY * 0.01}px)`
       }}
     >
-      <Quote className="h-8 w-8 text-red-400 mx-auto mb-2" />
-      <p className="text-sm italic text-gray-600">"{text}"</p>
+      <Quote className="h-6 w-6 text-red-400 mx-auto mb-1" />
+      <p className="text-xs italic text-gray-600">"{text}"</p>
       <p className="text-xs text-red-500 font-medium mt-1">— {author}</p>
+    </div>
+  )
+
+  // Refined floating elements
+  const FloatingElement = ({ children, className = "", delay = 0 }: { children: React.ReactNode; className?: string; delay?: number }) => (
+    <div 
+      className={`absolute ${className}`}
+      style={{
+        ...fadeInUp(sectionVisibility.hero, delay),
+        transform: `translateY(${scrollY * 0.005}px)`
+      }}
+    >
+      {children}
     </div>
   )
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50 relative overflow-hidden cursor-default">
-      {/* Hero section full background image */}
+      {/* Refined Hero Background */}
       <div className="absolute top-0 left-0 w-full h-[calc(100vh-4rem)] z-0 pointer-events-none">
         <img
           src="/junior-agricultural-scientists-researching-plants-diseases-greenhouse-with-parsley.jpg"
           alt="Junior Agricultural Scientists Researching Plants"
           className="w-full h-full object-cover"
         />
+        {/* Subtle overlay gradient */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20"></div>
       </div>
+
+      {/* Subtle floating decorative elements */}
+      <FloatingElement className="top-16 left-8 opacity-5" delay={0.5}>
+        <div className="w-12 h-12 bg-gradient-to-br from-red-200 to-red-300 rounded-full blur-lg animate-pulse"></div>
+      </FloatingElement>
+      <FloatingElement className="top-32 right-16 opacity-5" delay={0.8}>
+        <div className="w-10 h-10 bg-gradient-to-br from-red-100 to-red-200 rounded-full blur-md animate-pulse delay-1000"></div>
+      </FloatingElement>
 
       <Navbar isPublic />
 
       {/* Story Progress Indicator */}
       <StoryProgress />
 
-      {/* Hero Section - The Beginning of Our Story */}
+      {/* Hero Section - Refined Design */}
       <section 
         ref={heroRef} 
         data-section="hero"
-        className="bg-transparent py-16 sm:py-20 lg:py-32 relative min-h-screen flex items-center z-10"
+        className="bg-transparent py-12 sm:py-16 lg:py-20 relative min-h-screen flex items-center z-10"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full">
           <div className="text-center">
-            {/* Story Introduction */}
+            {/* Refined Story Introduction */}
             <div 
-              className="mb-8"
+              className="mb-6"
               style={fadeInUp(sectionVisibility.hero, 0)}
             >
-              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-red-100 to-red-200 text-red-800 px-6 py-3 rounded-full text-sm font-medium mb-6 border border-red-200">
-                <Sparkles className="h-4 w-4" />
+              <div className="inline-flex items-center gap-2 bg-gradient-to-r from-red-100 to-red-200 text-red-800 px-4 py-2 rounded-full text-xs font-medium mb-6 border border-red-200 shadow-sm">
+                <Sparkles className="h-3 w-3 animate-pulse" />
                 Découvrez notre histoire
               </div>
               
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-6 leading-tight cursor-pointer hover:text-red-600 transition-all duration-500 transform hover:scale-105">
-                Une <span className="text-red-600 bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight cursor-pointer hover:text-red-100 transition-all duration-300 transform hover:scale-105 drop-shadow-lg">
+                Une <span className="text-red-400 bg-gradient-to-r from-red-400 to-red-500 bg-clip-text text-transparent">
                   Plateforme
                 </span> qui Révolutionne
-                <span className="block text-red-600 bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent">
+                <span className="block text-red-400 bg-gradient-to-r from-red-400 to-red-500 bg-clip-text text-transparent">
                   l'Expérience des Stages
                 </span>
-                <span className="block text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-semibold text-gray-700 mt-2">
+                <span className="block text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white/90 mt-2">
                   Chez Rose Blanche Group
                 </span>
               </h1>
             </div>
 
-            {/* Story Hook */}
+            {/* Refined Story Hook */}
             <div 
-              className="mb-12"
-              style={fadeInUp(sectionVisibility.hero, 0.3)}
+              className="mb-8"
+              style={fadeInUp(sectionVisibility.hero, 0.2)}
             >
-              <p className="text-lg sm:text-xl md:text-2xl text-gray-600 max-w-4xl mx-auto leading-relaxed px-4">
+              <p className="text-base sm:text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed px-4 drop-shadow-sm">
                 Imaginez un monde où chaque stagiaire trouve sa place, où chaque projet devient une aventure, 
                 et où chaque apprentissage se transforme en réussite. C'est l'histoire que nous écrivons ensemble.
               </p>
             </div>
 
-            {/* Call to Adventure */}
+            {/* Refined Call to Adventure */}
             <div 
-              className="flex flex-col sm:flex-row gap-4 sm:gap-6 justify-center mb-16 px-4"
-              style={fadeInUp(sectionVisibility.hero, 0.6)}
+              className="flex flex-col sm:flex-row gap-4 justify-center mb-12 px-4"
+              style={fadeInUp(sectionVisibility.hero, 0.4)}
             >
               <Link href="/public/demande-stage" className="w-full sm:w-auto">
                 <Button
                   size="lg"
-                  className="group bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 sm:px-10 py-4 sm:py-6 text-lg sm:text-xl font-semibold hover:scale-105 transition-all duration-500 shadow-2xl hover:shadow-3xl cursor-pointer rounded-2xl transform hover:-translate-y-1 w-full sm:w-auto relative overflow-hidden"
+                  className="group bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl cursor-pointer rounded-xl transform hover:-translate-y-1 w-full sm:w-auto relative overflow-hidden border-2 border-red-500"
                 >
                   <span className="relative z-10">Commencer votre aventure</span>
                   <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
@@ -267,7 +325,7 @@ export default function PublicHomePage() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="group border-2 border-red-600 text-red-600 hover:bg-red-600 hover:text-white px-6 sm:px-10 py-4 sm:py-6 text-lg sm:text-xl font-semibold hover:scale-105 transition-all duration-500 shadow-lg hover:shadow-xl cursor-pointer rounded-2xl transform hover:-translate-y-1 w-full sm:w-auto"
+                  className="group border-2 border-white text-white hover:bg-white/20 backdrop-blur-sm px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer rounded-xl transform hover:-translate-y-1 w-full sm:w-auto bg-white/10"
                 >
                   Explorer nos projets
                   <Globe className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:rotate-12 transition-transform duration-300" />
@@ -275,40 +333,34 @@ export default function PublicHomePage() {
               </Link>
             </div>
 
-            {/* Scroll Indicator */}
-            <div 
-              className="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce"
-              style={fadeInUp(sectionVisibility.hero, 1)}
-            >
-              <ChevronDown className="h-8 w-8 text-red-600" />
-            </div>
+
           </div>
         </div>
       </section>
 
-      {/* Statistics Section - The Numbers Tell Our Story */}
+      {/* Refined Statistics Section */}
       <section 
         ref={statsRef}
         data-section="stats" 
-        className="py-10 bg-transparent relative"
+        className="py-12 bg-gradient-to-br from-white to-red-50 relative"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          {/* Section Introduction */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          {/* Refined Section Introduction */}
           <div 
-            className="text-center mb-8"
+            className="text-center mb-12"
             style={fadeInUp(sectionVisibility.stats, 0)}
           >
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Notre Impact en Chiffres
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+              Notre Impact en <span className="text-red-600">Chiffres</span>
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
               Chaque nombre raconte une histoire de réussite, d'apprentissage et de croissance
             </p>
-            <div className="w-32 h-1 bg-gradient-to-r from-red-500 to-red-700 mx-auto rounded-full mt-6"></div>
+            <div className="w-24 h-0.5 bg-gradient-to-r from-red-500 to-red-700 mx-auto rounded-full mt-6"></div>
           </div>
 
-          {/* Animated Statistics */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-8 px-4">
+          {/* Refined Animated Statistics */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 px-4">
             {[
               { 
                 number: "50+", 
@@ -347,27 +399,27 @@ export default function PublicHomePage() {
               return (
                 <div
                   key={index}
-                  className="text-center hover:scale-110 transition-all duration-500 cursor-pointer group relative"
-                  style={{ ...fadeInUp(sectionVisibility.stats, 0.2 + index * 0.1) }}
+                  className="text-center hover:scale-105 transition-all duration-500 cursor-pointer group relative"
+                  style={{ ...fadeInUp(sectionVisibility.stats, 0.1 + index * 0.1) }}
                 >
-                  <div className="bg-white rounded-2xl sm:rounded-3xl p-4 sm:p-8 shadow-xl sm:shadow-2xl hover:shadow-2xl sm:hover:shadow-3xl transition-all duration-500 border border-gray-100 transform hover:-translate-y-1 sm:hover:-translate-y-2 relative overflow-hidden">
-                    {/* Hover effect background */}
+                  <div className="bg-white rounded-xl p-4 sm:p-6 shadow-lg hover:shadow-xl transition-all duration-500 border border-gray-100 transform hover:-translate-y-1 relative overflow-hidden">
+                    {/* Refined hover effect background */}
                     <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-red-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     
-                    <div className={`w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br ${stat.color} rounded-xl sm:rounded-2xl flex items-center justify-center mx-auto mb-3 sm:mb-4 group-hover:scale-110 transition-transform duration-300 relative z-10`}>
-                      <IconComponent className="h-6 w-6 sm:h-8 sm:w-8 text-white" />
+                    <div className={`w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br ${stat.color} rounded-lg flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform duration-300 relative z-10 shadow-sm`}>
+                      <IconComponent className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
                     </div>
-                    <div className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 mb-1 sm:mb-2 group-hover:text-red-600 transition-colors duration-300 relative z-10">
+                    <div className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 mb-2 group-hover:text-red-600 transition-colors duration-300 relative z-10">
                       {stat.number}
                     </div>
-                    <p className="text-gray-900 font-semibold mb-1 sm:mb-2 text-sm sm:text-lg relative z-10">{stat.label}</p>
+                    <p className="text-gray-900 font-semibold mb-1 text-sm sm:text-base relative z-10">{stat.label}</p>
                     <p className="text-gray-500 text-xs sm:text-sm relative z-10">{stat.description}</p>
                     
-                    {/* Story tooltip */}
+                    {/* Refined story tooltip */}
                     <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-20">
-                      <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap">
+                      <div className="bg-gray-800 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap shadow-lg">
                         {stat.story}
-                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                        <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-3 border-r-3 border-t-3 border-transparent border-t-gray-800"></div>
                       </div>
                     </div>
                   </div>
@@ -378,54 +430,54 @@ export default function PublicHomePage() {
         </div>
       </section>
 
-      {/* About Section - The Heart of Our Story */}
+      {/* Refined About Section */}
       <section 
         ref={aboutRef}
         data-section="about"
-        className="py-10 bg-transparent relative"
+        className="py-12 bg-gradient-to-br from-red-50 to-white relative"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          {/* Floating Quote */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          {/* Refined Floating Quote */}
           <FloatingQuote 
             text="L'innovation naît de la passion et de la persévérance"
             author="Rose Blanche Group"
-            delay={0.5}
+            delay={0.3}
           />
           
           <div 
-            className="bg-white rounded-3xl p-8 md:p-12 shadow-2xl border border-gray-100 hover:shadow-3xl transition-all duration-500 transform hover:scale-[1.02] relative overflow-hidden"
+            className="bg-white rounded-2xl p-6 md:p-8 lg:p-10 shadow-xl border border-gray-100 hover:shadow-2xl transition-all duration-500 transform hover:scale-[1.01] relative overflow-hidden"
             style={fadeInUp(sectionVisibility.about, 0)}
           >
-            {/* Background pattern */}
-            <div className="absolute inset-0 opacity-5">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-red-200 to-red-300 rounded-full blur-2xl"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-br from-red-100 to-red-200 rounded-full blur-xl"></div>
+            {/* Refined background pattern */}
+            <div className="absolute inset-0 opacity-3">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-red-200 to-red-300 rounded-full blur-2xl"></div>
+              <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-full blur-xl"></div>
             </div>
 
-            <div className="text-center mb-12 relative z-10">
-              <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">L'Histoire de Rose Blanche</h2>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <div className="text-center mb-10 relative z-10">
+              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">L'Histoire de <span className="text-red-600">Rose Blanche</span></h2>
+              <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
                 De Sousse à la Tunisie entière, une success story qui continue de s'écrire
               </p>
-              <div className="w-32 h-1 bg-gradient-to-r from-red-500 to-red-700 mx-auto rounded-full mt-6"></div>
+              <div className="w-24 h-0.5 bg-gradient-to-r from-red-500 to-red-700 mx-auto rounded-full mt-6"></div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center relative z-10">
               <div style={fadeInLeft(sectionVisibility.about, 0.2)}>
-                <h3 className="text-3xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <Building className="h-8 w-8 text-red-600" />
+                <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-3">
+                  <Building className="h-6 w-6 text-red-600" />
                   Premier acteur agroalimentaire tunisien
                 </h3>
-                <p className="text-gray-600 leading-relaxed mb-6 text-lg">
+                <p className="text-gray-600 leading-relaxed mb-4 text-base">
                  Fondé à Sousse, le <strong className="text-red-600">Rose Blanche Group</strong> est le 1er groupe agroalimentaire tunisien spécialisé
                  dans la transformation des céréales (pâtes, couscous, farine) et la production avicole.
                 </p>
-                <p className="text-gray-600 leading-relaxed mb-8">
+                <p className="text-gray-600 leading-relaxed mb-6">
                 Avec plus de <strong className="text-red-600">29 filiales</strong>, <strong className="text-red-600">14 sites de production</strong> et <strong className="text-red-600">3 600
                 collaborateurs</strong>, le groupe s'appuie sur son réseau de <strong className="text-red-600">16 000 agriculteurs partenaires</strong>
                 et <strong className="text-red-600">48 centres</strong> de collecte à travers la Tunisie.
                 </p>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-2">
                   {[ 
                     "Céréales & dérivés",
                     "Production de pâtes & couscous",
@@ -436,8 +488,8 @@ export default function PublicHomePage() {
                   ].map((domain, index) => (
                     <span
                       key={index}
-                      className="bg-gradient-to-r from-red-50 to-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium border border-red-200 hover:from-red-100 hover:to-red-200 transition-all duration-300 transform hover:scale-105"
-                      style={staggerDelay(index, 0.4)}
+                      className="bg-gradient-to-r from-red-50 to-red-100 text-red-700 px-3 py-1.5 rounded-full text-xs font-medium border border-red-200 hover:from-red-100 hover:to-red-200 transition-all duration-300 transform hover:scale-105 shadow-sm"
+                      style={staggerDelay(index, 0.3)}
                     >
                       {domain}
                     </span>
@@ -445,19 +497,19 @@ export default function PublicHomePage() {
                 </div>
               </div>
 
-              <div className="relative" style={fadeInRight(sectionVisibility.about, 0.4)}>
-                <div className="bg-gradient-to-br from-red-500 to-red-700 rounded-3xl p-8 text-white shadow-2xl transform hover:scale-105 transition-all duration-500 relative overflow-hidden">
-                  {/* Animated background */}
-                  <div className="absolute inset-0 opacity-10">
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-white rounded-full blur-xl animate-pulse"></div>
-                    <div className="absolute bottom-0 left-0 w-16 h-16 bg-white rounded-full blur-lg animate-pulse delay-500"></div>
+              <div className="relative" style={fadeInRight(sectionVisibility.about, 0.3)}>
+                <div className="bg-gradient-to-br from-red-500 to-red-700 rounded-2xl p-6 text-white shadow-xl transform hover:scale-105 transition-all duration-500 relative overflow-hidden">
+                  {/* Refined animated background */}
+                  <div className="absolute inset-0 opacity-5">
+                    <div className="absolute top-0 right-0 w-16 h-16 bg-white rounded-full blur-xl animate-pulse"></div>
+                    <div className="absolute bottom-0 left-0 w-12 h-12 bg-white rounded-full blur-lg animate-pulse delay-500"></div>
                   </div>
                   
-                  <div className="flex items-center gap-3 mb-6 relative z-10">
-                    <Target className="h-8 w-8 text-red-200" />
-                    <h4 className="text-2xl font-bold">Notre Mission</h4>
+                  <div className="flex items-center gap-3 mb-4 relative z-10">
+                    <Target className="h-6 w-6 text-red-200" />
+                    <h4 className="text-xl font-bold">Notre Mission</h4>
                   </div>
-                  <p className="text-red-100 leading-relaxed text-lg relative z-10">
+                  <p className="text-red-100 leading-relaxed text-sm relative z-10">
                     Contribuer au développement de la future génération de professionnels en offrant des stages de qualité au sein
                     d'un groupe industriel reconnu. Rose Blanche s'engage à transmettre ses valeurs de rigueur, d'innovation et de
                     responsabilité dans un cadre formateur et bienveillant.
@@ -469,22 +521,22 @@ export default function PublicHomePage() {
         </div>
       </section>
 
-      {/* Process Section - The Journey We Offer */}
+      {/* Refined Process Section */}
       <section 
         ref={processRef}
         data-section="process"
-        className="py-10 bg-white relative"
+        className="py-12 bg-gradient-to-br from-white to-red-50 relative"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-8" style={fadeInUp(sectionVisibility.process, 0)}>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Votre Parcours de Stage</h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-10" style={fadeInUp(sectionVisibility.process, 0)}>
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Votre Parcours de <span className="text-red-600">Stage</span></h2>
+            <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
               Un voyage structuré et accompagné pour transformer votre potentiel en excellence
             </p>
-            <div className="w-32 h-1 bg-gradient-to-r from-red-500 to-red-700 mx-auto rounded-full mt-6"></div>
+            <div className="w-24 h-0.5 bg-gradient-to-r from-red-500 to-red-700 mx-auto rounded-full mt-6"></div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 lg:gap-8">
             {[
               {
                 step: "01",
@@ -524,35 +576,35 @@ export default function PublicHomePage() {
                 <div 
                   key={index} 
                   className="text-center group hover:scale-105 transition-all duration-500 cursor-pointer relative"
-                  style={{ ...fadeInUp(sectionVisibility.process, 0.2 + index * 0.1) }}
+                  style={{ ...fadeInUp(sectionVisibility.process, 0.1 + index * 0.1) }}
                 >
-                  <div className="relative mb-6">
-                    <div className="w-24 h-24 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mx-auto shadow-2xl group-hover:shadow-3xl transition-all duration-500 transform group-hover:scale-110 relative overflow-hidden">
-                      {/* Animated ring */}
-                      <div className="absolute inset-0 rounded-full border-4 border-red-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-ping"></div>
-                      <IconComponent className="h-10 w-10 text-white relative z-10" />
+                  <div className="relative mb-4">
+                    <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mx-auto shadow-lg group-hover:shadow-xl transition-all duration-500 transform group-hover:scale-110 relative overflow-hidden">
+                      {/* Refined animated ring */}
+                      <div className="absolute inset-0 rounded-full border-2 border-red-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-ping"></div>
+                      <IconComponent className="h-7 w-7 text-white relative z-10" />
                     </div>
-                    <div className="absolute -top-2 -right-2 w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-sm">
+                    <div className="absolute -top-1 -right-1 w-6 h-6 bg-red-600 rounded-full flex items-center justify-center text-white font-bold text-xs shadow-sm">
                       {process.step}
                     </div>
                     {index < 3 && (
-                      <div className="hidden md:block absolute top-12 left-full w-full h-1 bg-gradient-to-r from-red-200 to-red-300 -z-10 group-hover:from-red-300 group-hover:to-red-400 transition-all duration-300"></div>
+                      <div className="hidden md:block absolute top-8 left-full w-full h-0.5 bg-gradient-to-r from-red-200 to-red-300 -z-10 group-hover:from-red-300 group-hover:to-red-400 transition-all duration-300"></div>
                     )}
                   </div>
-                  <h3 className="text-2xl font-bold text-gray-900 mb-4 group-hover:text-red-600 transition-colors duration-300">
+                  <h3 className="text-lg font-bold text-gray-900 mb-3 group-hover:text-red-600 transition-colors duration-300">
                     {process.title}
                   </h3>
-                  <p className="text-gray-600 mb-4 leading-relaxed text-lg">{process.description}</p>
-                  <span className="inline-block bg-gradient-to-r from-red-50 to-red-100 text-red-700 px-4 py-2 rounded-full text-sm font-medium border border-red-200">
-                    <Clock className="inline h-4 w-4 mr-1" />
+                  <p className="text-gray-600 mb-3 leading-relaxed text-sm">{process.description}</p>
+                  <span className="inline-block bg-gradient-to-r from-red-50 to-red-100 text-red-700 px-3 py-1.5 rounded-full text-xs font-medium border border-red-200 shadow-sm">
+                    <Clock className="inline h-3 w-3 mr-1" />
                     {process.duration}
                   </span>
                   
-                  {/* Story tooltip */}
+                  {/* Refined story tooltip */}
                   <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-20">
-                    <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap">
+                    <div className="bg-gray-800 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap shadow-lg">
                       {process.story}
-                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-3 border-r-3 border-t-3 border-transparent border-t-gray-800"></div>
                     </div>
                   </div>
                 </div>
@@ -562,20 +614,20 @@ export default function PublicHomePage() {
         </div>
       </section>
 
-      {/* Testimonials Section - The Voices of Our Story */}
+      {/* Refined Testimonials Section */}
       <section 
         ref={testimonialsRef}
         data-section="testimonials"
-        className="py-10 bg-transparent relative"
+        className="py-12 bg-gradient-to-br from-red-50 to-white relative"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-8" style={fadeInUp(sectionVisibility.testimonials, 0)}>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">Les Héros de Notre Histoire</h2>
-            <p className="text-xl text-gray-600">Découvrez l'expérience de ceux qui nous ont fait confiance</p>
-            <div className="w-32 h-1 bg-gradient-to-r from-red-500 to-red-700 mx-auto rounded-full mt-6"></div>
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
+          <div className="text-center mb-10" style={fadeInUp(sectionVisibility.testimonials, 0)}>
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Les Héros de Notre <span className="text-red-600">Histoire</span></h2>
+            <p className="text-lg text-gray-600">Découvrez l'expérience de ceux qui nous ont fait confiance</p>
+            <div className="w-24 h-0.5 bg-gradient-to-r from-red-500 to-red-700 mx-auto rounded-full mt-6"></div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {[
               {
                 name: "Amira Ben Salem",
@@ -607,36 +659,36 @@ export default function PublicHomePage() {
             ].map((testimonial, index) => (
               <Card
                 key={index}
-                className="border-0 shadow-2xl hover:shadow-3xl transition-all duration-500 hover:scale-105 cursor-pointer overflow-hidden transform hover:-translate-y-2 relative group"
-                style={{ ...fadeInUp(sectionVisibility.testimonials, 0.2 + index * 0.1) }}
+                className="border-0 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 cursor-pointer overflow-hidden transform hover:-translate-y-1 relative group"
+                style={{ ...fadeInUp(sectionVisibility.testimonials, 0.1 + index * 0.1) }}
               >
-                {/* Hover effect background */}
+                {/* Refined hover effect background */}
                 <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-red-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 
-                <CardContent className="p-8 relative z-10">
-                  <div className="flex items-center gap-1 mb-6 justify-center">
+                <CardContent className="p-6 relative z-10">
+                  <div className="flex items-center gap-1 mb-4 justify-center">
                     {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-6 w-6 text-yellow-500 fill-current" />
+                      <Star key={i} className="h-5 w-5 text-yellow-500 fill-current" />
                     ))}
                   </div>
-                  <p className="text-gray-700 mb-6 italic leading-relaxed text-lg">"{testimonial.text}"</p>
-                  <div className="text-center border-t pt-6">
-                    <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold text-lg group-hover:scale-110 transition-transform duration-300">
+                  <p className="text-gray-700 mb-4 italic leading-relaxed text-sm">"{testimonial.text}"</p>
+                  <div className="text-center border-t pt-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold text-sm group-hover:scale-110 transition-transform duration-300 shadow-sm">
                       {testimonial.avatar}
                     </div>
-                    <div className="font-bold text-gray-900 mb-2 text-lg">{testimonial.name}</div>
-                    <div className="text-red-600 text-sm mb-3">{testimonial.role}</div>
-                    <div className="text-gray-500 text-xs bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-2 rounded-full inline-block border border-gray-200">
+                    <div className="font-bold text-gray-900 mb-1 text-base">{testimonial.name}</div>
+                    <div className="text-red-600 text-xs mb-2">{testimonial.role}</div>
+                    <div className="text-gray-500 text-xs bg-gradient-to-r from-gray-50 to-gray-100 px-3 py-1.5 rounded-full inline-block border border-gray-200 shadow-sm">
                       <Lightbulb className="inline h-3 w-3 mr-1" />
                       {testimonial.project}
                     </div>
                   </div>
                   
-                  {/* Story tooltip */}
+                  {/* Refined story tooltip */}
                   <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-20">
-                    <div className="bg-gray-900 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap">
+                    <div className="bg-gray-800 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap shadow-lg">
                       {testimonial.story}
-                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-3 border-r-3 border-t-3 border-transparent border-t-gray-800"></div>
                     </div>
                   </div>
                 </CardContent>
@@ -646,21 +698,21 @@ export default function PublicHomePage() {
         </div>
       </section>
 
-      {/* Story Conclusion */}
-      <section className="py-20 bg-gradient-to-br from-red-50 to-red-100 relative">
+      {/* Refined Story Conclusion */}
+      <section className="py-16 bg-gradient-to-br from-red-50 to-red-100 relative">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div style={fadeInUp(true, 0)}>
-            <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
-              Votre Histoire Nous Attend
+            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
+              Votre Histoire Nous <span className="text-red-600">Attend</span>
             </h2>
-            <p className="text-xl text-gray-600 mb-8 leading-relaxed">
+            <p className="text-lg text-gray-600 mb-8 leading-relaxed max-w-3xl mx-auto">
               Rejoignez la communauté Rose Blanche et écrivez avec nous les prochains chapitres 
               de cette success story tunisienne. Votre avenir professionnel commence ici.
             </p>
             <Link href="/public/demande-stage">
               <Button
                 size="lg"
-                className="group bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-8 py-6 text-xl font-semibold hover:scale-105 transition-all duration-500 shadow-2xl hover:shadow-3xl cursor-pointer rounded-2xl transform hover:-translate-y-1"
+                className="group bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-8 py-4 text-lg font-semibold hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer rounded-xl transform hover:-translate-y-1"
               >
                 Écrire votre histoire
                 <ArrowUpRight className="ml-2 h-5 w-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
