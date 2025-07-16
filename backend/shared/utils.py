@@ -19,34 +19,10 @@ logger = logging.getLogger(__name__)
 
 
 def custom_exception_handler(exc, context):
-    """
-    Custom exception handler for DRF that provides better error messages
-    and logs security-related exceptions.
-    """
-    # Call DRF's default exception handler first
     response = exception_handler(exc, context)
-    
-    if response is not None:
-        # Log the exception for debugging
-        logger.error(f"API Exception: {exc} - {context}")
-        
-        # Add additional context for security-related errors
-        if hasattr(exc, 'detail') and isinstance(exc.detail, dict):
-            # Handle validation errors
-            if 'non_field_errors' in exc.detail:
-                response.data['message'] = 'Erreur de validation des données.'
-            elif 'detail' in exc.detail:
-                response.data['message'] = exc.detail['detail']
-            else:
-                response.data['message'] = 'Une erreur est survenue.'
-        else:
-            response.data['message'] = str(exc)
-        
-        # Ensure we don't expose sensitive information in production
-        if not settings.DEBUG:
-            if response.status_code >= 500:
-                response.data['message'] = 'Une erreur interne est survenue.'
-    
+    if response is None:
+        # Unhandled error, return JSON instead of HTML
+        return Response({'error': str(exc)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return response
 
 
@@ -408,3 +384,98 @@ class RateLimitDecorator:
         else:
             ip = request.META.get('REMOTE_ADDR')
         return ip 
+
+    @staticmethod
+    def send_testimonial_submission_notification(testimonial) -> bool:
+        """
+        Send notification to RH team about new testimonial submission.
+        
+        Args:
+            testimonial: Testimonial object
+            
+        Returns:
+            bool: True if email was sent successfully
+        """
+        from auth_service.models import User
+        
+        subject = f'Nouveau témoignage soumis - {testimonial.author.get_full_name()}'
+        
+        context = {
+            'testimonial': testimonial,
+            'author': testimonial.author,
+            'stage': testimonial.stage,
+            'site_url': getattr(settings, 'SITE_URL', 'http://localhost:3000')
+        }
+        
+        # Get RH users
+        rh_users = User.objects.filter(role='rh', is_active=True)
+        rh_emails = [user.email for user in rh_users]
+        
+        if not rh_emails:
+            logger.warning("No RH users found to send testimonial notification to")
+            return False
+        
+        return MailService.send_email(
+            subject=subject,
+            recipient_list=rh_emails,
+            template_name='emails/new_testimonial_rh.txt',
+            context=context,
+            html_template_name='emails/new_testimonial_rh.html'
+        )
+    
+    @staticmethod
+    def send_testimonial_approval_notification(testimonial) -> bool:
+        """
+        Send approval notification to testimonial author.
+        
+        Args:
+            testimonial: Testimonial object
+            
+        Returns:
+            bool: True if email was sent successfully
+        """
+        subject = 'Votre témoignage a été approuvé'
+        
+        context = {
+            'testimonial': testimonial,
+            'author': testimonial.author,
+            'moderator': testimonial.moderated_by,
+            'site_url': getattr(settings, 'SITE_URL', 'http://localhost:3000')
+        }
+        
+        return MailService.send_email(
+            subject=subject,
+            recipient_list=[testimonial.author.email],
+            template_name='emails/testimonial_approved.txt',
+            context=context,
+            html_template_name='emails/testimonial_approved.html'
+        )
+    
+    @staticmethod
+    def send_testimonial_rejection_notification(testimonial) -> bool:
+        """
+        Send rejection notification to testimonial author.
+        
+        Args:
+            testimonial: Testimonial object
+            
+        Returns:
+            bool: True if email was sent successfully
+        """
+        subject = 'Votre témoignage nécessite des modifications'
+        
+        context = {
+            'testimonial': testimonial,
+            'author': testimonial.author,
+            'moderator': testimonial.moderated_by,
+            'moderation_comment': testimonial.moderation_comment,
+            'site_url': getattr(settings, 'SITE_URL', 'http://localhost:3000')
+        }
+        
+        return MailService.send_email(
+            subject=subject,
+            recipient_list=[testimonial.author.email],
+            template_name='emails/testimonial_rejected.txt',
+            context=context,
+            html_template_name='emails/testimonial_rejected.html'
+        ) 

@@ -120,8 +120,6 @@ export default function StagiaireDashboard() {
     admin: { label: "Administrateur", color: "bg-gradient-to-r from-purple-500 to-pink-600 text-white" },
   }[user?.role || "stagiaire"]
 
-  if (typeof window === 'undefined') return null;
-
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -215,7 +213,7 @@ export default function StagiaireDashboard() {
               <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-gray-500" />
                 <span className="text-sm text-gray-600">
-                  {new Date(internship.start_date).toLocaleDateString()} - {new Date(internship.end_date).toLocaleDateString()}
+                  {new Date(internship.start_date).toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit' })} - {new Date(internship.end_date).toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                 </span>
               </div>
               <div className="flex items-center gap-2">

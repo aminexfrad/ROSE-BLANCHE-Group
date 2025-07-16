@@ -70,10 +70,10 @@ class RHStagiairesView(APIView):
 class RHStagiaireDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, stagiaire_id):
+    def get(self, request, pk):
         try:
             # Get the stagiaire
-            stagiaire = get_object_or_404(User, id=stagiaire_id, role='stagiaire')
+            stagiaire = get_object_or_404(User, id=pk, role='stagiaire')
             
             # Get their stages
             stages = Stage.objects.filter(stagiaire=stagiaire).order_by('-created_at')
@@ -191,9 +191,9 @@ class RHTestimonialsView(APIView):
 class RHTestimonialModerationView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, testimonial_id):
+    def post(self, request, pk):
         try:
-            testimonial = get_object_or_404(Testimonial, id=testimonial_id)
+            testimonial = get_object_or_404(Testimonial, id=pk)
             
             action = request.data.get('action')
             comment = request.data.get('comment', '')
@@ -205,8 +205,18 @@ class RHTestimonialModerationView(APIView):
                 testimonial.moderation_comment = comment
                 testimonial.save()
                 
+                # Create notification for the author
+                from shared.models import Notification
+                Notification.objects.create(
+                    recipient=testimonial.author,
+                    title='Témoignage approuvé',
+                    message=f'Votre témoignage "{testimonial.title}" a été approuvé et publié sur la plateforme.',
+                    notification_type='success',
+                    related_stage=testimonial.stage
+                )
+                
                 return Response({
-                    'message': 'Testimonial approved successfully',
+                    'message': 'Témoignage approuvé avec succès',
                     'testimonial': {
                         'id': testimonial.id,
                         'status': testimonial.status,
@@ -222,8 +232,22 @@ class RHTestimonialModerationView(APIView):
                 testimonial.moderation_comment = comment
                 testimonial.save()
                 
+                # Create notification for the author
+                from shared.models import Notification
+                rejection_message = f'Votre témoignage "{testimonial.title}" nécessite des modifications.'
+                if comment:
+                    rejection_message += f' Commentaire: {comment}'
+                
+                Notification.objects.create(
+                    recipient=testimonial.author,
+                    title='Témoignage nécessite des modifications',
+                    message=rejection_message,
+                    notification_type='warning',
+                    related_stage=testimonial.stage
+                )
+                
                 return Response({
-                    'message': 'Testimonial rejected',
+                    'message': 'Témoignage rejeté',
                     'testimonial': {
                         'id': testimonial.id,
                         'status': testimonial.status,
@@ -234,18 +258,18 @@ class RHTestimonialModerationView(APIView):
                 
             else:
                 return Response(
-                    {'error': 'Invalid action. Use "approve" or "reject"'}, 
+                    {'error': 'Action invalide. Utilisez "approve" ou "reject"'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
                 
         except Testimonial.DoesNotExist:
             return Response(
-                {'error': 'Testimonial not found'}, 
+                {'error': 'Témoignage non trouvé'}, 
                 status=status.HTTP_404_NOT_FOUND
             )
         except Exception as e:
             return Response(
-                {'error': f'Error moderating testimonial: {str(e)}'}, 
+                {'error': f'Erreur lors de la modération du témoignage: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
@@ -444,9 +468,9 @@ class RHStagesView(APIView):
 class RHStageDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
-    def get(self, request, stage_id):
+    def get(self, request, pk):
         try:
-            stage = get_object_or_404(Stage, id=stage_id)
+            stage = get_object_or_404(Stage, id=pk)
             
             # Get steps
             steps = stage.steps.all().order_by('order')
@@ -957,7 +981,7 @@ class RHAssignerTuteurView(APIView):
     """
     permission_classes = [IsAuthenticated]
 
-    def post(self, request, stagiaire_id):
+    def post(self, request, pk):
         try:
             # Vérifier que l'utilisateur est RH ou admin
             if request.user.role not in ['rh', 'admin']:
@@ -967,7 +991,7 @@ class RHAssignerTuteurView(APIView):
                 )
             
             # Récupérer le stagiaire
-            stagiaire = get_object_or_404(User, id=stagiaire_id, role='stagiaire')
+            stagiaire = get_object_or_404(User, id=pk, role='stagiaire')
             
             # Récupérer l'ID du tuteur depuis la requête
             tuteur_id = request.data.get('tuteur_id')

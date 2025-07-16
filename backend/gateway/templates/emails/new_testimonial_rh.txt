@@ -1,0 +1,34 @@
+🎓 NOUVEAU TÉMOIGNAGE SOUMIS
+================================
+
+Bonjour,
+
+Un stagiaire a soumis un nouveau témoignage nécessitant votre validation.
+
+INFORMATIONS DU TÉMOIGNAGE :
+-----------------------------
+Auteur : {{ author.prenom }} {{ author.nom }}
+Institut : {{ author.institut }}
+Spécialité : {{ author.specialite }}
+Stage : {{ stage.title }} chez {{ stage.company }}
+Type : {{ testimonial.testimonial_type|title }}
+Date de soumission : {{ testimonial.created_at|date:"d/m/Y" }}
+
+CONTENU DU TÉMOIGNAGE :
+-----------------------
+Titre : {{ testimonial.title }}
+Contenu : {{ testimonial.content|truncatewords:50 }}
+
+ACTION REQUISE :
+---------------
+Veuillez examiner ce témoignage et prendre une décision d'approbation ou de rejet.
+
+Pour examiner le témoignage, connectez-vous à votre tableau de bord RH :
+{{ site_url }}/rh/temoignages
+
+Cordialement,
+L'équipe StageBloom
+
+---
+Ce message a été envoyé automatiquement par le système StageBloom.
+Si vous avez des questions, contactez l'équipe technique. 

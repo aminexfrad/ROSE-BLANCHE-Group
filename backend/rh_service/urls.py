@@ -15,7 +15,7 @@ urlpatterns = [
     
     # Tuteur assignment
     path('tuteurs-disponibles/', views.RHTuteursDisponiblesView.as_view(), name='rh-tuteurs-disponibles'),
-    path('stagiaires/<int:stagiaire_id>/assigner-tuteur/', views.RHAssignerTuteurView.as_view(), name='rh-assigner-tuteur'),
+    path('stagiaires/<int:pk>/assigner-tuteur/', views.RHAssignerTuteurView.as_view(), name='rh-assigner-tuteur'),
     
     # Stagiaire creation
     path('creer-stagiaire/', views.RHCreerStagiaireView.as_view(), name='rh-creer-stagiaire'),

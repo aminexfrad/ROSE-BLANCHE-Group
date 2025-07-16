@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nouveau témoignage soumis</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #e74c3c;
+            padding-bottom: 20px;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #e74c3c;
+            margin: 0;
+            font-size: 24px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .testimonial-info {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border-left: 4px solid #e74c3c;
+        }
+        .author-info {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .author-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: #e74c3c;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 15px;
+        }
+        .author-details h3 {
+            margin: 0;
+            color: #2c3e50;
+        }
+        .author-details p {
+            margin: 5px 0 0 0;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .testimonial-content {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            border: 1px solid #e1e8ed;
+        }
+        .testimonial-content h4 {
+            color: #2c3e50;
+            margin: 0 0 10px 0;
+        }
+        .testimonial-content p {
+            margin: 0;
+            font-style: italic;
+            color: #555;
+        }
+        .action-button {
+            display: inline-block;
+            background-color: #e74c3c;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            margin-top: 20px;
+        }
+        .action-button:hover {
+            background-color: #c0392b;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e1e8ed;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            text-align: center;
+        }
+        .stat-item {
+            flex: 1;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #e74c3c;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎓 Nouveau témoignage soumis</h1>
+            <p>Un stagiaire a soumis un nouveau témoignage nécessitant votre validation</p>
+        </div>
+
+        <div class="content">
+            <div class="testimonial-info">
+                <div class="author-info">
+                    <div class="author-avatar">
+                        {{ author.prenom|first }}{{ author.nom|first }}
+                    </div>
+                    <div class="author-details">
+                        <h3>{{ author.prenom }} {{ author.nom }}</h3>
+                        <p>{{ author.institut }} • {{ author.specialite }}</p>
+                        <p>Stage: {{ stage.title }} chez {{ stage.company }}</p>
+                    </div>
+                </div>
+
+                <div class="testimonial-content">
+                    <h4>{{ testimonial.title }}</h4>
+                    <p>{{ testimonial.content|truncatewords:50 }}</p>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-item">
+                    <div class="stat-number">{{ testimonial.created_at|date:"d/m/Y" }}</div>
+                    <div class="stat-label">Date de soumission</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ testimonial.testimonial_type|title }}</div>
+                    <div class="stat-label">Type</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">En attente</div>
+                    <div class="stat-label">Statut</div>
+                </div>
+            </div>
+
+            <p><strong>Action requise :</strong> Veuillez examiner ce témoignage et prendre une décision d'approbation ou de rejet.</p>
+        </div>
+
+        <div style="text-align: center;">
+            <a href="{{ site_url }}/rh/temoignages" class="action-button">
+                Examiner le témoignage
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>Ce message a été envoyé automatiquement par le système StageBloom.</p>
+            <p>Si vous avez des questions, contactez l'équipe technique.</p>
+        </div>
+    </div>
+</body>
+</html> 

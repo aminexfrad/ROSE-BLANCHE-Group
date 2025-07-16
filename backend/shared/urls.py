@@ -34,6 +34,8 @@ urlpatterns = [
     path('testimonials/', views.TestimonialsListView.as_view(), name='testimonials-list'),
     path('testimonials/create/', views.TestimonialCreateView.as_view(), name='testimonial-create'),
     path('testimonials/<int:pk>/moderate/', views.TestimonialModerationView.as_view(), name='testimonial-moderate'),
+    path('testimonials/<int:pk>/update/', views.TestimonialUpdateView.as_view(), name='testimonial-update'),
+    path('public/testimonials/', views.PublicTestimonialsView.as_view(), name='public-testimonials'),
     
     # Notifications
     path('notifications/', views.NotificationsListView.as_view(), name='notifications-list'),

@@ -363,8 +363,72 @@ class TestimonialCreateView(generics.CreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = TestimonialCreateSerializer
 
+    def create(self, request, *args, **kwargs):
+        try:
+            print(f"TestimonialCreateView.create called with data: {request.data}")
+            print(f"User: {request.user}")
+            print(f"User authenticated: {request.user.is_authenticated}")
+            
+            # Check if user has a stage
+            from .models import Stage
+            user_stages = Stage.objects.filter(stagiaire=request.user)
+            print(f"User stages: {user_stages.count()}")
+            
+            if not user_stages.exists():
+                return Response(
+                    {'error': 'Vous devez avoir un stage actif pour soumettre un témoignage'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check if stage is provided in request
+            stage_id = request.data.get('stage')
+            if not stage_id:
+                return Response(
+                    {'error': 'Le champ stage est requis'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check if stage exists and belongs to user
+            try:
+                stage = Stage.objects.get(id=stage_id, stagiaire=request.user)
+            except Stage.DoesNotExist:
+                return Response(
+                    {'error': 'Stage non trouvé ou ne vous appartient pas'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            return super().create(request, *args, **kwargs)
+        except Exception as e:
+            print(f"Error in TestimonialCreateView.create: {e}")
+            return Response(
+                {'error': f'Erreur lors de la création du témoignage: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        try:
+            print(f"TestimonialCreateView.perform_create called")
+            testimonial = serializer.save(author=self.request.user)
+            print(f"Testimonial created: {testimonial}")
+            
+            # Create notification for RH team
+            from shared.models import Notification
+            from auth_service.models import User
+            
+            # Get RH users
+            rh_users = User.objects.filter(role='rh', is_active=True)
+            
+            for rh_user in rh_users:
+                Notification.objects.create(
+                    recipient=rh_user,
+                    title='Nouveau témoignage soumis',
+                    message=f'Un nouveau témoignage a été soumis par {testimonial.author.get_full_name()} nécessitant votre validation.',
+                    notification_type='info',
+                    related_stage=testimonial.stage
+                )
+        except Exception as e:
+            print(f"Error in TestimonialCreateView.perform_create: {e}")
+            raise
 
 class TestimonialModerationView(generics.UpdateAPIView):
     permission_classes = [IsAuthenticated]
@@ -882,3 +946,30 @@ class PFEProjectDeleteView(APIView):
                 {'error': str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class PublicTestimonialsView(generics.ListAPIView):
+    """
+    Vue publique pour récupérer les témoignages approuvés
+    """
+    permission_classes = []  # Public access
+    serializer_class = TestimonialSerializer
+    pagination_class = PageNumberPagination
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_fields = ['testimonial_type']
+    ordering_fields = ['created_at']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        return Testimonial.objects.filter(status='approved')
+
+class TestimonialUpdateView(generics.UpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = TestimonialCreateSerializer
+    queryset = Testimonial.objects.all()
+
+    def get_queryset(self):
+        return Testimonial.objects.filter(author=self.request.user)
+
+    def perform_update(self, serializer):
+        # Reset status to pending when updating
+        serializer.save(status='pending')

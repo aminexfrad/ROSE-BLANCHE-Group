@@ -241,12 +241,23 @@ class ApiClient {
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`
     
+    // Don't set Content-Type for FormData, let browser set it automatically
+    const headers: Record<string, string> = {
+      'X-Requested-With': 'XMLHttpRequest', // CSRF protection
+    }
+    
+    // Add custom headers if provided
+    if (options.headers) {
+      Object.assign(headers, options.headers)
+    }
+    
+    // Only set Content-Type to application/json if not sending FormData
+    if (!(options.body instanceof FormData)) {
+      headers['Content-Type'] = 'application/json'
+    }
+    
     const config: RequestInit = {
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Requested-With': 'XMLHttpRequest', // CSRF protection
-        ...options.headers,
-      },
+      headers,
       ...options,
     }
 
@@ -298,11 +309,22 @@ class ApiClient {
       }
       
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
+        const text = await response.text();
+        let errorData;
+        try {
+          errorData = text ? JSON.parse(text) : {};
+        } catch {
+          errorData = {};
+        }
+        throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`);
       }
 
-      return await response.json()
+      const text = await response.text();
+      try {
+        return text ? JSON.parse(text) : ({} as T);
+      } catch {
+        return {} as T;
+      }
     } catch (error: any) {
       clearTimeout(timeoutId)
       
@@ -396,10 +418,16 @@ class ApiClient {
     })
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      console.error('API Error Response:', errorData)
+      let errorMessage = `HTTP ${response.status}`
+      try {
+        const errorData = await response.json()
+        errorMessage = errorData.detail || errorData.message || errorData.error || errorMessage
+      } catch (parseError) {
+        errorMessage = response.statusText || errorMessage
+      }
+      console.error('API Error Response:', errorMessage)
       console.error('Response Status:', response.status)
-      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
+      throw new Error(errorMessage)
     }
     
     return response.json()
@@ -563,28 +591,36 @@ class ApiClient {
 
   // Testimonial methods
   async getTestimonials(params: { status?: string; testimonial_type?: string } = {}): Promise<{ results: Testimonial[]; count: number }> {
-    const queryParams = new URLSearchParams()
-    if (params.status) queryParams.append('status', params.status)
-    if (params.testimonial_type) queryParams.append('testimonial_type', params.testimonial_type)
+    const searchParams = new URLSearchParams()
+    if (params.status) searchParams.append('status', params.status)
+    if (params.testimonial_type) searchParams.append('testimonial_type', params.testimonial_type)
     
-    return this.request<{ results: Testimonial[]; count: number }>(`/testimonials/?${queryParams}`)
+    const response = await this.request<{ results: Testimonial[]; count: number }>(`/testimonials/?${searchParams}`)
+    return response
+  }
+
+  async getPublicTestimonials(params: { testimonial_type?: string } = {}): Promise<{ results: Testimonial[]; count: number }> {
+    const searchParams = new URLSearchParams()
+    if (params.testimonial_type) searchParams.append('testimonial_type', params.testimonial_type)
+    
+    const response = await this.request<{ results: Testimonial[]; count: number }>(`/public/testimonials/?${searchParams}`)
+    return response
   }
 
   async createTestimonial(formData: FormData): Promise<Testimonial> {
-    const response = await fetch(`${API_BASE_URL}/testimonials/create/`, {
+    const response = await this.request<Testimonial>('/testimonials/create/', {
       method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.token}`,
-      },
       body: formData,
     })
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
-    }
-    
-    return response.json()
+    return response
+  }
+
+  async updateTestimonial(id: number, formData: FormData): Promise<Testimonial> {
+    const response = await this.request<Testimonial>(`/testimonials/${id}/update/`, {
+      method: 'PUT',
+      body: formData,
+    })
+    return response
   }
 
   async moderateTestimonial(id: number, action: 'approve' | 'reject', comment?: string): Promise<Testimonial> {
@@ -732,10 +768,10 @@ class ApiClient {
 
   async moderateRHTestimonial(testimonialId: number, action: 'approve' | 'reject', comment?: string): Promise<Testimonial> {
     return this.request<Testimonial>(`/rh/testimonials/${testimonialId}/moderate/`, {
-      method: 'PUT',
+      method: 'POST',
       body: JSON.stringify({ 
-        status: action === 'approve' ? 'approved' : 'rejected',
-        moderation_comment: comment 
+        action: action,
+        comment: comment 
       }),
     })
   }

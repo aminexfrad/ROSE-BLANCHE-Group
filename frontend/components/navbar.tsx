@@ -33,6 +33,7 @@ export function Navbar({ isPublic = false }: NavbarProps) {
 
   const publicLinks = [
     { href: "/public", label: "Accueil" },
+    { href: "/public/temoignages", label: "Témoignages" },
     { href: "/public/pfe-book", label: "PFE Book" },
     { href: "/public/video-3d", label: "Vidéo 3D" },
     { href: "/public/contact", label: "Contact" },

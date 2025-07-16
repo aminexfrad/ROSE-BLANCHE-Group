@@ -38,8 +38,12 @@ import {
   MapPin,
   Phone,
   Mail,
-  ExternalLink
+  ExternalLink,
+  Loader2,
+  MessageSquare
 } from "lucide-react"
+import { apiClient } from "@/lib/api"
+import type { Testimonial } from "@/lib/api"
 
 export default function PublicHomePage() {
   const [isVisible, setIsVisible] = useState(false)
@@ -64,6 +68,9 @@ export default function PublicHomePage() {
     process: false,
     testimonials: false
   })
+
+  const [testimonials, setTestimonials] = useState<Testimonial[]>([])
+  const [loadingTestimonials, setLoadingTestimonials] = useState(true)
 
   useEffect(() => {
     setIsVisible(true)
@@ -98,6 +105,22 @@ export default function PublicHomePage() {
       window.removeEventListener('scroll', handleScroll)
       window.removeEventListener('mousemove', handleMouseMove)
     }
+  }, [])
+
+  useEffect(() => {
+    const fetchTestimonials = async () => {
+      try {
+        setLoadingTestimonials(true)
+        const response = await apiClient.getPublicTestimonials()
+        setTestimonials(response.results || [])
+      } catch (error) {
+        console.error('Erreur lors du chargement des témoignages:', error)
+      } finally {
+        setLoadingTestimonials(false)
+      }
+    }
+
+    fetchTestimonials()
   }, [])
 
   // Intersection Observer setup
@@ -235,6 +258,106 @@ export default function PublicHomePage() {
     >
       {children}
     </div>
+  )
+
+  // Section Témoignages
+  const testimonialsSection = (
+    <section 
+      ref={(el) => {
+        if (el) {
+          const observer = new IntersectionObserver(
+            ([entry]) => {
+              if (entry.isIntersecting) {
+                setSectionVisibility(prev => ({ ...prev, testimonials: true }))
+              }
+            },
+            { threshold: 0.1 }
+          )
+          observer.observe(el)
+        }
+      }}
+      className="py-20 bg-gradient-to-br from-gray-50 to-white"
+    >
+      <div className="container mx-auto px-4">
+        <div className="text-center mb-16" style={fadeInUp(sectionVisibility.testimonials, 0)}>
+          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+            Témoignages de nos stagiaires
+          </h2>
+          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            Découvrez les expériences authentiques de nos stagiaires qui ont transformé leur parcours professionnel
+          </p>
+        </div>
+
+        {loadingTestimonials ? (
+          <div className="flex justify-center items-center py-12">
+            <div className="text-center">
+              <Loader2 className="h-8 w-8 text-blue-600 mx-auto mb-4 animate-spin" />
+              <p className="text-gray-600">Chargement des témoignages...</p>
+            </div>
+          </div>
+        ) : testimonials.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {testimonials.slice(0, 6).map((testimonial, index) => (
+              <Card
+                key={testimonial.id}
+                className="border-0 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 cursor-pointer overflow-hidden transform hover:-translate-y-1 relative group"
+                style={{ ...fadeInUp(sectionVisibility.testimonials, 0.1 + index * 0.1) }}
+              >
+                {/* Refined hover effect background */}
+                <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-red-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                
+                <CardContent className="p-6 relative z-10">
+                  <div className="flex items-center gap-1 mb-4 justify-center">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-5 w-5 text-yellow-500 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-gray-700 mb-4 italic leading-relaxed text-sm">"{testimonial.content.substring(0, 150)}..."</p>
+                  <div className="text-center border-t pt-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold text-sm group-hover:scale-110 transition-transform duration-300 shadow-sm">
+                      {testimonial.author.prenom.charAt(0)}{testimonial.author.nom.charAt(0)}
+                    </div>
+                    <div className="font-bold text-gray-900 mb-1 text-base">
+                      {testimonial.author.prenom} {testimonial.author.nom}
+                    </div>
+                    <div className="text-red-600 text-xs mb-2">{testimonial.author.specialite}</div>
+                    <div className="text-gray-500 text-xs bg-gradient-to-r from-gray-50 to-gray-100 px-3 py-1.5 rounded-full inline-block border border-gray-200 shadow-sm">
+                      <Lightbulb className="inline h-3 w-3 mr-1" />
+                      {testimonial.stage.title}
+                    </div>
+                  </div>
+                  
+                  {/* Refined story tooltip */}
+                  <div className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-red-600 text-white text-xs px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity duration-300 transform scale-75 group-hover:scale-100">
+                    {testimonial.testimonial_type === 'video' ? 'Vidéo' : 'Texte'}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun témoignage disponible</h3>
+            <p className="text-gray-600">Les témoignages de nos stagiaires apparaîtront ici.</p>
+          </div>
+        )}
+
+        {testimonials.length > 6 && (
+          <div className="text-center mt-12" style={fadeInUp(sectionVisibility.testimonials, 0.8)}>
+            <Link href="/public/temoignages">
+              <Button 
+                variant="outline" 
+                className="border-red-500 text-red-600 hover:bg-red-50"
+              >
+                Voir tous les témoignages
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        )}
+      </div>
+    </section>
   )
 
   return (
@@ -615,88 +738,7 @@ export default function PublicHomePage() {
       </section>
 
       {/* Refined Testimonials Section */}
-      <section 
-        ref={testimonialsRef}
-        data-section="testimonials"
-        className="py-12 bg-gradient-to-br from-red-50 to-white relative"
-      >
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-10" style={fadeInUp(sectionVisibility.testimonials, 0)}>
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Les Héros de Notre <span className="text-red-600">Histoire</span></h2>
-            <p className="text-lg text-gray-600">Découvrez l'expérience de ceux qui nous ont fait confiance</p>
-            <div className="w-24 h-0.5 bg-gradient-to-r from-red-500 to-red-700 mx-auto rounded-full mt-6"></div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
-            {[
-              {
-                name: "Amira Ben Salem",
-                role: "Étudiante en Génie Civil - ENIT",
-                text: "Mon stage chez Rose Blanche m'a permis de découvrir les réalités du terrain. L'encadrement était exceptionnel et la plateforme digitale a facilité tout mon parcours.",
-                rating: 5,
-                project: "Projet autoroutier Tunis-Sfax",
-                avatar: "AB",
-                story: "Transformée par l'expérience terrain"
-              },
-              {
-                name: "Mohamed Trabelsi",
-                role: "Étudiant en Génie Mécanique - INSAT",
-                text: "Une expérience enrichissante avec des projets concrets. Les outils de suivi m'ont aidé à progresser rapidement et à acquérir de vraies compétences professionnelles.",
-                rating: 5,
-                project: "Système de ventilation industrielle",
-                avatar: "MT",
-                story: "Développé des compétences techniques avancées"
-              },
-              {
-                name: "Salma Karray",
-                role: "Étudiante en Architecture - ENAU",
-                text: "L'approche pédagogique de Rose Blanche est remarquable. J'ai pu participer à des projets d'envergure tout en bénéficiant d'un suivi personnalisé via la plateforme.",
-                rating: 5,
-                project: "Complexe résidentiel Lac Nord",
-                avatar: "SK",
-                story: "Participé à des projets d'envergure"
-              },
-            ].map((testimonial, index) => (
-              <Card
-                key={index}
-                className="border-0 shadow-lg hover:shadow-xl transition-all duration-500 hover:scale-105 cursor-pointer overflow-hidden transform hover:-translate-y-1 relative group"
-                style={{ ...fadeInUp(sectionVisibility.testimonials, 0.1 + index * 0.1) }}
-              >
-                {/* Refined hover effect background */}
-                <div className="absolute inset-0 bg-gradient-to-br from-red-50 to-red-100 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                
-                <CardContent className="p-6 relative z-10">
-                  <div className="flex items-center gap-1 mb-4 justify-center">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="h-5 w-5 text-yellow-500 fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-gray-700 mb-4 italic leading-relaxed text-sm">"{testimonial.text}"</p>
-                  <div className="text-center border-t pt-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold text-sm group-hover:scale-110 transition-transform duration-300 shadow-sm">
-                      {testimonial.avatar}
-                    </div>
-                    <div className="font-bold text-gray-900 mb-1 text-base">{testimonial.name}</div>
-                    <div className="text-red-600 text-xs mb-2">{testimonial.role}</div>
-                    <div className="text-gray-500 text-xs bg-gradient-to-r from-gray-50 to-gray-100 px-3 py-1.5 rounded-full inline-block border border-gray-200 shadow-sm">
-                      <Lightbulb className="inline h-3 w-3 mr-1" />
-                      {testimonial.project}
-                    </div>
-                  </div>
-                  
-                  {/* Refined story tooltip */}
-                  <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-300 pointer-events-none z-20">
-                    <div className="bg-gray-800 text-white text-xs px-3 py-2 rounded-lg whitespace-nowrap shadow-lg">
-                      {testimonial.story}
-                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-3 border-r-3 border-t-3 border-transparent border-t-gray-800"></div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
+      {testimonialsSection}
 
       {/* Refined Story Conclusion */}
       <section className="py-16 bg-gradient-to-br from-red-50 to-red-100 relative">

@@ -94,13 +94,13 @@ export default function PFEBookPage() {
     return (
       <>
         <Navbar isPublic={true} />
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 pt-16">
+        <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-rose-100 pt-16">
           <div className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-center min-h-screen">
               <div className="text-center">
                 <div className="relative">
-                  <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-6"></div>
-                  <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-indigo-400 rounded-full animate-spin mx-auto" style={{ animationDelay: '0.5s' }}></div>
+                  <div className="w-16 h-16 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-6"></div>
+                  <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-rose-400 rounded-full animate-spin mx-auto" style={{ animationDelay: '0.5s' }}></div>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">Chargement de la bibliothèque PFE</h2>
                 <p className="text-gray-600 text-lg">Découverte des opportunités...</p>
@@ -117,7 +117,7 @@ export default function PFEBookPage() {
     return (
       <>
         <Navbar isPublic={true} />
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 pt-16">
+        <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-rose-100 pt-16">
           <div className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-center min-h-screen">
               <div className="text-center max-w-md">
@@ -126,7 +126,7 @@ export default function PFEBookPage() {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">Erreur de chargement</h2>
                 <p className="text-gray-600 mb-6">{error}</p>
-                <Button onClick={() => window.location.reload()} className="bg-blue-600 hover:bg-blue-700">
+                <Button onClick={() => window.location.reload()} className="bg-red-600 hover:bg-red-700">
                   Réessayer
                 </Button>
               </div>
@@ -141,17 +141,17 @@ export default function PFEBookPage() {
   return (
     <>
       <Navbar isPublic={true} />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 pt-16">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-rose-100 pt-16">
         {/* Hero Section */}
         <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-600/20 to-indigo-600/20"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-red-600/20 to-rose-600/20"></div>
           <div className="container mx-auto px-4 py-16 relative">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <div className="inline-flex items-center gap-2 bg-red-100 text-red-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
                 <BookOpen className="h-4 w-4" />
                 Bibliothèque des Opportunités
               </div>
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-6 leading-tight">
+              <h1 className="text-6xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
                 Découvrez les Offres de Stage
               </h1>
               <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
@@ -170,25 +170,25 @@ export default function PFEBookPage() {
                 title: "Offres Disponibles",
                 value: offers.length.toString(),
                 icon: BookOpen,
-                color: "from-blue-500 to-blue-600",
-                bgColor: "bg-blue-50",
-                textColor: "text-blue-600"
+                color: "from-red-500 to-red-600",
+                bgColor: "bg-red-50",
+                textColor: "text-red-600"
               },
               {
                 title: "Offres Ouvertes",
                 value: offers.length.toString(),
                 icon: FileText,
-                color: "from-emerald-500 to-emerald-600",
-                bgColor: "bg-emerald-50",
-                textColor: "text-emerald-600"
+                color: "from-rose-500 to-rose-600",
+                bgColor: "bg-rose-50",
+                textColor: "text-rose-600"
               },
               {
                 title: "Candidatures",
                 value: offers.reduce((sum, o) => sum + (o.nombre_postes || 0), 0).toString(),
                 icon: Users,
-                color: "from-purple-500 to-purple-600",
-                bgColor: "bg-purple-50",
-                textColor: "text-purple-600"
+                color: "from-pink-500 to-pink-600",
+                bgColor: "bg-pink-50",
+                textColor: "text-pink-600"
               },
               {
                 title: "Vues Total",

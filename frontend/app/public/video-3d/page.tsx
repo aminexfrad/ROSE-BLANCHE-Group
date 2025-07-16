@@ -94,13 +94,13 @@ export default function Video3DPage() {
     return (
       <>
         <Navbar isPublic={true} />
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-100 pt-16">
+        <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-rose-100 pt-16">
           <div className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-center min-h-screen">
               <div className="text-center">
                 <div className="relative">
-                  <div className="w-16 h-16 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-6"></div>
-                  <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-pink-400 rounded-full animate-spin mx-auto" style={{ animationDelay: '0.5s' }}></div>
+                  <div className="w-16 h-16 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-6"></div>
+                  <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-rose-400 rounded-full animate-spin mx-auto" style={{ animationDelay: '0.5s' }}></div>
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">Chargement des vidéos Rose Blanche</h2>
                 <p className="text-gray-600 text-lg">Préparation de l'expérience immersive...</p>
@@ -117,7 +117,7 @@ export default function Video3DPage() {
     return (
       <>
         <Navbar isPublic={true} />
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-100 pt-16">
+        <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-rose-100 pt-16">
           <div className="container mx-auto px-4 py-8">
             <div className="flex items-center justify-center min-h-screen">
               <div className="text-center max-w-md">
@@ -126,7 +126,7 @@ export default function Video3DPage() {
                 </div>
                 <h2 className="text-2xl font-bold text-gray-900 mb-3">Erreur de chargement</h2>
                 <p className="text-gray-600 mb-6">{error}</p>
-                <Button onClick={() => window.location.reload()} className="bg-purple-600 hover:bg-purple-700">
+                <Button onClick={() => window.location.reload()} className="bg-red-600 hover:bg-red-700">
                   Réessayer
                 </Button>
               </div>
@@ -141,17 +141,17 @@ export default function Video3DPage() {
   return (
     <>
       <Navbar isPublic={true} />
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-100 pt-16">
+      <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-rose-100 pt-16">
         {/* Hero Section */}
         <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-pink-600/20"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-red-600/20 to-rose-600/20"></div>
           <div className="container mx-auto px-4 py-16 relative">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-purple-100 text-purple-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
+              <div className="inline-flex items-center gap-2 bg-red-100 text-red-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
                 <Building2 className="h-4 w-4" />
                 Rose Blanche Group
               </div>
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-indigo-600 bg-clip-text text-transparent mb-6 leading-tight">
+              <h1 className="text-6xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
                 Vidéos & Présentations
               </h1>
               <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
@@ -170,33 +170,33 @@ export default function Video3DPage() {
                 title: "Vidéos Corporate",
                 value: totalVideos.toString(),
                 icon: Video,
-                color: "from-purple-500 to-purple-600",
-                bgColor: "bg-purple-50",
-                textColor: "text-purple-600"
+                color: "from-red-500 to-red-600",
+                bgColor: "bg-red-50",
+                textColor: "text-red-600"
               },
               {
                 title: "Présentations",
                 value: publishedVideos.toString(),
                 icon: Play,
-                color: "from-emerald-500 to-emerald-600",
-                bgColor: "bg-emerald-50",
-                textColor: "text-emerald-600"
+                color: "from-rose-500 to-rose-600",
+                bgColor: "bg-rose-50",
+                textColor: "text-rose-600"
               },
               {
                 title: "Vues Total",
                 value: totalViews.toString(),
                 icon: Eye,
-                color: "from-blue-500 to-blue-600",
-                bgColor: "bg-blue-50",
-                textColor: "text-blue-600"
+                color: "from-pink-500 to-pink-600",
+                bgColor: "bg-pink-50",
+                textColor: "text-pink-600"
               },
               {
                 title: "Téléchargements",
                 value: totalDownloads.toString(),
                 icon: TrendingUp,
-                color: "from-pink-500 to-pink-600",
-                bgColor: "bg-pink-50",
-                textColor: "text-pink-600"
+                color: "from-orange-500 to-orange-600",
+                bgColor: "bg-orange-50",
+                textColor: "text-orange-600"
               },
             ].map((stat, index) => (
               <Card
