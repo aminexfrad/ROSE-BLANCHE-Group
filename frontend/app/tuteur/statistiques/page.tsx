@@ -122,14 +122,14 @@ export default function TuteurStatistiquesPage() {
       <div className="space-y-8">
         {/* Header */}
         <div className="animate-in fade-in duration-1000">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
             Statistiques & Analytics
           </h1>
-          <p className="text-gray-600 mt-2 text-lg">Analysez les performances et l'évolution de vos stagiaires</p>
+          <p className="text-gray-600 mt-2 text-base sm:text-lg">Analysez les performances et l'évolution de vos stagiaires</p>
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[
             {
               title: "Stagiaires actifs",

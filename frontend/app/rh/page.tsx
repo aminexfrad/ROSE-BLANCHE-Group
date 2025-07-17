@@ -193,17 +193,17 @@ export default function RHDashboard() {
     <DashboardLayout allowedRoles={["rh"]} breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">Bon retour, {user?.prenom} !</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Bon retour, {user?.prenom} !</h1>
             <Badge className={roleInfo.color}>{roleInfo.label}</Badge>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" size="sm">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
               <Download className="mr-2 h-4 w-4" />
               Exporter
             </Button>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
               <BarChart3 className="mr-2 h-4 w-4" />
               Rapports
             </Button>
@@ -212,7 +212,7 @@ export default function RHDashboard() {
 
         {/* Stats Overview */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Stagiaires</CardTitle>
@@ -268,20 +268,20 @@ export default function RHDashboard() {
         )}
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {quickActions.map((action) => (
             <Card key={action.title} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <action.icon className="h-8 w-8 text-blue-600" />
+                  <action.icon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                   {action.badge && (
                     <Badge variant="secondary" className="text-xs">
                       {action.badge}
                     </Badge>
                   )}
                 </div>
-                <CardTitle className="text-lg">{action.title}</CardTitle>
-                <CardDescription className="text-sm">
+                <CardTitle className="text-base sm:text-lg">{action.title}</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
                   {action.description}
                 </CardDescription>
               </CardHeader>
@@ -297,20 +297,20 @@ export default function RHDashboard() {
         </div>
 
         {/* Additional Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
           {additionalActions.map((action) => (
             <Card key={action.title} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <action.icon className="h-8 w-8 text-green-600" />
+                  <action.icon className="h-6 w-6 sm:h-8 sm:w-8 text-green-600" />
                   {action.badge && (
                     <Badge variant="secondary" className="text-xs">
                       {action.badge}
                     </Badge>
                   )}
                 </div>
-                <CardTitle className="text-lg">{action.title}</CardTitle>
-                <CardDescription className="text-sm">
+                <CardTitle className="text-base sm:text-lg">{action.title}</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
                   {action.description}
                 </CardDescription>
               </CardHeader>
@@ -337,16 +337,16 @@ export default function RHDashboard() {
           <CardContent>
             <div className="space-y-4">
               {applications.slice(0, 5).map((application) => (
-                <div key={application.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div key={application.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg gap-3">
                   <div className="flex items-center gap-3">
-                    <Avatar className="h-10 w-10">
+                    <Avatar className="h-10 w-10 flex-shrink-0">
                       <AvatarFallback>
                         {(application.prenom?.charAt(0) || '')}{(application.nom?.charAt(0) || '')}
                       </AvatarFallback>
                     </Avatar>
-                    <div>
-                      <div className="font-medium">{application.prenom || ''} {application.nom || ''}</div>
-                      <div className="text-sm text-gray-600">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{application.prenom || ''} {application.nom || ''}</div>
+                      <div className="text-sm text-gray-600 truncate">
                         {application.institut || ''} • {application.specialite || ''}
                       </div>
                     </div>

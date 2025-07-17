@@ -189,9 +189,9 @@ export default function StagiaireDashboard() {
     <DashboardLayout allowedRoles={["stagiaire"]} breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">Bon retour, {user?.prenom} !</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Bon retour, {user?.prenom} !</h1>
             <Badge className={roleInfo.color}>{roleInfo.label}</Badge>
           </div>
           <Badge className={getStatusColor(internship.status)}>
@@ -209,24 +209,24 @@ export default function StagiaireDashboard() {
             <CardDescription>{internship.company}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <div className="flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">
+                <Calendar className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-gray-600 truncate">
                   {new Date(internship.start_date).toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit' })} - {new Date(internship.end_date).toLocaleDateString('fr-FR', { year: 'numeric', month: '2-digit', day: '2-digit' })}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">{internship.location}</span>
+                <MapPin className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-gray-600 truncate">{internship.location}</span>
               </div>
               <div className="flex items-center gap-2">
-                <User className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">{internship.mentor}</span>
+                <User className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-gray-600 truncate">{internship.mentor}</span>
               </div>
               <div className="flex items-center gap-2">
-                <Clock className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-600">
+                <Clock className="h-4 w-4 text-gray-500 flex-shrink-0" />
+                <span className="text-xs sm:text-sm text-gray-600 truncate">
                   {internship.days_remaining} jours restants
                 </span>
               </div>
@@ -240,7 +240,7 @@ export default function StagiaireDashboard() {
               <Progress value={internship.progress} className="h-2" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
               <div className="text-center">
                 <div className="text-2xl font-bold text-blue-600">{steps.length}</div>
                 <div className="text-sm text-gray-600">Étapes</div>
@@ -258,20 +258,20 @@ export default function StagiaireDashboard() {
         </Card>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {quickActions.map((action) => (
             <Card key={action.title} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <action.icon className="h-8 w-8 text-blue-600" />
+                  <action.icon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                   {action.badge && (
                     <Badge variant="secondary" className="text-xs">
                       {action.badge}
                     </Badge>
                   )}
                 </div>
-                <CardTitle className="text-lg">{action.title}</CardTitle>
-                <CardDescription className="text-sm">
+                <CardTitle className="text-base sm:text-lg">{action.title}</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
                   {action.description}
                 </CardDescription>
               </CardHeader>
@@ -298,12 +298,12 @@ export default function StagiaireDashboard() {
           <CardContent>
             <div className="space-y-4">
               {steps.slice(0, 3).map((step) => (
-                <div key={step.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div key={step.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg gap-3">
                   <div className="flex items-center gap-3">
                     {getStepStatusIcon(step.status)}
-                    <div>
-                      <div className="font-medium">{step.title}</div>
-                      <div className="text-sm text-gray-600">{step.description}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{step.title}</div>
+                      <div className="text-sm text-gray-600 truncate">{step.description}</div>
                     </div>
                   </div>
                   <Badge className={getStatusColor(step.status)}>
@@ -339,12 +339,12 @@ export default function StagiaireDashboard() {
           <CardContent>
             <div className="space-y-4">
               {documents.slice(0, 3).map((doc) => (
-                <div key={doc.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div key={doc.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg gap-3">
                   <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-blue-600" />
-                    <div>
-                      <div className="font-medium">{doc.title}</div>
-                      <div className="text-sm text-gray-600">
+                    <FileText className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium truncate">{doc.title}</div>
+                      <div className="text-sm text-gray-600 truncate">
                         {doc.document_type} • {new Date(doc.created_at).toLocaleDateString()}
                       </div>
                     </div>

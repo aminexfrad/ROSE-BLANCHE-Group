@@ -172,17 +172,17 @@ export default function TuteurDashboard() {
     <DashboardLayout allowedRoles={["tuteur"]} breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">Bon retour, {user?.prenom} !</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Bon retour, {user?.prenom} !</h1>
             <Badge className={roleInfo.color}>{roleInfo.label}</Badge>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" size="sm">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <Button variant="outline" size="sm" className="w-full sm:w-auto">
               <Calendar className="mr-2 h-4 w-4" />
               Planning
             </Button>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
               <MessageSquare className="mr-2 h-4 w-4" />
               Messages
             </Button>
@@ -191,7 +191,7 @@ export default function TuteurDashboard() {
 
         {/* Stats Overview */}
         {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">Total Stagiaires</CardTitle>
@@ -247,20 +247,20 @@ export default function TuteurDashboard() {
         )}
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {quickActions.map((action) => (
             <Card key={action.title} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <action.icon className="h-8 w-8 text-blue-600" />
+                  <action.icon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
                   {action.badge && (
                     <Badge variant="secondary" className="text-xs">
                       {action.badge}
                     </Badge>
                   )}
                 </div>
-                <CardTitle className="text-lg">{action.title}</CardTitle>
-                <CardDescription className="text-sm">
+                <CardTitle className="text-base sm:text-lg">{action.title}</CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
                   {action.description}
                 </CardDescription>
               </CardHeader>
@@ -294,27 +294,27 @@ export default function TuteurDashboard() {
             ) : (
               <div className="space-y-4">
                 {internships.map((internship) => (
-                  <div key={internship.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors">
+                  <div key={internship.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg hover:bg-gray-50 transition-colors gap-4">
                     <div className="flex items-center gap-4">
-                      <Avatar className="h-12 w-12">
+                      <Avatar className="h-12 w-12 flex-shrink-0">
                         <AvatarImage src={internship.stagiaire?.avatar || undefined} />
                         <AvatarFallback>
                           {(internship.stagiaire?.prenom?.charAt(0) || '')}{(internship.stagiaire?.nom?.charAt(0) || '')}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
-                        <h4 className="font-semibold">
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-semibold truncate">
                           {internship.stagiaire?.prenom || ''} {internship.stagiaire?.nom || ''}
                         </h4>
-                        <p className="text-sm text-gray-600">{internship.title}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-sm text-gray-600 truncate">{internship.title}</p>
+                        <p className="text-xs text-gray-500 truncate">
                           {internship.company} • {internship.location}
                         </p>
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-4">
-                      <div className="text-right">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                      <div className="text-right sm:text-left">
                         <div className={`font-medium ${getProgressColor(internship.progress ?? 0)}`}>
                           {internship.progress ?? 0}%
                         </div>

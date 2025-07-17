@@ -126,14 +126,14 @@ export default function RHStatistiquesPage() {
       <div className="space-y-8">
         {/* Header */}
         <div className="animate-in fade-in duration-1000">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+          <h1 className="text-3xl sm:text-4xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
             Statistiques RH
           </h1>
-          <p className="text-gray-600 mt-2 text-lg">Analysez les performances et l'évolution des stages</p>
+          <p className="text-gray-600 mt-2 text-base sm:text-lg">Analysez les performances et l'évolution des stages</p>
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {[
             {
               title: "Total demandes",
@@ -174,14 +174,14 @@ export default function RHStatistiquesPage() {
             >
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <kpi.icon className="h-8 w-8 text-white opacity-80" />
+                  <kpi.icon className="h-6 w-6 sm:h-8 sm:w-8 text-white opacity-80 flex-shrink-0" />
                   <div className="text-right">
-                    <div className="text-3xl font-bold">{kpi.value}</div>
-                    <div className="text-sm opacity-90 flex items-center gap-1">
+                    <div className="text-2xl sm:text-3xl font-bold">{kpi.value}</div>
+                    <div className="text-xs sm:text-sm opacity-90 flex items-center gap-1">
                       {kpi.trend === "up" ? (
-                        <TrendingUp className="h-4 w-4" />
+                        <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4" />
                       ) : (
-                        <TrendingUp className="h-4 w-4 rotate-180" />
+                        <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 rotate-180" />
                       )}
                       {kpi.change}
                     </div>
@@ -189,19 +189,19 @@ export default function RHStatistiquesPage() {
                 </div>
               </CardHeader>
               <CardContent className="pt-0">
-                <h3 className="font-semibold text-lg">{kpi.title}</h3>
+                <h3 className="font-semibold text-base sm:text-lg">{kpi.title}</h3>
               </CardContent>
             </Card>
           ))}
         </div>
 
         {/* Graphiques principaux */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
           {/* Évolution des demandes */}
           <Card className="shadow-xl border-0 animate-in slide-in-from-left duration-700 delay-600">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-              <CardTitle className="text-xl flex items-center gap-3">
-                <BarChart3 className="h-6 w-6 text-blue-600" />
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-3">
+                <BarChart3 className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 flex-shrink-0" />
                 Évolution des demandes
               </CardTitle>
               <CardDescription>
@@ -227,8 +227,8 @@ export default function RHStatistiquesPage() {
           {/* Répartition des statuts */}
           <Card className="shadow-xl border-0 animate-in slide-in-from-right duration-700 delay-700">
             <CardHeader className="bg-gradient-to-r from-green-50 to-blue-50 border-b">
-              <CardTitle className="text-xl flex items-center gap-3">
-                <Award className="h-6 w-6 text-green-600" />
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-3">
+                <Award className="h-5 w-5 sm:h-6 sm:w-6 text-green-600 flex-shrink-0" />
                 Répartition des statuts
               </CardTitle>
               <CardDescription>Distribution des demandes par statut</CardDescription>
@@ -257,12 +257,12 @@ export default function RHStatistiquesPage() {
         </div>
 
         {/* Graphiques secondaires */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-8">
           {/* Progression des stages */}
           <Card className="shadow-xl border-0 animate-in slide-in-from-left duration-700 delay-800">
             <CardHeader className="bg-gradient-to-r from-purple-50 to-pink-50 border-b">
-              <CardTitle className="text-xl flex items-center gap-3">
-                <Target className="h-6 w-6 text-purple-600" />
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-3">
+                <Target className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 flex-shrink-0" />
                 Progression des stages
               </CardTitle>
               <CardDescription>Progression actuelle des stages en cours</CardDescription>
@@ -286,8 +286,8 @@ export default function RHStatistiquesPage() {
           {/* Tendances mensuelles */}
           <Card className="shadow-xl border-0 animate-in slide-in-from-right duration-700 delay-900">
             <CardHeader className="bg-gradient-to-r from-yellow-50 to-orange-50 border-b">
-              <CardTitle className="text-xl flex items-center gap-3">
-                <TrendingUp className="h-6 w-6 text-yellow-600" />
+              <CardTitle className="text-lg sm:text-xl flex items-center gap-3">
+                <TrendingUp className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600 flex-shrink-0" />
                 Tendances mensuelles
               </CardTitle>
               <CardDescription>Évolution des demandes par mois</CardDescription>
@@ -323,29 +323,29 @@ export default function RHStatistiquesPage() {
         {/* Statistiques détaillées */}
         <Card className="shadow-xl border-0 animate-in slide-in-from-bottom duration-700 delay-1000">
           <CardHeader className="bg-gradient-to-r from-indigo-50 to-cyan-50 border-b">
-            <CardTitle className="text-xl flex items-center gap-3">
-              <Star className="h-6 w-6 text-indigo-600" />
-              Statistiques détaillées
-            </CardTitle>
+                          <CardTitle className="text-lg sm:text-xl flex items-center gap-3">
+                <Star className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600 flex-shrink-0" />
+                Statistiques détaillées
+              </CardTitle>
             <CardDescription>Vue d'ensemble complète des métriques RH</CardDescription>
           </CardHeader>
           <CardContent className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <div className="text-center p-4 bg-white rounded-lg shadow">
-                <div className="text-2xl font-bold text-blue-600">{stagiairesActifs}</div>
-                <div className="text-sm text-gray-600">Stagiaires actifs</div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              <div className="text-center p-3 sm:p-4 bg-white rounded-lg shadow">
+                <div className="text-xl sm:text-2xl font-bold text-blue-600">{stagiairesActifs}</div>
+                <div className="text-xs sm:text-sm text-gray-600">Stagiaires actifs</div>
               </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow">
-                <div className="text-2xl font-bold text-green-600">{stagiairesTermines}</div>
-                <div className="text-sm text-gray-600">Stages terminés</div>
+              <div className="text-center p-3 sm:p-4 bg-white rounded-lg shadow">
+                <div className="text-xl sm:text-2xl font-bold text-green-600">{stagiairesTermines}</div>
+                <div className="text-xs sm:text-sm text-gray-600">Stages terminés</div>
               </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow">
-                <div className="text-2xl font-bold text-yellow-600">{demandesEnAttente}</div>
-                <div className="text-sm text-gray-600">Demandes en attente</div>
+              <div className="text-center p-3 sm:p-4 bg-white rounded-lg shadow">
+                <div className="text-xl sm:text-2xl font-bold text-yellow-600">{demandesEnAttente}</div>
+                <div className="text-xs sm:text-sm text-gray-600">Demandes en attente</div>
               </div>
-              <div className="text-center p-4 bg-white rounded-lg shadow">
-                <div className="text-2xl font-bold text-red-600">{demandesRejetees}</div>
-                <div className="text-sm text-gray-600">Demandes rejetées</div>
+              <div className="text-center p-3 sm:p-4 bg-white rounded-lg shadow">
+                <div className="text-xl sm:text-2xl font-bold text-red-600">{demandesRejetees}</div>
+                <div className="text-xs sm:text-sm text-gray-600">Demandes rejetées</div>
               </div>
             </div>
           </CardContent>

@@ -38,17 +38,17 @@ export function DashboardLayout({ children, allowedRoles, breadcrumbs = [] }: Da
             <Separator orientation="vertical" className="mr-2 h-4" />
             {breadcrumbs.length > 0 && (
               <Breadcrumb>
-                <BreadcrumbList>
+                <BreadcrumbList className="flex-wrap">
                   {breadcrumbs.map((crumb, index) => (
                     <div key={index} className="flex items-center">
                       {index > 0 && <BreadcrumbSeparator />}
                       <BreadcrumbItem>
                         {crumb.href ? (
-                          <BreadcrumbLink href={crumb.href} className="hover:text-red-600 transition-colors">
+                          <BreadcrumbLink href={crumb.href} className="hover:text-red-600 transition-colors text-sm">
                             {crumb.label}
                           </BreadcrumbLink>
                         ) : (
-                          <BreadcrumbPage className="text-red-600 font-medium">{crumb.label}</BreadcrumbPage>
+                          <BreadcrumbPage className="text-red-600 font-medium text-sm">{crumb.label}</BreadcrumbPage>
                         )}
                       </BreadcrumbItem>
                     </div>
@@ -57,8 +57,8 @@ export function DashboardLayout({ children, allowedRoles, breadcrumbs = [] }: Da
               </Breadcrumb>
             )}
           </header>
-          <div className="flex flex-1 flex-col gap-4 p-4 pt-0">
-            <div className="min-h-[100vh] flex-1 rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-200 p-6 shadow-sm">
+          <div className="flex flex-1 flex-col gap-4 p-2 sm:p-4 pt-0">
+            <div className="min-h-[100vh] flex-1 rounded-xl bg-gradient-to-br from-gray-50 to-white border border-gray-200 p-3 sm:p-6 shadow-sm">
               {children}
             </div>
           </div>

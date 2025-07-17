@@ -215,21 +215,21 @@ export default function RHKPIG() {
     <DashboardLayout allowedRoles={["rh"]} breadcrumbs={breadcrumbs}>
       <div className="space-y-6">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">KPI Globaux</h1>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">KPI Globaux</h1>
             <p className="text-gray-600 mt-1">Analysez les performances globales des stages</p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline">
+          <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <Button variant="outline" className="w-full sm:w-auto">
               <Filter className="mr-2 h-4 w-4" />
               Filtrer
             </Button>
-            <Button variant="outline">
+            <Button variant="outline" className="w-full sm:w-auto">
               <Calendar className="mr-2 h-4 w-4" />
               Période
             </Button>
-            <Button className="bg-red-600 hover:bg-red-700">
+            <Button className="bg-red-600 hover:bg-red-700 w-full sm:w-auto">
               <Download className="mr-2 h-4 w-4" />
               Exporter
             </Button>
@@ -237,16 +237,16 @@ export default function RHKPIG() {
         </div>
 
         {/* KPI principaux */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           {kpiPrincipaux.map((kpi, index) => (
             <Card key={index}>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">{kpi.titre}</CardTitle>
-                <kpi.icon className="h-4 w-4 text-red-600" />
+                <CardTitle className="text-xs sm:text-sm font-medium">{kpi.titre}</CardTitle>
+                <kpi.icon className="h-4 w-4 text-red-600 flex-shrink-0" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{kpi.valeur}</div>
-                <div className="flex items-center justify-between mt-2">
+                <div className="text-xl sm:text-2xl font-bold">{kpi.valeur}</div>
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-2 gap-1">
                   <p className="text-xs text-gray-600">Objectif: {kpi.objectif}</p>
                   <Badge className={getStatutColor(kpi.statut)}>{kpi.evolution}</Badge>
                 </div>
