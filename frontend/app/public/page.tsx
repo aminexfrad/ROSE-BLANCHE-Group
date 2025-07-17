@@ -276,11 +276,11 @@ export default function PublicHomePage() {
           observer.observe(el)
         }
       }}
-      className="py-20 bg-gradient-to-br from-gray-50 to-white"
+      className="py-8 bg-gradient-to-br from-gray-50 to-white"
     >
       <div className="container mx-auto px-4">
-        <div className="text-center mb-16" style={fadeInUp(sectionVisibility.testimonials, 0)}>
-          <h2 className="text-4xl font-bold text-gray-900 mb-4">
+        <div className="text-center mb-8" style={fadeInUp(sectionVisibility.testimonials, 0)}>
+                      <h2 className="text-2xl md:text-3xl font-bold text-gray-900 mb-4">
             Témoignages de nos stagiaires
           </h2>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
@@ -365,12 +365,12 @@ export default function PublicHomePage() {
       {/* Refined Hero Background */}
       <div className="absolute top-0 left-0 w-full h-[calc(100vh-4rem)] z-0 pointer-events-none">
         <img
-          src="/junior-agricultural-scientists-researching-plants-diseases-greenhouse-with-parsley.jpg"
-          alt="Junior Agricultural Scientists Researching Plants"
+          src="/two-graduates-classmates-shake-hands-smiling-holding-diplomas.jpg"
+          alt="Two Graduates Classmates Shake Hands Smiling Holding Diplomas"
           className="w-full h-full object-cover"
         />
-        {/* Subtle overlay gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/10 via-transparent to-black/20"></div>
+        {/* Enhanced overlay for better text readability */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/40"></div>
       </div>
 
       {/* Subtle floating decorative elements */}
@@ -390,7 +390,7 @@ export default function PublicHomePage() {
       <section 
         ref={heroRef} 
         data-section="hero"
-        className="bg-transparent py-12 sm:py-16 lg:py-20 relative min-h-screen flex items-center z-10"
+        className="bg-transparent py-8 sm:py-12 lg:py-16 relative min-h-screen flex items-center z-10"
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative w-full">
           <div className="text-center">
@@ -404,14 +404,14 @@ export default function PublicHomePage() {
                 Découvrez notre histoire
               </div>
               
-              <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-white mb-6 leading-tight cursor-pointer hover:text-red-100 transition-all duration-300 transform hover:scale-105 drop-shadow-lg">
-                Une <span className="text-red-400 bg-gradient-to-r from-red-400 to-red-500 bg-clip-text text-transparent">
+              <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-6 leading-tight cursor-pointer hover:text-red-100 transition-all duration-300 transform hover:scale-105 drop-shadow-2xl">
+                Une <span className="text-red-300 bg-gradient-to-r from-red-300 to-red-400 bg-clip-text text-transparent drop-shadow-2xl">
                   Plateforme
                 </span> qui Révolutionne
-                <span className="block text-red-400 bg-gradient-to-r from-red-400 to-red-500 bg-clip-text text-transparent">
+                <span className="block text-red-300 bg-gradient-to-r from-red-300 to-red-400 bg-clip-text text-transparent drop-shadow-2xl">
                   l'Expérience des Stages
                 </span>
-                <span className="block text-lg sm:text-xl md:text-2xl lg:text-3xl font-semibold text-white/90 mt-2">
+                <span className="block text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-white mt-2 drop-shadow-2xl">
                   Chez Rose Blanche Group
                 </span>
               </h1>
@@ -422,7 +422,7 @@ export default function PublicHomePage() {
               className="mb-8"
               style={fadeInUp(sectionVisibility.hero, 0.2)}
             >
-              <p className="text-base sm:text-lg md:text-xl text-white/90 max-w-3xl mx-auto leading-relaxed px-4 drop-shadow-sm">
+              <p className="text-sm sm:text-base md:text-lg text-white max-w-3xl mx-auto leading-relaxed px-4 drop-shadow-2xl font-medium">
                 Imaginez un monde où chaque stagiaire trouve sa place, où chaque projet devient une aventure, 
                 et où chaque apprentissage se transforme en réussite. C'est l'histoire que nous écrivons ensemble.
               </p>
@@ -465,15 +465,15 @@ export default function PublicHomePage() {
       <section 
         ref={statsRef}
         data-section="stats" 
-        className="py-12 bg-gradient-to-br from-white to-red-50 relative"
+        className="py-8 bg-gradient-to-br from-white to-red-50 relative"
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           {/* Refined Section Introduction */}
           <div 
-            className="text-center mb-12"
+            className="text-center mb-8"
             style={fadeInUp(sectionVisibility.stats, 0)}
           >
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
               Notre Impact en <span className="text-red-600">Chiffres</span>
             </h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
@@ -557,7 +557,7 @@ export default function PublicHomePage() {
       <section 
         ref={aboutRef}
         data-section="about"
-        className="py-12 bg-gradient-to-br from-red-50 to-white relative"
+        className="py-8 bg-gradient-to-br from-red-50 to-white relative"
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           {/* Refined Floating Quote */}
@@ -577,8 +577,8 @@ export default function PublicHomePage() {
               <div className="absolute bottom-0 left-0 w-20 h-20 bg-gradient-to-br from-red-100 to-red-200 rounded-full blur-xl"></div>
             </div>
 
-            <div className="text-center mb-10 relative z-10">
-              <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">L'Histoire de <span className="text-red-600">Rose Blanche</span></h2>
+            <div className="text-center mb-6 relative z-10">
+              <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-4">L'Histoire de <span className="text-red-600">Rose Blanche</span></h2>
               <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
                 De Sousse à la Tunisie entière, une success story qui continue de s'écrire
               </p>
@@ -648,11 +648,11 @@ export default function PublicHomePage() {
       <section 
         ref={processRef}
         data-section="process"
-        className="py-12 bg-gradient-to-br from-white to-red-50 relative"
+        className="py-8 bg-gradient-to-br from-white to-red-50 relative"
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="text-center mb-10" style={fadeInUp(sectionVisibility.process, 0)}>
-            <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-4">Votre Parcours de <span className="text-red-600">Stage</span></h2>
+          <div className="text-center mb-6" style={fadeInUp(sectionVisibility.process, 0)}>
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-4">Votre Parcours de <span className="text-red-600">Stage</span></h2>
             <p className="text-lg text-gray-600 max-w-3xl mx-auto leading-relaxed">
               Un voyage structuré et accompagné pour transformer votre potentiel en excellence
             </p>

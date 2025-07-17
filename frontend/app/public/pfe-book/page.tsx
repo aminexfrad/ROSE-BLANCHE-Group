@@ -151,10 +151,10 @@ export default function PFEBookPage() {
                 <BookOpen className="h-4 w-4" />
                 Bibliothèque des Opportunités
               </div>
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
                 Découvrez les Offres de Stage
               </h1>
-              <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-base md:text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
                 Explorez une collection exclusive d'opportunités de stage dans lrose blanche group. 
                 Trouvez votre prochaine aventure professionnelle.
               </p>

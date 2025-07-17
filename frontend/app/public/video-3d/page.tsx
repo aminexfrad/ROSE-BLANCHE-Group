@@ -151,10 +151,10 @@ export default function Video3DPage() {
                 <Building2 className="h-4 w-4" />
                 Rose Blanche Group
               </div>
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
                 Vidéos & Présentations
               </h1>
-              <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-base md:text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
                 Découvrez l'excellence de Rose Blanche Group à travers nos vidéos de présentation, 
                 projets 3D innovants et témoignages de nos collaborateurs. Une vitrine de notre expertise et de notre vision.
               </p>

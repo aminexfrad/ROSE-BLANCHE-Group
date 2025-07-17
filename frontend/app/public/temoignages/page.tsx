@@ -131,10 +131,10 @@ export default function PublicTemoignagesPage() {
                 <MessageSquare className="h-4 w-4" />
                 Expériences Authentiques
               </div>
-              <h1 className="text-6xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
+              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
                 Témoignages de nos Stagiaires
               </h1>
-              <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-base md:text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
                 Découvrez les expériences authentiques et inspirantes de nos stagiaires. 
                 Des histoires vraies qui témoignent de la qualité de nos programmes.
               </p>

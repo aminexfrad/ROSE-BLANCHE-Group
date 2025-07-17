@@ -86,10 +86,10 @@ export default function ContactPage() {
       <section className="pt-24 pb-16 relative">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
           <div className="text-center">
-            <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6 cursor-pointer hover:text-red-600 transition-colors duration-300">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-6 cursor-pointer hover:text-red-600 transition-colors duration-300">
               Contactez-<span className="text-red-600">nous</span>
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-8">
+            <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto mb-8">
               Notre équipe est là pour répondre à toutes vos questions concernant StageBloom. N'hésitez pas à nous
               contacter !
             </p>

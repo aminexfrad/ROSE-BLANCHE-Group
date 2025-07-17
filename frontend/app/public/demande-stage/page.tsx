@@ -55,17 +55,7 @@ interface FormData {
   demandeStageBinome: File | null
 }
 
-interface PFEProject {
-  reference_id: string
-  title: string
-  description: string
-  objectives: string
-  keywords: string
-  diplome: string
-  specialite: string
-  nombre_postes: number
-  ville: string
-}
+
 
 export default function DemandeStage() {
   const router = useRouter()
@@ -74,9 +64,6 @@ export default function DemandeStage() {
   const [currentStep, setCurrentStep] = useState(1)
   const [submitting, setSubmitting] = useState(false)
   const [isPrefilledFromOffer, setIsPrefilledFromOffer] = useState(false)
-  const [pfeProjects, setPfeProjects] = useState<PFEProject[]>([])
-  const [loadingPfeProjects, setLoadingPfeProjects] = useState(false)
-  const [pfeProjectsError, setPfeProjectsError] = useState<string | null>(null)
   const [formError, setFormError] = useState<string | null>(null)
   
   // Form data
@@ -146,24 +133,7 @@ export default function DemandeStage() {
     }
   }, [searchParams, toast])
 
-  // Fetch PFE projects when Stage PFE is selected and not prefilled
-  useEffect(() => {
-    if (isPFEStage && !isPrefilledFromOffer) {
-      setLoadingPfeProjects(true)
-      setPfeProjectsError(null)
-      
-      apiClient.getPublicPFEProjects()
-        .then(data => {
-          setPfeProjects(data.results || [])
-        })
-        .catch((error) => {
-          console.error('Error fetching PFE projects:', error)
-          setPfeProjectsError('Impossible de charger les projets PFE. Veuillez réessayer.')
-          setPfeProjects([])
-        })
-        .finally(() => setLoadingPfeProjects(false))
-    }
-  }, [isPFEStage, isPrefilledFromOffer])
+
 
   const [errors, setErrors] = useState({
     nom: false,
@@ -411,10 +381,10 @@ export default function DemandeStage() {
           </div>
 
           <div className="text-center mb-8">
-            <h1 className="text-4xl md:text-5xl font-bold mb-4 cursor-pointer hover:text-red-600 transition-colors duration-300">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold mb-4 cursor-pointer hover:text-red-600 transition-colors duration-300">
               <span className="text-gray-900">Demande de</span> <span className="text-red-600">Stage</span>
             </h1>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
               Complétez votre demande de stage en 5 étapes simples et commencez votre parcours professionnel
             </p>
           </div>
@@ -617,35 +587,7 @@ export default function DemandeStage() {
                           </Badge>
                         )}
                       </Label>
-                      {/* Only show dropdown if not prefilled from offer */}
-                      {!isPrefilledFromOffer && (
-                        <div className="mb-2">
-                          <Select
-                            value={formData.pfeReference}
-                            onValueChange={val => handleInputChange('pfeReference', val)}
-                            disabled={loadingPfeProjects || pfeProjects.length === 0}
-                          >
-                            <SelectTrigger className="border-gray-300 focus:border-red-500 focus:ring-red-500">
-                              <SelectValue placeholder={loadingPfeProjects ? 'Chargement...' : 'Choisissez un projet PFE'} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {pfeProjects.map((proj) => (
-                                <SelectItem key={proj.reference_id} value={proj.reference_id}>
-                                  {proj.reference_id} - {proj.title}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          {pfeProjectsError && (
-                            <div className="mt-2 p-3 bg-red-50 border border-red-200 rounded-lg">
-                              <div className="flex items-center gap-2">
-                                <AlertCircle className="h-4 w-4 text-red-600" />
-                                <p className="text-sm text-red-700">{pfeProjectsError}</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
+
                       <Input
                         id="pfeReference"
                         value={formData.pfeReference}

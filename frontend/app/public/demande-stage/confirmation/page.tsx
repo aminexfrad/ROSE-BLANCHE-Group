@@ -24,10 +24,10 @@ export default function ConfirmationPage() {
             <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <CheckCircle className="h-12 w-12 text-green-600" />
             </div>
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-6">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
               Demande <span className="text-green-600">Envoyée !</span>
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-base md:text-lg text-gray-600 max-w-3xl mx-auto">
               Votre demande de stage a été soumise avec succès. Nous vous contacterons dans les plus brefs délais.
             </p>
           </div>
@@ -38,10 +38,10 @@ export default function ConfirmationPage() {
       <section className="py-16 bg-gradient-to-br from-blue-50 via-white to-purple-50">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+            <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-4">
               Prochaines étapes
             </h2>
-            <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+            <p className="text-base md:text-lg text-gray-600 max-w-2xl mx-auto">
               Ce qui va se passer maintenant
             </p>
           </div>
