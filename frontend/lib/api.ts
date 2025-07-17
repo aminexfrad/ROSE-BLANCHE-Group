@@ -168,17 +168,7 @@ export interface PFEDocument {
   created_at: string
 }
 
-export interface PFEProject {
-  reference_id: string
-  title: string
-  description: string
-  objectives: string
-  keywords: string
-  diplome: string
-  specialite: string
-  nombre_postes: number
-  ville: string
-}
+
 
 export interface OffreStage {
   id: number
@@ -924,94 +914,13 @@ class ApiClient {
     return this.request<void>(`/offres-stage/${id}/delete/`, { method: 'DELETE' })
   }
 
-  // PFE Projects API
-  async getPFEProjects(params: { 
-    domain?: string; 
-    status?: string; 
-    academic_year?: string; 
-    search?: string; 
-    featured?: boolean 
-  } = {}): Promise<{ results: PFEProject[]; count: number }> {
-    // Use public endpoint for PFE projects
-    return this.getPublicPFEProjects(params)
-  }
 
-  // Public method for getting PFE projects without authentication
-  async getPublicPFEProjects(params: { 
-    domain?: string; 
-    status?: string; 
-    academic_year?: string; 
-    search?: string; 
-    featured?: boolean 
-  } = {}): Promise<{ results: PFEProject[]; count: number }> {
-    const searchParams = new URLSearchParams()
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        searchParams.append(key, value.toString())
-      }
-    })
-    
-    const queryString = searchParams.toString()
-    const url = `${API_BASE_URL}/pfe-projects/${queryString ? `?${queryString}` : ''}`
-    
-    try {
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
-      }
-
-      return await response.json()
-    } catch (error) {
-      console.error('Public PFE API request failed:', error)
-      throw error
-    }
-  }
-
-  async getPFEProject(id: number): Promise<PFEProject> {
-    return this.request(`/pfe-projects/${id}/`)
-  }
-
-  async createPFEProject(data: Partial<PFEProject>): Promise<PFEProject> {
-    return this.request('/pfe-projects/create/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    })
-  }
-
-  async updatePFEProject(id: number, data: Partial<PFEProject>): Promise<PFEProject> {
-    return this.request(`/pfe-projects/${id}/update/`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    })
-  }
-
-  async deletePFEProject(id: number): Promise<void> {
-    return this.request(`/pfe-projects/${id}/delete/`, { method: 'DELETE' })
-  }
 
   async getDemandes(): Promise<{ results: Demande[]; count: number }> {
     return this.request('/demandes/');
   }
 
-  async getAdminDatabaseStats(): Promise<any> {
-    return this.request('/admin/database/stats/');
-  }
 
-  async postAdminDatabaseBackup(): Promise<any> {
-    return this.request('/admin/database/backup/', { method: 'POST' });
-  }
 }
 
 export const apiClient = new ApiClient()

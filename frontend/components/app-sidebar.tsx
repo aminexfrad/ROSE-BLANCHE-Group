@@ -38,17 +38,13 @@ import {
   FileText,
   BarChart3,
   MessageSquare,
-  BookOpen,
   Calendar,
   Settings,
   LogOut,
   User,
   ChevronUp,
-  Award,
   Shield,
-  Database,
   Upload,
-  Activity,
   CheckCircle,
   TrendingUp,
   Bell,
@@ -70,13 +66,6 @@ const menuItems = {
         { title: "Témoignages", url: "/stagiaire/temoignages", icon: MessageSquare },
       ],
     },
-    {
-      title: "Ressources",
-      items: [
-        { title: "Rose Blanche", url: "/public/pfe-book", icon: BookOpen },
-        { title: "Vidéo 3D", url: "/public/video-3d", icon: Award },
-      ],
-    },
   ],
   tuteur: [
     {
@@ -88,13 +77,7 @@ const menuItems = {
         { title: "Statistiques", url: "/tuteur/statistiques", icon: BarChart3 },
       ],
     },
-    {
-      title: "Suivi",
-      items: [
-        { title: "Planning", url: "/tuteur/planning", icon: Calendar },
-        { title: "Messages", url: "/tuteur/messages", icon: MessageSquare },
-      ],
-    },
+
   ],
   rh: [
     {
@@ -124,7 +107,6 @@ const menuItems = {
         { title: "Tableau de bord", url: "/admin", icon: Home },
         { title: "Utilisateurs", url: "/admin/utilisateurs", icon: Users },
         { title: "Offres de Stage", url: "/admin/offres-stage", icon: Briefcase },
-        { title: "Rose Blanche", url: "/admin/pfe-book", icon: BookOpen },
         { title: "Configuration", url: "/admin/configuration", icon: Settings },
       ],
     },
@@ -132,9 +114,6 @@ const menuItems = {
       title: "Système",
       items: [
         { title: "Statistiques", url: "/admin/statistiques", icon: BarChart3 },
-        { title: "Monitoring", url: "/admin/monitoring", icon: Activity },
-        { title: "Sécurité", url: "/admin/security", icon: Shield },
-        { title: "Base de données", url: "/admin/database", icon: Database },
       ],
     },
   ],

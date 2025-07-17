@@ -17,9 +17,7 @@ import {
   Clock,
   AlertTriangle,
   BarChart3,
-  MessageSquare,
   FileText,
-  Calendar,
   TrendingUp,
   Award,
   Target,
@@ -159,13 +157,6 @@ export default function TuteurDashboard() {
       href: "/tuteur/statistiques",
       badge: null,
     },
-    {
-      title: "Messages",
-      description: "Communiquez avec vos stagiaires",
-      icon: MessageSquare,
-      href: "/tuteur/messages",
-      badge: "8",
-    },
   ]
 
   return (
@@ -178,14 +169,7 @@ export default function TuteurDashboard() {
             <Badge className={roleInfo.color}>{roleInfo.label}</Badge>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-            <Button variant="outline" size="sm" className="w-full sm:w-auto">
-              <Calendar className="mr-2 h-4 w-4" />
-              Planning
-            </Button>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
-              <MessageSquare className="mr-2 h-4 w-4" />
-              Messages
-            </Button>
+            {/* Planning and Messages buttons removed */}
           </div>
         </div>
 
@@ -247,7 +231,7 @@ export default function TuteurDashboard() {
         )}
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {quickActions.map((action) => (
             <Card key={action.title} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">

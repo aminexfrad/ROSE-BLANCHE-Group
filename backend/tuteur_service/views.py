@@ -224,10 +224,7 @@ class TuteurNotificationReadView(APIView):
     def post(self, request, pk):
         return Response({'detail': 'TuteurNotificationReadView not implemented'}, status=501)
 
-class TuteurPlanningView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        return Response({'detail': 'TuteurPlanningView not implemented'}, status=501)
+
 
 class TuteurStatisticsView(APIView):
     permission_classes = [IsAuthenticated]

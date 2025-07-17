@@ -33,7 +33,6 @@ import {
 interface Settings {
   parcourNotifications: boolean
   kpiReminders: boolean
-  tuteurMessages: boolean
   notifications: boolean
   emailNotifications: boolean
   smsNotifications: boolean
@@ -45,7 +44,6 @@ interface Settings {
 const baseSettings: Settings = {
   parcourNotifications: true,
   kpiReminders: true,
-  tuteurMessages: true,
   notifications: true,
   emailNotifications: true,
   smsNotifications: false,
@@ -59,25 +57,21 @@ const roleSpecificSettings: Record<string, Settings> = {
     ...baseSettings,
     parcourNotifications: true,
     kpiReminders: true,
-    tuteurMessages: true,
   },
   tuteur: {
     ...baseSettings,
     parcourNotifications: false,
     kpiReminders: false,
-    tuteurMessages: true,
   },
   rh: {
     ...baseSettings,
     parcourNotifications: false,
     kpiReminders: false,
-    tuteurMessages: false,
   },
   admin: {
     ...baseSettings,
     parcourNotifications: false,
     kpiReminders: false,
-    tuteurMessages: false,
   },
 }
 
@@ -183,18 +177,7 @@ export default function SettingsPage() {
                         onCheckedChange={(checked) => handleSettingChange("kpiReminders", checked)}
                       />
                     </div>
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-0.5">
-                        <Label className="text-base">Messages du tuteur</Label>
-                        <p className="text-sm text-gray-500">
-                          Notifications des messages de votre tuteur
-                        </p>
-                      </div>
-                      <Switch
-                        checked={settings.tuteurMessages}
-                        onCheckedChange={(checked) => handleSettingChange("tuteurMessages", checked)}
-                      />
-                    </div>
+
                   </>
                 )}
 

@@ -23,10 +23,7 @@ import {
   Settings,
   AlertTriangle,
   Database,
-  Shield,
-  Monitor,
   BarChart3,
-  BookOpen,
   Cog,
 } from "lucide-react"
 
@@ -55,13 +52,7 @@ const quickActions = [
     href: "/admin/utilisateurs",
     color: "bg-blue-500",
   },
-  {
-    title: "System Monitoring",
-    description: "Monitor system performance",
-    icon: Monitor,
-    href: "/admin/monitoring",
-    color: "bg-green-500",
-  },
+
   {
     title: "Database Management",
     description: "Manage database and backups",
@@ -70,25 +61,11 @@ const quickActions = [
     color: "bg-purple-500",
   },
   {
-    title: "Security Settings",
-    description: "Configure security settings",
-    icon: Shield,
-    href: "/admin/security",
-    color: "bg-red-500",
-  },
-  {
     title: "Analytics",
     description: "View system analytics",
     icon: BarChart3,
     href: "/admin/statistiques",
     color: "bg-orange-500",
-  },
-  {
-    title: "PFE Book",
-    description: "Manage PFE documents",
-    icon: BookOpen,
-    href: "/admin/pfe-book",
-    color: "bg-indigo-500",
   },
   {
     title: "Offres de Stage",
