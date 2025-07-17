@@ -6,7 +6,7 @@ Intellectual Property – Protected by international copyright law.
 
 from rest_framework import serializers
 from .models import Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage
-from admin_service.models import PFEProject
+
 from auth_service.models import User
 from auth_service.serializers import UserSerializer
 
@@ -221,24 +221,4 @@ class OffreStageCreateSerializer(serializers.ModelSerializer):
         validated_data.setdefault('validated', False)
         return super().create(validated_data)
 
-class PFEProjectSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PFEProject
-        fields = ['reference_id', 'title', 'description', 'objectives', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville']
-
-class PFEProjectListSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PFEProject
-        fields = ['reference_id', 'title', 'description', 'objectives', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville']
-
-class PFEProjectCreateSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = PFEProject
-        fields = ['reference_id', 'title', 'description', 'domain',
-                 'supervisor_name', 'supervisor_email', 'supervisor_department',
-                 'objectives', 'requirements', 'deliverables', 'duration_weeks',
-                 'technologies', 'tools', 'max_candidates', 'academic_year']
-    
-    def create(self, validated_data):
-        validated_data['created_by'] = self.context['request'].user
-        return super().create(validated_data) 
+ 
