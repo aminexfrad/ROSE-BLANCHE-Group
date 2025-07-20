@@ -177,6 +177,21 @@ export interface PFEDocument {
   created_at: string
 }
 
+export interface PFEProject {
+  id: number
+  title: string
+  description: string
+  authors: string
+  year: number
+  speciality: string
+  supervisor?: string
+  keywords?: string
+  abstract?: string
+  status: 'draft' | 'published' | 'archived'
+  download_count: number
+  view_count: number
+  created_at: string
+}
 
 
 export interface OffreStage {
@@ -1011,6 +1026,14 @@ class ApiClient {
     return this.request('/demandes/');
   }
 
+  // Admin database methods
+  async getAdminDatabaseStats(): Promise<any> {
+    return this.request('/admin/database/stats/');
+  }
+
+  async postAdminDatabaseBackup(): Promise<any> {
+    return this.request('/admin/database/backup/', { method: 'POST' });
+  }
 
 }
 
