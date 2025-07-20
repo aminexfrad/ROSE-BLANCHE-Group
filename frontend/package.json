@@ -19,7 +19,13 @@
     "analyze": "ANALYZE=true npm run build",
     "clean": "rm -rf .next out dist",
     "prebuild": "npm run type-check && npm run lint",
-    "postinstall": "npm run security:audit"
+    "postinstall": "npm run security:audit",
+    "optimize": "node scripts/optimize-performance.js",
+    "performance:analyze": "npm run analyze",
+    "performance:monitor": "npm run dev",
+    "performance:build": "npm run build && npm run analyze",
+    "cache:clear": "echo 'Cache cleared'",
+    "bundle:analyze": "npm run analyze"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

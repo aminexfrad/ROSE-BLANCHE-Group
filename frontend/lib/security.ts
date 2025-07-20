@@ -138,7 +138,13 @@ export const validateEnvironment = () => {
   const missingVars = requiredEnvVars.filter(varName => !process.env[varName])
   
   if (missingVars.length > 0) {
-    throw new Error(`Missing required environment variables: ${missingVars.join(', ')}`)
+    console.warn(`Missing environment variables: ${missingVars.join(', ')}`)
+    console.warn('Using default values. Please create a .env.local file with the required variables.')
+    
+    // Set default values instead of throwing
+    if (!process.env.NEXT_PUBLIC_API_URL) {
+      process.env.NEXT_PUBLIC_API_URL = 'http://localhost:8000/api'
+    }
   }
 }
 

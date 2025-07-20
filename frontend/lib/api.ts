@@ -7,17 +7,25 @@
 // API Client for StageBloom Backend
 import { validateEnvironment, sanitizeInput } from './security'
 import { api as apiConfig, isProduction } from './env'
+import { apiCache, cachedFetch, createDebouncedAPI } from './api-cache'
 
 // Validate environment variables only on client side
 if (typeof window !== 'undefined') {
-  try {
-    validateEnvironment()
-  } catch (error) {
-    console.warn('Environment validation failed:', error)
-  }
+  validateEnvironment()
 }
 
 const API_BASE_URL = apiConfig.baseUrl
+
+// Request deduplication cache
+const pendingRequests = new Map<string, Promise<any>>()
+
+// Performance monitoring
+const performanceMetrics = {
+  requestCount: 0,
+  cacheHits: 0,
+  averageResponseTime: 0,
+  totalResponseTime: 0,
+}
 
 export interface User {
   id: number
@@ -225,12 +233,59 @@ class ApiClient {
     }
   }
 
+  // Enhanced request method with caching and deduplication
   private async request<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: RequestInit = {},
+    cacheOptions?: { ttl?: number; skipCache?: boolean }
   ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`
+    const requestKey = `${options.method || 'GET'}:${url}:${JSON.stringify(options.body || '')}`
     
+    // Check for pending requests to avoid duplicates
+    if (pendingRequests.has(requestKey)) {
+      return pendingRequests.get(requestKey) as Promise<T>
+    }
+    
+    // Try cache first for GET requests
+    if (options.method === 'GET' && !cacheOptions?.skipCache) {
+      const cached = apiCache.get<T>(url, options)
+      if (cached) {
+        performanceMetrics.cacheHits++
+        return cached
+      }
+    }
+    
+    const startTime = performance.now()
+    
+    // Create the request promise
+    const requestPromise = this.executeRequest<T>(url, options, cacheOptions)
+    
+    // Store the promise to prevent duplicate requests
+    pendingRequests.set(requestKey, requestPromise)
+    
+    try {
+      const result = await requestPromise
+      
+      // Update performance metrics
+      const responseTime = performance.now() - startTime
+      performanceMetrics.requestCount++
+      performanceMetrics.totalResponseTime += responseTime
+      performanceMetrics.averageResponseTime = performanceMetrics.totalResponseTime / performanceMetrics.requestCount
+      
+      return result
+    } finally {
+      // Clean up pending request
+      pendingRequests.delete(requestKey)
+    }
+  }
+
+  // Separate method for actual request execution
+  private async executeRequest<T>(
+    url: string,
+    options: RequestInit = {},
+    cacheOptions?: { ttl?: number; skipCache?: boolean }
+  ): Promise<T> {
     // Don't set Content-Type for FormData, let browser set it automatically
     const headers: Record<string, string> = {
       'X-Requested-With': 'XMLHttpRequest', // CSRF protection
@@ -287,7 +342,14 @@ class ApiClient {
             throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${retryResponse.status}`)
           }
           
-          return await retryResponse.json()
+          const result = await retryResponse.json()
+          
+          // Cache successful GET requests
+          if (options.method === 'GET' && !cacheOptions?.skipCache) {
+            apiCache.set(url, result, options, cacheOptions?.ttl)
+          }
+          
+          return result
         } catch (refreshError) {
           // If refresh fails, clear tokens and throw original error
           this.token = null
@@ -310,11 +372,19 @@ class ApiClient {
       }
 
       const text = await response.text();
+      let result: T;
       try {
-        return text ? JSON.parse(text) : ({} as T);
+        result = text ? JSON.parse(text) : ({} as T);
       } catch {
-        return {} as T;
+        result = {} as T;
       }
+      
+      // Cache successful GET requests
+      if (options.method === 'GET' && !cacheOptions?.skipCache) {
+        apiCache.set(url, result, options, cacheOptions?.ttl)
+      }
+      
+      return result
     } catch (error: any) {
       clearTimeout(timeoutId)
       
@@ -333,6 +403,19 @@ class ApiClient {
     }
   }
 
+  // Get performance metrics
+  getPerformanceMetrics() {
+    return {
+      ...performanceMetrics,
+      cacheStats: apiCache.getStats(),
+    }
+  }
+
+  // Clear cache
+  clearCache() {
+    apiCache.clear()
+  }
+
   // Authentication methods
   async login(email: string, password: string): Promise<{ access: string; refresh: string; user: User }> {
     // Sanitize inputs
@@ -342,7 +425,7 @@ class ApiClient {
     const response = await this.request<{ access: string; refresh: string; user: User }>('/auth/login/', {
       method: 'POST',
       body: JSON.stringify({ email: sanitizedEmail, password: sanitizedPassword }),
-    })
+    }, { skipCache: true })
     
     this.token = response.access
     if (typeof window !== 'undefined') {
@@ -355,7 +438,7 @@ class ApiClient {
 
   async logout(): Promise<void> {
     try {
-      await this.request('/auth/logout/', { method: 'POST' })
+      await this.request('/auth/logout/', { method: 'POST' }, { skipCache: true })
     } catch (error) {
       console.error('Logout error:', error)
     } finally {
@@ -364,6 +447,8 @@ class ApiClient {
         localStorage.removeItem('auth_token')
         localStorage.removeItem('refresh_token')
       }
+      // Clear cache on logout
+      this.clearCache()
     }
   }
 
@@ -374,7 +459,7 @@ class ApiClient {
     const response = await this.request<{ access: string }>('/auth/refresh/', {
       method: 'POST',
       body: JSON.stringify({ refresh }),
-    })
+    }, { skipCache: true })
     
     this.token = response.access
     if (typeof window !== 'undefined') {
@@ -388,16 +473,21 @@ class ApiClient {
     return !!this.token
   }
 
-  // User profile methods
+  // User profile methods with caching
   async getProfile(): Promise<User> {
-    return this.request<User>('/auth/profile/')
+    return this.request<User>('/auth/profile/', {}, { ttl: 2 * 60 * 1000 }) // Cache for 2 minutes
   }
 
   async updateProfile(data: Partial<User>): Promise<User> {
-    return this.request<User>('/auth/profile/', {
+    const response = await this.request<User>('/auth/profile/', {
       method: 'PUT',
       body: JSON.stringify(data),
-    })
+    }, { skipCache: true })
+    
+    // Invalidate profile cache
+    apiCache.delete('/auth/profile/')
+    
+    return response
   }
 
   // Application methods

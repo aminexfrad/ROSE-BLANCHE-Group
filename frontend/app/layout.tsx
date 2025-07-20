@@ -13,7 +13,14 @@ import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { ErrorBoundary } from "@/components/error-boundary"
 
-const inter = Inter({ subsets: ["latin"] })
+// Optimize font loading
+const inter = Inter({ 
+  subsets: ["latin"],
+  display: 'swap',
+  preload: true,
+  fallback: ['system-ui', 'arial'],
+  variable: '--font-inter',
+})
 
 export const metadata: Metadata = {
   title: {
@@ -61,6 +68,11 @@ export const metadata: Metadata = {
   verification: {
     google: process.env.GOOGLE_SITE_VERIFICATION,
   },
+  // Performance optimizations
+  other: {
+    'theme-color': '#dc2626',
+    'color-scheme': 'light dark',
+  },
 }
 
 export default function RootLayout({
@@ -69,14 +81,24 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" suppressHydrationWarning className={inter.variable}>
       <head>
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
         <meta name="theme-color" content="#dc2626" />
         <meta name="color-scheme" content="light dark" />
+        
+        {/* Preload critical resources */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="//localhost" />
+        
+        {/* Favicon and manifest */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
+        
+        {/* Performance hints */}
+        <link rel="preload" href="/api" as="fetch" crossOrigin="anonymous" />
       </head>
       <body className={`${inter.className} min-h-screen antialiased`} suppressHydrationWarning>
         <ErrorBoundary>
