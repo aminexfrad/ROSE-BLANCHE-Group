@@ -97,8 +97,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <link rel="manifest" href="/manifest.json" />
         
-        {/* Performance hints */}
-        <link rel="preload" href="/api" as="fetch" crossOrigin="anonymous" />
+        {/* Performance hints - removed /api preload since API is on different server */}
       </head>
       <body className={`${inter.className} min-h-screen antialiased`} suppressHydrationWarning>
         <ErrorBoundary>

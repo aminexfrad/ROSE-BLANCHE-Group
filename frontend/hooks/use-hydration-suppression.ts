@@ -11,7 +11,7 @@ export function useHydrationSuppression() {
     setIsClient(true)
   }, [])
 
-  // Suppress console warnings about hydration mismatches
+  // Suppress console warnings about hydration mismatches and auto-scroll
   useEffect(() => {
     const originalWarn = console.warn
     console.warn = (...args) => {
@@ -19,7 +19,8 @@ export function useHydrationSuppression() {
       if (typeof message === 'string' && 
           (message.includes('Hydration') || 
            message.includes('Text content did not match') ||
-           message.includes('Expected server HTML to contain'))) {
+           message.includes('Expected server HTML to contain') ||
+           message.includes('Skipping auto-scroll behavior'))) {
         return
       }
       originalWarn.apply(console, args)

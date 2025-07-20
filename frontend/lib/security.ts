@@ -134,18 +134,12 @@ export const applicationSchema = z.object({
 
 // Environment variable validation
 export const validateEnvironment = () => {
-  const requiredEnvVars = ['NEXT_PUBLIC_API_URL']
-  const missingVars = requiredEnvVars.filter(varName => !process.env[varName])
-  
-  if (missingVars.length > 0) {
-    console.warn(`Missing environment variables: ${missingVars.join(', ')}`)
-    console.warn('Using default values. Please create a .env.local file with the required variables.')
-    
-    // Set default values instead of throwing
-    if (!process.env.NEXT_PUBLIC_API_URL) {
-      process.env.NEXT_PUBLIC_API_URL = 'http://localhost:8000/api'
-    }
+  // Set default values if not present
+  if (!process.env.NEXT_PUBLIC_API_URL) {
+    process.env.NEXT_PUBLIC_API_URL = 'http://localhost:8000/api'
   }
+  
+  // No warnings - defaults work fine
 }
 
 // Security headers helper

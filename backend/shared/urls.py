@@ -8,6 +8,9 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Root API endpoint
+    path('', views.APIRootView.as_view(), name='api-root'),
+    
     # Dashboard and stats
     path('stats/', views.DashboardStatsView.as_view(), name='dashboard-stats'),
     path('users/', views.UsersListView.as_view(), name='users-list'),

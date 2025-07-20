@@ -29,6 +29,45 @@ from .serializers import (
 from auth_service.models import User
 from auth_service.serializers import UserSerializer
 
+class APIRootView(APIView):
+    """
+    Root API endpoint providing information about available endpoints
+    """
+    permission_classes = []  # Public access
+    
+    def get(self, request):
+        return Response({
+            "message": "StageBloom API",
+            "version": "v1",
+            "description": "API pour la gestion des stages et demandes",
+            "endpoints": {
+                "auth": "/api/auth/",
+                "demandes": "/api/demandes/",
+                "stagiaire": "/api/stagiaire/",
+                "admin": "/api/admin/",
+                "rh": "/api/rh/",
+                "tuteur": "/api/tuteur/",
+                "public": {
+                    "testimonials": "/api/public/testimonials/",
+                    "offres-stage": "/api/offres-stage/",
+                    "pfe-documents": "/api/pfe-documents/"
+                },
+                "stats": "/api/stats/",
+                "users": "/api/users/",
+                "stages": "/api/stages/",
+                "steps": "/api/steps/",
+                "documents": "/api/documents/",
+                "evaluations": "/api/evaluations/",
+                "testimonials": "/api/testimonials/",
+                "notifications": "/api/notifications/",
+                "kpi-questions": "/api/kpi-questions/"
+            },
+            "documentation": {
+                "swagger": "/api/docs/",
+                "redoc": "/api/redoc/"
+            }
+        })
+
 class DashboardStatsView(APIView):
     permission_classes = [IsAuthenticated]
 
