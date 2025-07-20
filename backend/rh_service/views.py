@@ -156,6 +156,7 @@ class RHTestimonialsView(APIView):
                     "testimonial_type": testimonial.testimonial_type,
                     "status": testimonial.status,
                     "video_url": testimonial.video_url,
+                    "video_file": request.build_absolute_uri(testimonial.video_file.url) if testimonial.video_file and testimonial.video_file.name else None,
                     "created_at": testimonial.created_at.isoformat(),
                     "moderated_at": testimonial.moderated_at.isoformat() if testimonial.moderated_at else None,
                     "moderation_comment": testimonial.moderation_comment,

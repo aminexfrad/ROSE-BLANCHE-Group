@@ -37,6 +37,7 @@ import {
   FileText,
   Video,
   Loader2,
+  Play,
 } from "lucide-react"
 import { apiClient } from "@/lib/api"
 import { useState, useEffect } from "react"
@@ -55,6 +56,8 @@ export default function RHTemoignagesPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [videoPreviewModal, setVideoPreviewModal] = useState(false)
+  const [previewTestimonial, setPreviewTestimonial] = useState<Testimonial | null>(null)
   
   const breadcrumbs = [{ label: "RH", href: "/rh" }, { label: "Témoignages" }]
 
@@ -142,6 +145,11 @@ export default function RHTemoignagesPage() {
     setModerationAction(action)
     setModerationComment('')
     setModerationDialog(true)
+  }
+
+  const openVideoPreview = (testimonial: Testimonial) => {
+    setPreviewTestimonial(testimonial)
+    setVideoPreviewModal(true)
   }
 
   // Compute statistics
@@ -361,20 +369,80 @@ export default function RHTemoignagesPage() {
                       <p className="text-gray-700 leading-relaxed">{testimonial.content}</p>
                     </div>
 
-                    {testimonial.video_url && (
+                    {(testimonial.video_url || testimonial.video_file) && (
                       <div className="bg-gray-50 p-4 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Video className="h-4 w-4 text-purple-600" />
-                          <span className="font-medium">Vidéo associée</span>
+                        <div className="flex items-center gap-2 mb-3">
+                          <Video className="h-5 w-5 text-purple-600" />
+                          <span className="font-medium text-purple-700">Vidéo associée</span>
+                          <Badge variant="secondary" className="ml-auto">
+                            {testimonial.video_file ? 'Fichier uploadé' : 'URL externe'}
+                          </Badge>
                         </div>
-                        <a 
-                          href={testimonial.video_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          Voir la vidéo
-                        </a>
+                        {testimonial.video_file ? (
+                          <div className="space-y-2">
+                            <div className="relative">
+                              <video 
+                                controls 
+                                className="w-full max-w-lg rounded-lg shadow-sm"
+                                src={testimonial.video_file}
+                                preload="metadata"
+                              >
+                                Votre navigateur ne supporte pas la lecture de vidéos.
+                              </video>
+                              <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded">
+                                Uploadé
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openVideoPreview(testimonial)}
+                                className="text-xs"
+                              >
+                                <Play className="h-3 w-3 mr-1" />
+                                Prévisualiser
+                              </Button>
+                              <a 
+                                href={testimonial.video_file} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="text-blue-600 hover:text-blue-800 text-xs"
+                              >
+                                Ouvrir dans un nouvel onglet
+                              </a>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              Vidéo uploadée directement par le stagiaire
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => openVideoPreview(testimonial)}
+                                className="text-xs"
+                              >
+                                <Play className="h-3 w-3 mr-1" />
+                                Prévisualiser
+                              </Button>
+                              <a 
+                                href={testimonial.video_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                              >
+                                <Video className="h-4 w-4" />
+                                Voir la vidéo externe
+                              </a>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                              Lien vers une vidéo externe (YouTube, etc.)
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
 
@@ -484,6 +552,111 @@ export default function RHTemoignagesPage() {
                 {moderationAction === 'approve' ? 'Approuver' : 'Rejeter'}
               </Button>
             </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Video Preview Modal */}
+        <Dialog open={videoPreviewModal} onOpenChange={setVideoPreviewModal}>
+          <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                Prévisualisation du témoignage vidéo
+              </DialogTitle>
+              <DialogDescription>
+                {previewTestimonial?.title}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {previewTestimonial && (
+              <div className="space-y-4">
+                {/* Video Player */}
+                <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                  {previewTestimonial.video_file ? (
+                    <video
+                      controls
+                      className="w-full h-full"
+                      src={previewTestimonial.video_file}
+                      preload="metadata"
+                    >
+                      Votre navigateur ne supporte pas la lecture de vidéos.
+                    </video>
+                  ) : previewTestimonial.video_url ? (
+                    <iframe
+                      src={previewTestimonial.video_url}
+                      className="w-full h-full"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-white">
+                      <div className="text-center">
+                        <Video className="h-12 w-12 mx-auto mb-2" />
+                        <p>Vidéo non disponible</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Testimonial Details */}
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-semibold text-lg">{previewTestimonial.title}</h3>
+                    <p className="text-sm text-gray-600">
+                      Par {previewTestimonial.author.prenom} {previewTestimonial.author.nom}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-gray-700 leading-relaxed">{previewTestimonial.content}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>{new Date(previewTestimonial.created_at).toLocaleDateString("fr-FR")}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      <span>{previewTestimonial.stage.company}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Action Buttons */}
+                <div className="flex items-center justify-between pt-4 border-t">
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium">Stage :</span> {previewTestimonial.stage.title}
+                  </div>
+
+                  {previewTestimonial.status === "pending" && (
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-red-600 border-red-600 hover:bg-red-50"
+                        onClick={() => {
+                          setVideoPreviewModal(false)
+                          openModerationDialog(previewTestimonial, 'reject')
+                        }}
+                      >
+                        <ThumbsDown className="mr-2 h-4 w-4" />
+                        Rejeter
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        className="bg-green-600 hover:bg-green-700"
+                        onClick={() => {
+                          setVideoPreviewModal(false)
+                          openModerationDialog(previewTestimonial, 'approve')
+                        }}
+                      >
+                        <ThumbsUp className="mr-2 h-4 w-4" />
+                        Approuver
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </DialogContent>
         </Dialog>
       </div>

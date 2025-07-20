@@ -24,19 +24,19 @@ import {
   User,
   Building,
   Calendar,
-  Eye,
-  Heart,
-  Share2,
   Loader2,
   ArrowLeft,
   ExternalLink,
   X,
+  ThumbsUp,
+  ThumbsDown,
 } from "lucide-react"
 import { apiClient } from "@/lib/api"
 import type { Testimonial } from "@/lib/api"
 import Link from "next/link"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 export default function PublicTemoignagesPage() {
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
@@ -45,6 +45,8 @@ export default function PublicTemoignagesPage() {
   const [typeFilter, setTypeFilter] = useState<string>("all")
   const [selectedTestimonial, setSelectedTestimonial] = useState<Testimonial | null>(null)
   const [showVideoModal, setShowVideoModal] = useState(false)
+  const [videoPreviewModal, setVideoPreviewModal] = useState(false)
+  const [previewTestimonial, setPreviewTestimonial] = useState<Testimonial | null>(null)
 
   useEffect(() => {
     const fetchTestimonials = async () => {
@@ -84,6 +86,11 @@ export default function PublicTemoignagesPage() {
     setShowVideoModal(true)
   }
 
+  const openVideoPreview = (testimonial: Testimonial) => {
+    setPreviewTestimonial(testimonial)
+    setVideoPreviewModal(true)
+  }
+
   const renderStars = () => {
     return Array.from({ length: 5 }, (_, i) => (
       <Star key={i} className="h-4 w-4 text-yellow-500 fill-current" />
@@ -111,12 +118,86 @@ export default function PublicTemoignagesPage() {
                 <p className="text-gray-600">Veuillez patienter...</p>
               </div>
             </div>
-          </div>
-        </div>
-        <Footer />
-      </>
-    )
-  }
+                  </div>
+
+        {/* Video Preview Modal */}
+        <Dialog open={videoPreviewModal} onOpenChange={setVideoPreviewModal}>
+          <DialogContent className="sm:max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>
+                Prévisualisation du témoignage vidéo
+              </DialogTitle>
+              <DialogDescription>
+                {previewTestimonial?.title}
+              </DialogDescription>
+            </DialogHeader>
+            
+            {previewTestimonial && (
+              <div className="space-y-4">
+                {/* Video Player */}
+                <div className="aspect-video bg-black rounded-lg overflow-hidden">
+                  {previewTestimonial.video_file ? (
+                    <video
+                      controls
+                      className="w-full h-full"
+                      src={previewTestimonial.video_file}
+                      preload="metadata"
+                    >
+                      Votre navigateur ne supporte pas la lecture de vidéos.
+                    </video>
+                  ) : previewTestimonial.video_url ? (
+                    <iframe
+                      src={previewTestimonial.video_url}
+                      className="w-full h-full"
+                      allowFullScreen
+                    />
+                  ) : (
+                    <div className="flex items-center justify-center h-full text-white">
+                      <div className="text-center">
+                        <Video className="h-12 w-12 mx-auto mb-2" />
+                        <p>Vidéo non disponible</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Testimonial Details */}
+                <div className="space-y-3">
+                  <div>
+                    <h3 className="font-semibold text-lg">{previewTestimonial.title}</h3>
+                    <p className="text-sm text-gray-600">
+                      Par {previewTestimonial.author.prenom} {previewTestimonial.author.nom}
+                    </p>
+                  </div>
+                  
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-gray-700 leading-relaxed">{previewTestimonial.content}</p>
+                  </div>
+
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      <span>{new Date(previewTestimonial.created_at).toLocaleDateString("fr-FR")}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      <span>{previewTestimonial.stage.company}</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span className="font-medium">Stage :</span> {previewTestimonial.stage.title}
+                  </div>
+                </div>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      </div>
+      <Footer />
+    </>
+  )
+}
 
   return (
     <>
@@ -131,10 +212,10 @@ export default function PublicTemoignagesPage() {
                 <MessageSquare className="h-4 w-4" />
                 Expériences Authentiques
               </div>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
                 Témoignages de nos Stagiaires
               </h1>
-              <p className="text-base md:text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-sm md:text-base text-gray-700 max-w-3xl mx-auto leading-relaxed">
                 Découvrez les expériences authentiques et inspirantes de nos stagiaires. 
                 Des histoires vraies qui témoignent de la qualité de nos programmes.
               </p>
@@ -272,6 +353,7 @@ export default function PublicTemoignagesPage() {
                       key={testimonial.id}
                       testimonial={testimonial}
                       onVideoClick={handleVideoClick}
+                      onPreviewClick={openVideoPreview}
                     />
                   ))}
                 </div>
@@ -284,6 +366,7 @@ export default function PublicTemoignagesPage() {
                       key={testimonial.id}
                       testimonial={testimonial}
                       onVideoClick={handleVideoClick}
+                      onPreviewClick={openVideoPreview}
                     />
                   ))}
                 </div>
@@ -296,6 +379,7 @@ export default function PublicTemoignagesPage() {
                       key={testimonial.id}
                       testimonial={testimonial}
                       onVideoClick={handleVideoClick}
+                      onPreviewClick={openVideoPreview}
                     />
                   ))}
                 </div>
@@ -321,7 +405,16 @@ export default function PublicTemoignagesPage() {
                 </div>
 
                 <div className="aspect-video bg-gray-900 rounded-lg mb-4 flex items-center justify-center">
-                  {selectedTestimonial.video_url ? (
+                  {selectedTestimonial.video_file ? (
+                    <video
+                      controls
+                      className="w-full h-full rounded-lg"
+                      src={selectedTestimonial.video_file}
+                      preload="metadata"
+                    >
+                      Votre navigateur ne supporte pas la lecture de vidéos.
+                    </video>
+                  ) : selectedTestimonial.video_url ? (
                     <iframe
                       src={selectedTestimonial.video_url}
                       className="w-full h-full rounded-lg"
@@ -336,7 +429,7 @@ export default function PublicTemoignagesPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="flex items-center gap-4 text-sm text-gray-600">
+                  <div className="flex items-center gap-4 text-xs text-gray-600">
                     <div className="flex items-center gap-1">
                       <User className="h-4 w-4" />
                       <span>
@@ -359,22 +452,14 @@ export default function PublicTemoignagesPage() {
                     <p className="text-gray-700 leading-relaxed">{selectedTestimonial.content}</p>
                   </div>
 
-                  <div className="flex items-center gap-4">
-                    <Button variant="outline" size="sm">
-                      <Heart className="h-4 w-4 mr-2" />
-                      J'aime
-                    </Button>
-                    <Button variant="outline" size="sm">
-                      <Share2 className="h-4 w-4 mr-2" />
-                      Partager
-                    </Button>
-                    {selectedTestimonial.video_url && (
+                  {selectedTestimonial.video_url && (
+                    <div className="flex items-center gap-4">
                       <Button variant="outline" size="sm">
                         <ExternalLink className="h-4 w-4 mr-2" />
                         Voir sur YouTube
                       </Button>
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -390,9 +475,11 @@ export default function PublicTemoignagesPage() {
 function TestimonialCard({
   testimonial,
   onVideoClick,
+  onPreviewClick,
 }: {
   testimonial: Testimonial
   onVideoClick: (testimonial: Testimonial) => void
+  onPreviewClick: (testimonial: Testimonial) => void
 }) {
   return (
     <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105 cursor-pointer group">
@@ -401,9 +488,9 @@ function TestimonialCard({
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               {getTypeIcon(testimonial.testimonial_type)}
-              <CardTitle className="text-lg line-clamp-2">{testimonial.title}</CardTitle>
+              <CardTitle className="text-base line-clamp-2">{testimonial.title}</CardTitle>
             </div>
-            <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex items-center gap-4 text-xs text-gray-600">
               <div className="flex items-center gap-1">
                 <User className="h-4 w-4" />
                 <span>
@@ -427,53 +514,64 @@ function TestimonialCard({
         <div className="space-y-4">
           {/* Aperçu du contenu */}
           <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-gray-700 text-sm line-clamp-4 leading-relaxed">
+            <p className="text-gray-700 text-xs line-clamp-4 leading-relaxed">
               {testimonial.content}
             </p>
           </div>
 
           {/* Aperçu vidéo si disponible */}
-          {testimonial.testimonial_type === "video" && testimonial.video_url && (
-            <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden group">
-              <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-all duration-300" />
-              <div className="absolute inset-0 flex items-center justify-center">
+          {testimonial.testimonial_type === "video" && (testimonial.video_url || testimonial.video_file) && (
+            <div className="space-y-3">
+              <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden group">
+                <div className="absolute inset-0 bg-black bg-opacity-30 group-hover:bg-opacity-20 transition-all duration-300" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <Button
+                    size="sm"
+                    className="bg-white text-gray-900 hover:bg-gray-100"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onVideoClick(testimonial)
+                    }}
+                  >
+                    <Play className="h-4 w-4 mr-2" />
+                    Regarder
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Video Actions */}
+              <div className="flex items-center gap-2">
                 <Button
                   size="sm"
-                  className="bg-white text-gray-900 hover:bg-gray-100"
+                  variant="outline"
                   onClick={(e) => {
                     e.stopPropagation()
-                    onVideoClick(testimonial)
+                    onPreviewClick(testimonial)
                   }}
+                  className="text-xs"
                 >
-                  <Play className="h-4 w-4 mr-2" />
-                  Regarder
+                  <Play className="h-3 w-3 mr-1" />
+                  Prévisualiser
                 </Button>
+                {testimonial.video_file ? (
+                  <Badge variant="secondary" className="text-xs">
+                    Uploadé
+                  </Badge>
+                ) : (
+                  <Badge variant="outline" className="text-xs">
+                    Externe
+                  </Badge>
+                )}
               </div>
             </div>
           )}
 
           {/* Métadonnées */}
-          <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center justify-between text-xs text-gray-500">
             <div className="flex items-center gap-1">
               <Calendar className="h-4 w-4" />
               <span>{new Date(testimonial.created_at).toLocaleDateString("fr-FR")}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <Eye className="h-4 w-4" />
-              <span>1.2k vues</span>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex items-center gap-2 pt-2 border-t">
-            <Button variant="ghost" size="sm" className="flex-1">
-              <Heart className="h-4 w-4 mr-2" />
-              J'aime
-            </Button>
-            <Button variant="ghost" size="sm" className="flex-1">
-              <Share2 className="h-4 w-4 mr-2" />
-              Partager
-            </Button>
           </div>
         </div>
       </CardContent>

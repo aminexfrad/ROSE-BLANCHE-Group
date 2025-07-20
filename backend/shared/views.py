@@ -395,6 +395,33 @@ class TestimonialCreateView(generics.CreateAPIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
+            # Handle video file validation
+            if request.data.get('testimonial_type') == 'video':
+                video_file = request.FILES.get('video_file')
+                video_url = request.data.get('video_url')
+                
+                if not video_file and not video_url:
+                    return Response(
+                        {'error': 'Pour un témoignage vidéo, vous devez fournir soit un fichier vidéo soit une URL vidéo'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                if video_file:
+                    # Validate file size (50MB max)
+                    if video_file.size > 50 * 1024 * 1024:
+                        return Response(
+                            {'error': 'Le fichier vidéo est trop volumineux. Taille maximum: 50MB'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                    
+                    # Validate file type
+                    allowed_types = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm']
+                    if video_file.content_type not in allowed_types:
+                        return Response(
+                            {'error': 'Type de fichier non supporté. Formats acceptés: MP4, AVI, MOV, WMV, FLV, WEBM'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+            
             return super().create(request, *args, **kwargs)
         except Exception as e:
             print(f"Error in TestimonialCreateView.create: {e}")
@@ -770,6 +797,43 @@ class TestimonialUpdateView(generics.UpdateAPIView):
 
     def get_queryset(self):
         return Testimonial.objects.filter(author=self.request.user)
+
+    def update(self, request, *args, **kwargs):
+        try:
+            # Handle video file validation for updates
+            if request.data.get('testimonial_type') == 'video':
+                video_file = request.FILES.get('video_file')
+                video_url = request.data.get('video_url')
+                
+                if not video_file and not video_url:
+                    return Response(
+                        {'error': 'Pour un témoignage vidéo, vous devez fournir soit un fichier vidéo soit une URL vidéo'},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                
+                if video_file:
+                    # Validate file size (50MB max)
+                    if video_file.size > 50 * 1024 * 1024:
+                        return Response(
+                            {'error': 'Le fichier vidéo est trop volumineux. Taille maximum: 50MB'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+                    
+                    # Validate file type
+                    allowed_types = ['video/mp4', 'video/avi', 'video/mov', 'video/wmv', 'video/flv', 'video/webm']
+                    if video_file.content_type not in allowed_types:
+                        return Response(
+                            {'error': 'Type de fichier non supporté. Formats acceptés: MP4, AVI, MOV, WMV, FLV, WEBM'},
+                            status=status.HTTP_400_BAD_REQUEST
+                        )
+            
+            return super().update(request, *args, **kwargs)
+        except Exception as e:
+            print(f"Error in TestimonialUpdateView.update: {e}")
+            return Response(
+                {'error': f'Erreur lors de la mise à jour du témoignage: {str(e)}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
     def perform_update(self, serializer):
         # Reset status to pending when updating

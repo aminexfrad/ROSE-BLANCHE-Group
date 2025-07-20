@@ -269,6 +269,7 @@ class InternshipTestimonialsView(APIView):
                     "content": testimonial.content,
                     "testimonial_type": testimonial.testimonial_type,
                     "video_url": testimonial.video_url,
+                    "video_file": request.build_absolute_uri(testimonial.video_file.url) if testimonial.video_file else None,
                     "status": testimonial.status,
                     "moderated_by": {
                         "id": testimonial.moderated_by.id,

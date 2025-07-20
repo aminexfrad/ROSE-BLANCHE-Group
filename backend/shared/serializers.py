@@ -126,15 +126,38 @@ class TestimonialSerializer(serializers.ModelSerializer):
     stage = StageSerializer(read_only=True)
     author = UserSerializer(read_only=True)
     moderated_by = UserSerializer(read_only=True)
+    video_file = serializers.SerializerMethodField()
     
     class Meta:
         model = Testimonial
         fields = '__all__'
+    
+    def get_video_file(self, obj):
+        if obj.video_file:
+            try:
+                if 'request' in self.context:
+                    return self.context['request'].build_absolute_uri(obj.video_file.url)
+                else:
+                    # Fallback if no request context
+                    return obj.video_file.url
+            except Exception as e:
+                print(f"Error generating video file URL: {e}")
+                return obj.video_file.url
+        return None
 
 class TestimonialCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Testimonial
         fields = ['stage', 'title', 'content', 'testimonial_type', 'video_url', 'video_file']
+    
+    def validate(self, data):
+        # Ensure either video_url or video_file is provided for video testimonials
+        if data.get('testimonial_type') == 'video':
+            if not data.get('video_url') and not data.get('video_file'):
+                raise serializers.ValidationError(
+                    "Pour un témoignage vidéo, vous devez fournir soit une URL vidéo soit un fichier vidéo."
+                )
+        return data
     
     def create(self, validated_data):
         validated_data['author'] = self.context['request'].user

@@ -15,6 +15,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import VideoUpload from "@/components/video-upload"
 import {
   MessageSquare,
   CheckCircle,
@@ -50,6 +51,7 @@ export default function StagiaireTemoignagesPage() {
     testimonial_type: "text" as "text" | "video",
     video_url: ""
   })
+  const [selectedVideo, setSelectedVideo] = useState<File | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
@@ -122,8 +124,13 @@ export default function StagiaireTemoignagesPage() {
       formDataObj.append("content", formData.content)
       formDataObj.append("testimonial_type", formData.testimonial_type)
       formDataObj.append("stage", internship.id.toString())
-      if (formData.testimonial_type === "video" && formData.video_url) {
-        formDataObj.append("video_url", formData.video_url)
+      
+      if (formData.testimonial_type === "video") {
+        if (selectedVideo) {
+          formDataObj.append("video_file", selectedVideo)
+        } else if (formData.video_url) {
+          formDataObj.append("video_url", formData.video_url)
+        }
       }
 
       if (editingTestimonial) {
@@ -141,6 +148,7 @@ export default function StagiaireTemoignagesPage() {
       setShowForm(false)
       setEditingTestimonial(null)
       setFormData({ title: "", content: "", testimonial_type: "text", video_url: "" })
+      setSelectedVideo(null)
     } catch (err: any) {
       toast.error(err.message || "Erreur lors de la soumission du témoignage")
     } finally {
@@ -163,6 +171,7 @@ export default function StagiaireTemoignagesPage() {
     setShowForm(false)
     setEditingTestimonial(null)
     setFormData({ title: "", content: "", testimonial_type: "text", video_url: "" })
+    setSelectedVideo(null)
   }
 
   // Compute statistics
@@ -332,20 +341,30 @@ export default function StagiaireTemoignagesPage() {
                       <p className="text-gray-700 leading-relaxed">{testimonial.content}</p>
                     </div>
 
-                    {testimonial.video_url && (
+                    {(testimonial.video_url || testimonial.video_file) && (
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <div className="flex items-center gap-2 mb-2">
                           <Video className="h-4 w-4 text-purple-600" />
                           <span className="font-medium">Vidéo associée</span>
                         </div>
-                        <a 
-                          href={testimonial.video_url} 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-blue-600 hover:text-blue-800 text-sm"
-                        >
-                          Voir la vidéo
-                        </a>
+                        {testimonial.video_file ? (
+                          <video 
+                            controls 
+                            className="w-full max-w-md rounded-lg"
+                            src={testimonial.video_file}
+                          >
+                            Votre navigateur ne supporte pas la lecture de vidéos.
+                          </video>
+                        ) : (
+                          <a 
+                            href={testimonial.video_url} 
+                            target="_blank" 
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 text-sm"
+                          >
+                            Voir la vidéo
+                          </a>
+                        )}
                       </div>
                     )}
 
@@ -396,8 +415,8 @@ export default function StagiaireTemoignagesPage() {
 
         {/* Dialog de création/modification */}
         <Dialog open={showForm} onOpenChange={setShowForm}>
-          <DialogContent className="sm:max-w-[600px]">
-            <DialogHeader>
+          <DialogContent className="sm:max-w-[600px] max-h-[85vh] flex flex-col">
+            <DialogHeader className="flex-shrink-0">
               <DialogTitle>
                 {editingTestimonial ? 'Modifier le témoignage' : 'Nouveau témoignage'}
               </DialogTitle>
@@ -409,7 +428,7 @@ export default function StagiaireTemoignagesPage() {
               </DialogDescription>
             </DialogHeader>
             
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto space-y-4 px-6" id="testimonial-form">
               <div>
                 <Label htmlFor="title">Titre du témoignage</Label>
                 <Input
@@ -450,28 +469,33 @@ export default function StagiaireTemoignagesPage() {
               </div>
               
               {formData.testimonial_type === "video" && (
-                <div>
-                  <Label htmlFor="video_url">URL de la vidéo</Label>
-                  <Input
-                    id="video_url"
-                    type="url"
-                    value={formData.video_url}
-                    onChange={(e) => setFormData({ ...formData, video_url: e.target.value })}
-                    placeholder="https://www.youtube.com/watch?v=..."
-                  />
-                </div>
+                <VideoUpload
+                  onVideoSelect={setSelectedVideo}
+                  onVideoUrlChange={(url) => setFormData({ ...formData, video_url: url })}
+                  selectedVideo={selectedVideo}
+                  videoUrl={formData.video_url}
+                  maxSize={50}
+                  acceptedFormats={['.mp4', '.avi', '.mov', '.wmv', '.flv', '.webm']}
+                />
               )}
-              
-              <DialogFooter>
-                <Button type="button" variant="outline" onClick={handleCancel}>
-                  Annuler
-                </Button>
-                <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {editingTestimonial ? 'Modifier' : 'Soumettre'}
-                </Button>
-              </DialogFooter>
             </form>
+            
+            <DialogFooter className="flex-shrink-0 border-t pt-4 mt-4 bg-white">
+              <div className="flex items-center justify-between w-full">
+                <div className="text-sm text-gray-500">
+                  <span>💡 Appuyez sur Entrée pour soumettre</span>
+                </div>
+                <div className="flex gap-2">
+                  <Button type="button" variant="outline" onClick={handleCancel}>
+                    Annuler
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting} form="testimonial-form">
+                    {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {editingTestimonial ? 'Modifier' : 'Soumettre'}
+                  </Button>
+                </div>
+              </div>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>

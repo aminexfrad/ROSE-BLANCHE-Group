@@ -44,6 +44,7 @@ import {
 } from "lucide-react"
 import { apiClient } from "@/lib/api"
 import type { Testimonial } from "@/lib/api"
+import { useHydrationSuppression } from "@/hooks/use-hydration-suppression"
 
 export default function PublicHomePage() {
   const [isVisible, setIsVisible] = useState(false)
@@ -71,6 +72,9 @@ export default function PublicHomePage() {
 
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [loadingTestimonials, setLoadingTestimonials] = useState(true)
+
+  // Suppress hydration warnings caused by browser extensions
+  useHydrationSuppression()
 
   useEffect(() => {
     setIsVisible(true)

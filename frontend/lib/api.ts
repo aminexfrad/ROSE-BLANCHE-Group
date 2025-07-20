@@ -141,6 +141,7 @@ export interface Testimonial {
   content: string
   testimonial_type: 'text' | 'video'
   video_url?: string
+  video_file?: string
   status: 'pending' | 'approved' | 'rejected'
   author: User
   stage: Stage
