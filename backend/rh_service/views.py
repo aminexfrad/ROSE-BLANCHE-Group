@@ -850,22 +850,37 @@ class RHCreerStagiaireView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            # Générer un mot de passe aléatoire
-            import secrets
-            import string
-            password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
-            
-            # Créer l'utilisateur stagiaire
-            stagiaire = User.objects.create_user(
-                email=data['email'],
-                password=password,
-                prenom=data['prenom'],
-                nom=data['nom'],
-                telephone=data.get('telephone', ''),
-                institut=data['institut'],
-                specialite=data['specialite'],
-                role='stagiaire'
-            )
+            # Vérifier si l'utilisateur existe déjà
+            existing_user = User.objects.filter(email=data['email']).first()
+            if existing_user:
+                # Si l'utilisateur existe, utiliser l'utilisateur existant
+                stagiaire = existing_user
+                # Mettre à jour les informations si nécessaire
+                stagiaire.nom = data['nom']
+                stagiaire.prenom = data['prenom']
+                stagiaire.telephone = data.get('telephone', '')
+                stagiaire.institut = data['institut']
+                stagiaire.specialite = data['specialite']
+                stagiaire.role = 'stagiaire'
+                stagiaire.save()
+                password = None  # Pas de nouveau mot de passe pour un utilisateur existant
+            else:
+                # Générer un mot de passe aléatoire
+                import secrets
+                import string
+                password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+                
+                # Créer l'utilisateur stagiaire
+                stagiaire = User.objects.create_user(
+                    email=data['email'],
+                    password=password,
+                    prenom=data['prenom'],
+                    nom=data['nom'],
+                    telephone=data.get('telephone', ''),
+                    institut=data['institut'],
+                    specialite=data['specialite'],
+                    role='stagiaire'
+                )
             
             # Créer une demande de stage approuvée
             demande = DemandeModel.objects.create(
@@ -907,7 +922,7 @@ class RHCreerStagiaireView(APIView):
                 print(f"Erreur lors de l'envoi de l'email: {e}")
             
             return Response({
-                'message': 'Stagiaire créé avec succès',
+                'message': 'Stagiaire créé avec succès' + (' (utilisateur existant)' if existing_user else ''),
                 'stagiaire': {
                     'id': stagiaire.id,
                     'email': stagiaire.email,

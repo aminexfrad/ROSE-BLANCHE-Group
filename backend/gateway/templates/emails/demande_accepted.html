@@ -32,16 +32,21 @@ Intellectual Property – Protected by international copyright law.
             
             <p>Nous avons le plaisir de vous informer que votre demande de stage a été <strong>acceptée</strong> !</p>
             
-            <p>Votre compte stagiaire a été créé sur la plateforme StageBloom. Voici vos identifiants de connexion :</p>
-            
-            <div class="credentials">
-                <p><strong>Email :</strong> {{ demande.email }}</p>
-                <p><strong>Mot de passe :</strong> {{ password }}</p>
-            </div>
-            
-            <div class="warning">
-                <p><strong>⚠️ Important :</strong> Veuillez changer votre mot de passe lors de votre première connexion pour des raisons de sécurité.</p>
-            </div>
+            {% if is_existing_user %}
+                <p>Votre compte stagiaire existant a été mis à jour sur la plateforme StageBloom.</p>
+                <p>Vous pouvez vous connecter avec votre mot de passe actuel.</p>
+            {% else %}
+                <p>Votre compte stagiaire a été créé sur la plateforme StageBloom. Voici vos identifiants de connexion :</p>
+                
+                <div class="credentials">
+                    <p><strong>Email :</strong> {{ demande.email }}</p>
+                    <p><strong>Mot de passe :</strong> {{ password }}</p>
+                </div>
+                
+                <div class="warning">
+                    <p><strong>⚠️ Important :</strong> Veuillez changer votre mot de passe lors de votre première connexion pour des raisons de sécurité.</p>
+                </div>
+            {% endif %}
             
             <p>Prochaines étapes :</p>
             <ol>

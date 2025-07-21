@@ -49,6 +49,22 @@ class DemandeCreateView(generics.CreateAPIView):
             
             # Send email notification to RH with PDF and attachments
             self.send_rh_notification(demande, pdf_content)
+            
+            # Create dashboard notifications for RH users
+            from shared.models import Notification
+            from auth_service.models import User
+            
+            # Get RH users
+            rh_users = User.objects.filter(role='rh', is_active=True)
+            
+            for rh_user in rh_users:
+                Notification.objects.create(
+                    recipient=rh_user,
+                    title='Nouvelle demande de stage',
+                    message=f'Nouvelle candidature reçue de {demande.prenom} {demande.nom} ({demande.institut}) pour un stage {demande.type_stage}.',
+                    notification_type='info'
+                )
+                
         except Exception as e:
             import traceback
             print('Error in DemandeCreateView.perform_create:', e)
@@ -292,32 +308,58 @@ def approve_demande(request, pk):
     password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
     
     try:
-        # Create user account
-        user = User.objects.create_user(
-            email=demande.email,
-            password=password,
-            nom=demande.nom,
-            prenom=demande.prenom,
-            telephone=demande.telephone,
-            institut=demande.institut,
-            specialite=demande.specialite,
-            role='stagiaire'
-        )
+        # Check if user already exists
+        existing_user = User.objects.filter(email=demande.email).first()
+        if existing_user:
+            # If user exists, use the existing user
+            user = existing_user
+            # Update user information if needed
+            user.nom = demande.nom
+            user.prenom = demande.prenom
+            user.telephone = demande.telephone
+            user.institut = demande.institut
+            user.specialite = demande.specialite
+            user.role = 'stagiaire'
+            user.save()
+        else:
+            # Create new user account
+            user = User.objects.create_user(
+                email=demande.email,
+                password=password,
+                nom=demande.nom,
+                prenom=demande.prenom,
+                telephone=demande.telephone,
+                institut=demande.institut,
+                specialite=demande.specialite,
+                role='stagiaire'
+            )
         
         # Approve demande
         demande.approve(user_created=user)
         
         # Send acceptance email
-        MailService.send_acceptance_email(demande, password)
-        
-        return Response({
-            'message': 'Demande approuvée avec succès',
-            'user_created': {
-                'id': user.id,
-                'email': user.email,
-                'password': password
-            }
-        }, status=status.HTTP_200_OK)
+        if existing_user:
+            # If using existing user, don't send password in email
+            MailService.send_acceptance_email(demande, None)
+            return Response({
+                'message': 'Demande approuvée avec succès (utilisateur existant)',
+                'user_created': {
+                    'id': user.id,
+                    'email': user.email,
+                    'password': None
+                }
+            }, status=status.HTTP_200_OK)
+        else:
+            # Send acceptance email with password for new user
+            MailService.send_acceptance_email(demande, password)
+            return Response({
+                'message': 'Demande approuvée avec succès',
+                'user_created': {
+                    'id': user.id,
+                    'email': user.email,
+                    'password': password
+                }
+            }, status=status.HTTP_200_OK)
         
     except Exception as e:
         import traceback

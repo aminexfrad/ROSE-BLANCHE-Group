@@ -475,7 +475,7 @@ class TestimonialCreateView(generics.CreateAPIView):
             testimonial = serializer.save(author=self.request.user)
             print(f"Testimonial created: {testimonial}")
             
-            # Create notification for RH team
+            # Create dashboard notifications for RH team
             from shared.models import Notification
             from auth_service.models import User
             
@@ -490,6 +490,7 @@ class TestimonialCreateView(generics.CreateAPIView):
                     notification_type='info',
                     related_stage=testimonial.stage
                 )
+                
         except Exception as e:
             print(f"Error in TestimonialCreateView.perform_create: {e}")
             raise

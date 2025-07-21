@@ -134,13 +134,13 @@ class MailService:
             return False
     
     @staticmethod
-    def send_acceptance_email(demande, password: str) -> bool:
+    def send_acceptance_email(demande, password: str = None) -> bool:
         """
         Send acceptance email to candidate.
         
         Args:
             demande: Demande object
-            password: Generated password for the new user account
+            password: Generated password for the new user account (None for existing users)
             
         Returns:
             bool: True if email was sent successfully
@@ -150,6 +150,7 @@ class MailService:
         context = {
             'demande': demande,
             'password': password,
+            'is_existing_user': password is None,
             'site_url': getattr(settings, 'SITE_URL', 'http://localhost:3000')
         }
         

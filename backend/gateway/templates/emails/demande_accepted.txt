@@ -4,12 +4,17 @@ Bonjour {{ demande.prenom }} {{ demande.nom }},
 
 Nous avons le plaisir de vous informer que votre demande de stage a été ACCEPTÉE !
 
+{% if is_existing_user %}
+Votre compte stagiaire existant a été mis à jour sur la plateforme StageBloom.
+Vous pouvez vous connecter avec votre mot de passe actuel.
+{% else %}
 Votre compte stagiaire a été créé sur la plateforme StageBloom. Voici vos identifiants de connexion :
 
 Email : {{ demande.email }}
 Mot de passe : {{ password }}
 
 ⚠️ IMPORTANT : Veuillez changer votre mot de passe lors de votre première connexion pour des raisons de sécurité.
+{% endif %}
 
 PROCHAINES ÉTAPES :
 1. Connectez-vous à votre espace stagiaire avec les identifiants ci-dessus
