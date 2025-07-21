@@ -12,6 +12,11 @@ from django.db.models import Count, Avg
 from django.utils import timezone
 from datetime import timedelta
 from shared.models import User, Stage, Document, Evaluation, Testimonial
+from auth_service.serializers import UserSerializer, UserRegistrationSerializer
+from django.shortcuts import get_object_or_404
+from demande_service.models import Demande
+import secrets
+import string
 
 class AdminDashboardView(APIView):
     permission_classes = [IsAuthenticated]
@@ -65,6 +70,232 @@ class AdminDashboardView(APIView):
         except Exception as e:
             return Response(
                 {'error': f'Error fetching dashboard data: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class AdminUsersView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Get all users with optional filtering"""
+        try:
+            # Check if user is admin
+            if request.user.role != 'admin':
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Get query parameters
+            role_filter = request.query_params.get('role', '')
+            search = request.query_params.get('search', '')
+            
+            # Build queryset
+            users = User.objects.all()
+            
+            if role_filter:
+                users = users.filter(role=role_filter)
+            
+            if search:
+                users = users.filter(
+                    email__icontains=search
+                ) | users.filter(
+                    nom__icontains=search
+                ) | users.filter(
+                    prenom__icontains=search
+                )
+            
+            # Serialize users
+            serializer = UserSerializer(users, many=True)
+            
+            return Response({
+                'results': serializer.data,
+                'count': users.count()
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error fetching users: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def post(self, request):
+        """Create a new user"""
+        try:
+            # Check if user is admin
+            if request.user.role != 'admin':
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Generate a random password
+            password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(12))
+            
+            # Add password to data
+            data = request.data.copy()
+            data['password'] = password
+            data['confirm_password'] = password
+            
+            # Validate and create user
+            serializer = UserRegistrationSerializer(data=data)
+            if serializer.is_valid():
+                user = serializer.save()
+                
+                # If the user is a stagiaire, create a stage for them
+                if user.role == 'stagiaire':
+                    try:
+                        # Create a demande for the stagiaire
+                        demande = Demande.objects.create(
+                            nom=user.nom,
+                            prenom=user.prenom,
+                            email=user.email,
+                            telephone=user.telephone or '',
+                            cin=f"CIN{user.id:06d}",
+                            institut=user.institut or 'Institut à définir',
+                            specialite=user.specialite or 'Spécialité à définir',
+                            type_stage='Stage PFE',
+                            niveau='Master',
+                            date_debut=timezone.now().date(),
+                            date_fin=(timezone.now() + timedelta(days=90)).date(),
+                            stage_binome=False,
+                            status='approved',
+                            user_created=user
+                        )
+                        
+                        # Create a stage for the stagiaire
+                        stage = Stage.objects.create(
+                            demande=demande,
+                            stagiaire=user,
+                            title=f"Stage {user.prenom} {user.nom}",
+                            description=f"Stage de {user.specialite or 'spécialité'}",
+                            company="Entreprise à définir",
+                            location="Localisation à définir",
+                            start_date=demande.date_debut,
+                            end_date=demande.date_fin,
+                            status='active',
+                            progress=0
+                        )
+                        
+                        return Response({
+                            'message': 'Utilisateur créé avec succès',
+                            'user': UserSerializer(user).data,
+                            'password': password,
+                            'stage_created': True,
+                            'stage_id': stage.id
+                        }, status=status.HTTP_201_CREATED)
+                        
+                    except Exception as e:
+                        # If stage creation fails, still return the user but with a warning
+                        return Response({
+                            'message': 'Utilisateur créé avec succès, mais erreur lors de la création du stage',
+                            'user': UserSerializer(user).data,
+                            'password': password,
+                            'stage_created': False,
+                            'stage_error': str(e)
+                        }, status=status.HTTP_201_CREATED)
+                
+                return Response({
+                    'message': 'Utilisateur créé avec succès',
+                    'user': UserSerializer(user).data,
+                    'password': password
+                }, status=status.HTTP_201_CREATED)
+            else:
+                return Response(
+                    {'error': 'Données invalides', 'details': serializer.errors}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+        except Exception as e:
+            return Response(
+                {'error': f'Error creating user: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class AdminUserDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, user_id):
+        """Get a specific user"""
+        try:
+            # Check if user is admin
+            if request.user.role != 'admin':
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            user = get_object_or_404(User, id=user_id)
+            serializer = UserSerializer(user)
+            
+            return Response(serializer.data)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error fetching user: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def put(self, request, user_id):
+        """Update a user"""
+        try:
+            # Check if user is admin
+            if request.user.role != 'admin':
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            user = get_object_or_404(User, id=user_id)
+            serializer = UserSerializer(user, data=request.data, partial=True)
+            
+            if serializer.is_valid():
+                serializer.save()
+                return Response({
+                    'message': 'Utilisateur mis à jour avec succès',
+                    'user': serializer.data
+                })
+            else:
+                return Response(
+                    {'error': 'Données invalides', 'details': serializer.errors}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+                
+        except Exception as e:
+            return Response(
+                {'error': f'Error updating user: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def delete(self, request, user_id):
+        """Delete a user"""
+        try:
+            # Check if user is admin
+            if request.user.role != 'admin':
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            user = get_object_or_404(User, id=user_id)
+            
+            # Prevent deleting self
+            if user.id == request.user.id:
+                return Response(
+                    {'error': 'Vous ne pouvez pas supprimer votre propre compte'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Delete user
+            user.delete()
+            
+            return Response({
+                'message': 'Utilisateur supprimé avec succès'
+            }, status=status.HTTP_200_OK)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error deleting user: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 

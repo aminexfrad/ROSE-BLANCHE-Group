@@ -929,7 +929,37 @@ class ApiClient {
     if (params.limit) queryParams.append('limit', params.limit.toString())
     if (params.role) queryParams.append('role', params.role)
     
-    return this.request<{ results: User[]; count: number }>(`/users/?${queryParams}`)
+    return this.request<{ results: User[]; count: number }>(`/admin/users/?${queryParams}`)
+  }
+
+  async getUser(id: number): Promise<User> {
+    return this.request<User>(`/admin/users/${id}/`)
+  }
+
+  async createUser(userData: Partial<User>): Promise<{ user: User; password: string; stage_created?: boolean; stage_id?: number; stage_error?: string }> {
+    return this.request<{ user: User; password: string; stage_created?: boolean; stage_id?: number; stage_error?: string }>('/admin/users/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    })
+  }
+
+  async updateUser(id: number, userData: Partial<User>): Promise<{ user: User }> {
+    return this.request<{ user: User }>(`/admin/users/${id}/`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(userData),
+    })
+  }
+
+  async deleteUser(id: number): Promise<{ message: string }> {
+    return this.request<{ message: string }>(`/admin/users/${id}/`, {
+      method: 'DELETE',
+    })
   }
 
   async getStagiaires(params: { limit?: number } = {}): Promise<{ results: Stagiaire[]; count: number }> {

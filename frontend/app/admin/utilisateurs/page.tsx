@@ -19,30 +19,90 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Users, Search, Plus, Edit, Trash2, Eye, Loader2, AlertCircle, Shield, UserCheck, UserX } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
+import { UserManagementModal } from "@/components/user-management-modal"
+import { useToast } from "@/hooks/use-toast"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 export default function AdminUtilisateursPage() {
   const breadcrumbs = [{ label: "Administration", href: "/admin" }, { label: "Utilisateurs" }]
+  const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [users, setUsers] = useState<User[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [showUserModal, setShowUserModal] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [deletingUser, setDeletingUser] = useState<User | null>(null)
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true)
-        const response = await apiClient.getUsers()
-        setUsers(response.results || [])
-      } catch (err: any) {
-        setError(err.message || "Erreur lors du chargement des utilisateurs")
-      } finally {
-        setLoading(false)
-      }
-    }
-    fetchData()
+    fetchUsers()
   }, [])
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true)
+      const response = await apiClient.getUsers()
+      setUsers(response.results || [])
+    } catch (err: any) {
+      setError(err.message || "Erreur lors du chargement des utilisateurs")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleCreateUser = () => {
+    setEditingUser(null)
+    setShowUserModal(true)
+  }
+
+  const handleEditUser = (user: User) => {
+    setEditingUser(user)
+    setShowUserModal(true)
+  }
+
+  const handleDeleteUser = (user: User) => {
+    setDeletingUser(user)
+  }
+
+  const confirmDeleteUser = async () => {
+    if (!deletingUser) return
+
+    try {
+      await apiClient.deleteUser(deletingUser.id)
+      toast({
+        title: "Succès",
+        description: "Utilisateur supprimé avec succès",
+      })
+      fetchUsers()
+    } catch (error: any) {
+      toast({
+        title: "Erreur",
+        description: error.message || "Une erreur est survenue lors de la suppression",
+        variant: "destructive",
+      })
+    } finally {
+      setDeletingUser(null)
+    }
+  }
+
+  const handleUserCreated = (user: User) => {
+    fetchUsers()
+  }
+
+  const handleUserUpdated = (user: User) => {
+    fetchUsers()
+  }
 
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -236,7 +296,7 @@ export default function AdminUtilisateursPage() {
                   <SelectItem value="inactive">Inactif</SelectItem>
                 </SelectContent>
               </Select>
-              <Button className="w-full">
+              <Button onClick={handleCreateUser} className="w-full">
                 <Plus className="h-4 w-4 mr-2" />
                 Nouvel utilisateur
               </Button>
@@ -300,10 +360,19 @@ export default function AdminUtilisateursPage() {
                           <Button size="sm" variant="outline">
                             <Eye className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="outline">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleEditUser(user)}
+                          >
                             <Edit className="h-4 w-4" />
                           </Button>
-                          <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            className="text-red-600 hover:text-red-700"
+                            onClick={() => handleDeleteUser(user)}
+                          >
                             <Trash2 className="h-4 w-4" />
                           </Button>
                         </div>
@@ -358,6 +427,34 @@ export default function AdminUtilisateursPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* User Management Modal */}
+      <UserManagementModal
+        isOpen={showUserModal}
+        onClose={() => setShowUserModal(false)}
+        user={editingUser}
+        onUserCreated={handleUserCreated}
+        onUserUpdated={handleUserUpdated}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!deletingUser} onOpenChange={() => setDeletingUser(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmer la suppression</AlertDialogTitle>
+            <AlertDialogDescription>
+              Êtes-vous sûr de vouloir supprimer l'utilisateur "{deletingUser?.prenom} {deletingUser?.nom}" ? 
+              Cette action est irréversible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteUser} className="bg-red-600 hover:bg-red-700">
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </DashboardLayout>
   )
 }

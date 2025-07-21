@@ -199,7 +199,7 @@ class UserRegistrationSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'email', 'nom', 'prenom', 'password', 'confirm_password',
-            'telephone', 'departement', 'institut', 'specialite'
+            'telephone', 'departement', 'institut', 'specialite', 'role'
         ]
     
     def validate_email(self, value):
