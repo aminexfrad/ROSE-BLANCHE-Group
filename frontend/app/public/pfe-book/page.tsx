@@ -41,6 +41,12 @@ export default function PFEBookPage() {
   const [specialityFilter, setSpecialityFilter] = useState("all")
   const [diplomeFilter, setDiplomeFilter] = useState("all")
   const [villeFilter, setVilleFilter] = useState("all")
+  // Add state for expanded descriptions
+  const [expandedDescriptions, setExpandedDescriptions] = useState<{ [ref: string]: boolean }>({});
+
+  const toggleDescription = (ref: string) => {
+    setExpandedDescriptions(prev => ({ ...prev, [ref]: !prev[ref] }));
+  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -223,10 +229,10 @@ export default function PFEBookPage() {
 
           {/* Filtres */}
           <Card className="shadow-xl border-0 mb-12 bg-white/80 backdrop-blur-sm">
-            <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100">
+            <CardHeader className="bg-gradient-to-r from-red-50 to-rose-100 border-b border-red-100">
               <CardTitle className="text-2xl flex items-center gap-3 text-gray-900">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Filter className="h-6 w-6 text-blue-600" />
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <Filter className="h-6 w-6 text-red-600" />
                 </div>
                 Recherche et Filtres
               </CardTitle>
@@ -234,16 +240,16 @@ export default function PFEBookPage() {
             <CardContent className="p-8">
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="relative group">
-                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
+                  <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
                   <Input
                     placeholder="Rechercher une offre..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-12 h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500 transition-all"
+                    className="pl-12 h-12 border-gray-200 focus:border-red-500 focus:ring-red-500 transition-all"
                   />
                 </div>
                 <Select value={specialityFilter} onValueChange={setSpecialityFilter}>
-                  <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+                  <SelectTrigger className="h-12 border-gray-200 focus:border-red-500 focus:ring-red-500">
                     <SelectValue placeholder="Spécialité" />
                   </SelectTrigger>
                   <SelectContent>
@@ -254,7 +260,7 @@ export default function PFEBookPage() {
                   </SelectContent>
                 </Select>
                 <Select value={diplomeFilter} onValueChange={setDiplomeFilter}>
-                  <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+                  <SelectTrigger className="h-12 border-gray-200 focus:border-red-500 focus:ring-red-500">
                     <SelectValue placeholder="Diplôme" />
                   </SelectTrigger>
                   <SelectContent>
@@ -265,7 +271,7 @@ export default function PFEBookPage() {
                   </SelectContent>
                 </Select>
                 <Select value={villeFilter} onValueChange={setVilleFilter}>
-                  <SelectTrigger className="h-12 border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+                  <SelectTrigger className="h-12 border-gray-200 focus:border-red-500 focus:ring-red-500">
                     <SelectValue placeholder="Ville" />
                   </SelectTrigger>
                   <SelectContent>
@@ -280,7 +286,7 @@ export default function PFEBookPage() {
                 <Button 
                   onClick={resetFilters}
                   variant="outline" 
-                  className="border-gray-300 hover:border-blue-500 hover:bg-blue-50 transition-all"
+                  className="border-gray-300 hover:border-red-500 hover:bg-red-50 transition-all"
                 >
                   <Filter className="h-4 w-4 mr-2" />
                   Réinitialiser les filtres
@@ -297,34 +303,45 @@ export default function PFEBookPage() {
                   key={offer.reference}
                   className="group relative overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 bg-white/80 backdrop-blur-sm hover:bg-white"
                 >
-                  <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-100 pb-6">
-                    <CardTitle className="text-xl font-bold text-gray-900 line-clamp-2 mb-3 group-hover:text-blue-600 transition-colors">
+                  <CardHeader className="bg-gradient-to-r from-red-50 to-rose-100 border-b border-red-100 pb-6">
+                    <CardTitle className="text-xl font-bold text-gray-900 mb-3 group-hover:text-red-600 transition-colors">
                       {offer.title}
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="p-6">
                     <div className="space-y-4">
-                      <p className="text-gray-600 text-sm leading-relaxed line-clamp-3">
+                      <p className={`text-gray-600 text-sm leading-relaxed ${expandedDescriptions[offer.reference] ? '' : 'line-clamp-3'}`}>
                         {offer.description}
                       </p>
+                      {offer.description.length > 180 && (
+                        <button
+                          className="text-red-600 hover:text-red-800 text-xs font-semibold focus:outline-none transition-colors"
+                          onClick={() => toggleDescription(offer.reference)}
+                        >
+                          {expandedDescriptions[offer.reference] ? 'Afficher moins' : 'Afficher plus'}
+                        </button>
+                      )}
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div className="flex items-center gap-2 text-gray-500">
                           <GraduationCap className="h-4 w-4 text-purple-500" />
                           <span>{offer.diplome}</span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-500">
+                          <BookOpen className="h-4 w-4 text-red-500" />
                           <span className="font-medium">{offer.specialite}</span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-500">
+                          <MapPin className="h-4 w-4 text-red-400" />
                           <span className="font-medium">{offer.ville}</span>
                         </div>
                         <div className="flex items-center gap-2 text-gray-500">
+                          <Users className="h-4 w-4 text-red-300" />
                           <span className="font-medium">{offer.nombre_postes} postes</span>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {offer.keywords.split(',').map((kw, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs bg-blue-50 border-blue-200 text-blue-700">
+                          <Badge key={idx} variant="outline" className="text-xs bg-red-50 border-red-200 text-red-700">
                             {kw.trim()}
                           </Badge>
                         ))}
@@ -334,7 +351,7 @@ export default function PFEBookPage() {
                       </div>
                       <div className="pt-4 flex justify-end">
                         <Button 
-                          className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition-all duration-300"
+                          className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition-all duration-300"
                           onClick={() => handleApplyToOffer(offer)}
                         >
                           Postuler
@@ -357,7 +374,7 @@ export default function PFEBookPage() {
               <Button 
                 variant="outline" 
                 size="lg" 
-                className="border-2 border-blue-200 hover:border-blue-500 hover:bg-blue-50 text-blue-600 hover:text-blue-700 transition-all duration-300 px-8 py-3"
+                className="border-2 border-red-200 hover:border-red-500 hover:bg-red-50 text-red-600 hover:text-red-700 transition-all duration-300 px-8 py-3"
               >
                 <span>Voir plus d'offres</span>
                 <ArrowRight className="h-5 w-5 ml-2" />
