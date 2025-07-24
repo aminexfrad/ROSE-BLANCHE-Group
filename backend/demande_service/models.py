@@ -42,6 +42,8 @@ class Demande(models.Model):
     )
     niveau = models.CharField(_('niveau'), max_length=100)  # Changed to text field
     pfe_reference = models.CharField(_('référence PFE'), max_length=200, blank=True)  # New field for PFE reference
+    # Grouped PFE: Many-to-many to selected offers
+    offres = models.ManyToManyField('shared.OffreStage', blank=True, related_name='demandes', through='DemandeOffre')
     
     # Stage details
     date_debut = models.DateField(_('date de début'))
@@ -131,3 +133,21 @@ class Demande(models.Model):
         if raison:
             self.raison_refus = raison
         self.save()
+
+
+class DemandeOffre(models.Model):
+    STATUS_CHOICES = [
+        ('pending', 'En attente'),
+        ('accepted', 'Acceptée'),
+        ('rejected', 'Rejetée'),
+    ]
+    demande = models.ForeignKey('Demande', on_delete=models.CASCADE, related_name='demande_offres')
+    offre = models.ForeignKey('shared.OffreStage', on_delete=models.CASCADE, related_name='offre_demandes')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('demande', 'offre')
+
+    def __str__(self):
+        return f"{self.demande} - {self.offre} ({self.status})"

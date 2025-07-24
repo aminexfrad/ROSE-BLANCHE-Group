@@ -4,6 +4,13 @@ Bonjour {{ demande.prenom }} {{ demande.nom }},
 
 Nous avons le plaisir de vous informer que votre demande de stage a été ACCEPTÉE !
 
+{% if accepted_offres and accepted_offres|length > 0 %}
+OFFRES DE STAGE ACCEPTÉES :
+{% for offre in accepted_offres %}
+- {{ offre.title }} ({{ offre.reference }})
+{% endfor %}
+{% endif %}
+
 {% if is_existing_user %}
 Votre compte stagiaire existant a été mis à jour sur la plateforme StageBloom.
 Vous pouvez vous connecter avec votre mot de passe actuel.

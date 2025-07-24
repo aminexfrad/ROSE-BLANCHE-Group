@@ -33,6 +33,7 @@ import {
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { FaFilePdf, FaFileAlt } from "react-icons/fa";
+import { useToast } from '@/components/ui/use-toast'
 
 // FilePreviewCard component for document display
 function FilePreviewCard({ label, url }: { label: string; url?: string }) {
@@ -105,6 +106,9 @@ export default function RHDemandesPage() {
   })
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const { toast } = useToast();
+  // Track loading state for each offer action
+  const [loadingOffers, setLoadingOffers] = useState<{ [key: string]: boolean }>({});
 
   const breadcrumbs = [{ label: "RH", href: "/rh" }, { label: "Demandes de stage" }]
 
@@ -201,6 +205,55 @@ export default function RHDemandesPage() {
     files.forEach(file => {
       window.open(file.url, '_blank')
     })
+  }
+
+  const BACKEND_URL = 'http://localhost:8000';
+
+  const handleApproveOffer = async (demandeId: number, offerId: number) => {
+    const key = `${demandeId}-${offerId}`;
+    setLoadingOffers((prev) => ({ ...prev, [key]: true }));
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    try {
+      await fetch(`${BACKEND_URL}/api/demandes/stage/${demandeId}/offre/${offerId}/status/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ status: 'accepted' }),
+        credentials: 'include'
+      });
+      const response = await apiClient.getApplications();
+      setApplications(response.results || []);
+      toast({ title: 'Succès', description: 'Offre acceptée et autres offres rejetées.' });
+    } catch (err) {
+      toast({ title: 'Erreur', description: 'Erreur lors de l\'acceptation de l\'offre', variant: 'destructive' });
+    } finally {
+      setLoadingOffers((prev) => ({ ...prev, [key]: false }));
+    }
+  }
+  const handleRejectOffer = async (demandeId: number, offerId: number) => {
+    const key = `${demandeId}-${offerId}`;
+    setLoadingOffers((prev) => ({ ...prev, [key]: true }));
+    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
+    try {
+      await fetch(`${BACKEND_URL}/api/demandes/stage/${demandeId}/offre/${offerId}/status/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ status: 'rejected' }),
+        credentials: 'include'
+      });
+      const response = await apiClient.getApplications();
+      setApplications(response.results || []);
+      toast({ title: 'Succès', description: 'Offre rejetée.' });
+    } catch (err) {
+      toast({ title: 'Erreur', description: 'Erreur lors du rejet de l\'offre', variant: 'destructive' });
+    } finally {
+      setLoadingOffers((prev) => ({ ...prev, [key]: false }));
+    }
   }
 
   if (loading) {
@@ -404,6 +457,7 @@ export default function RHDemandesPage() {
                   <TableHead>Spécialité</TableHead>
                   <TableHead>Type de stage</TableHead>
                   <TableHead>Période</TableHead>
+                  <TableHead>Offres sélectionnées</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Documents</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -433,6 +487,36 @@ export default function RHDemandesPage() {
                         <div>{new Date(application.date_debut).toLocaleDateString()}</div>
                         <div className="text-gray-500">au {new Date(application.date_fin).toLocaleDateString()}</div>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {Array.isArray(application.offres) && application.offres.length > 0 ? (
+                        <ul className="list-disc ml-4">
+                          {application.offres.map((offre: any) => (
+                            <li key={offre.id} className="text-xs text-gray-800 flex items-center gap-2">
+                              {offre.title} <span className="text-gray-400">({offre.reference})</span>
+                              {/* Status badge */}
+                              <span className={
+                                offre.status === 'accepted' ? 'bg-green-100 text-green-700 px-2 py-0.5 rounded' :
+                                offre.status === 'rejected' ? 'bg-red-100 text-red-700 px-2 py-0.5 rounded' :
+                                'bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded'
+                              }>
+                                {offre.status === 'accepted' ? 'Acceptée' : offre.status === 'rejected' ? 'Rejetée' : 'En attente'}
+                              </span>
+                              {/* Per-offer actions */}
+                              {offre.status === 'pending' && <>
+                                <Button size="sm" variant="outline" onClick={() => handleApproveOffer(application.id, offre.id)} disabled={loadingOffers[`${application.id}-${offre.id}`]}>
+                                  {loadingOffers[`${application.id}-${offre.id}`] ? '...' : 'Accepter'}
+                                </Button>
+                                <Button size="sm" variant="destructive" onClick={() => handleRejectOffer(application.id, offre.id)} disabled={loadingOffers[`${application.id}-${offre.id}`]}>
+                                  {loadingOffers[`${application.id}-${offre.id}`] ? '...' : 'Rejeter'}
+                                </Button>
+                              </>}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <span className="text-xs text-gray-400">-</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

@@ -6,6 +6,7 @@ Intellectual Property – Protected by international copyright law.
 
 from django.urls import path
 from . import views
+from .views import update_demande_offre_status
 
 app_name = 'demande_service'
 
@@ -18,4 +19,8 @@ urlpatterns = [
     path('<int:pk>/', views.DemandeDetailView.as_view(), name='detail'),
     path('<int:pk>/approve/', views.approve_demande, name='approve'),
     path('<int:pk>/reject/', views.reject_demande, name='reject'),
+]
+
+urlpatterns += [
+    path('stage/<int:demande_id>/offre/<int:offre_id>/status/', update_demande_offre_status, name='update_demande_offre_status'),
 ] 

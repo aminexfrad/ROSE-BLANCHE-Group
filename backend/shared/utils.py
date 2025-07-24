@@ -137,21 +137,27 @@ class MailService:
     def send_acceptance_email(demande, password: str = None) -> bool:
         """
         Send acceptance email to candidate.
-        
-        Args:
-            demande: Demande object
-            password: Generated password for the new user account (None for existing users)
-            
-        Returns:
-            bool: True if email was sent successfully
         """
         subject = 'Félicitations ! Votre demande de stage a été acceptée'
+        
+        # Get accepted offers for grouped PFE
+        accepted_offres = []
+        if hasattr(demande, 'demande_offres') and demande.is_pfe_stage:
+            accepted_offres = [
+                {
+                    'title': do.offre.title,
+                    'reference': do.offre.reference
+                }
+                for do in demande.demande_offres.select_related('offre').all()
+                if do.status == 'accepted'
+            ]
         
         context = {
             'demande': demande,
             'password': password,
             'is_existing_user': password is None,
-            'site_url': getattr(settings, 'SITE_URL', 'http://localhost:3000')
+            'site_url': getattr(settings, 'SITE_URL', 'http://localhost:3000'),
+            'accepted_offres': accepted_offres,
         }
         
         return MailService.send_email(

@@ -65,6 +65,8 @@ export default function DemandeStage() {
   const [submitting, setSubmitting] = useState(false)
   const [isPrefilledFromOffer, setIsPrefilledFromOffer] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
+  const [selectedOfferIds, setSelectedOfferIds] = useState<number[]>([]);
+  const [selectedOfferReferences, setSelectedOfferReferences] = useState<string[]>([]);
   
   // Form data
   const [formData, setFormData] = useState<FormData>({
@@ -98,40 +100,34 @@ export default function DemandeStage() {
   
   // Handle URL parameters to pre-fill form data from PFE book
   useEffect(() => {
-    // Only prefill and lock typeStage and pfeReference from the URL
-    const type = searchParams.get('type')
-    const pfeReference = searchParams.get('pfeReference')
-    if (type === 'PFE' && pfeReference) {
+    const type = searchParams.get('type');
+    const offerIds = searchParams.getAll('offerIds').map(id => parseInt(id, 10)).filter(Boolean);
+    setSelectedOfferIds(offerIds);
+    if (type === 'PFE' && offerIds.length > 0) {
       setFormData(prev => ({
         ...prev,
         typeStage: 'Stage PFE',
-        pfeReference: pfeReference
-      }))
-      setIsPrefilledFromOffer(true)
-      toast({
-        title: "Offre PFE sélectionnée",
-        description: `Vous postulez pour le PFE référence: ${pfeReference}`,
-      })
-      return
+      }));
+      setIsPrefilledFromOffer(true);
+      // Fetch offer details for summary and reference prefill
+      apiClient.getOffresStage().then(res => {
+        const all = res.results || [];
+        const selected = all.filter((o: any) => offerIds.includes(o.id));
+        setSelectedOfferReferences(selected.map((o: any) => o.reference));
+        // If only one offer, prefill pfeReference
+        if (selected.length === 1) {
+          setFormData(prev => ({
+            ...prev,
+            pfeReference: selected[0].reference,
+          }));
+        }
+      });
+      return;
     }
-    // Fallback: old logic for offres with 'offre_id' and 'reference_pfe'
-    const offreId = searchParams.get('offre_id')
-    if (offreId) {
-      const prefillData = {
-        typeStage: searchParams.get('type') === 'PFE' ? 'Stage PFE' : 'Stage d\'Été',
-        pfeReference: searchParams.get('reference_pfe') || '',
-      }
-      setFormData(prev => ({
-        ...prev,
-        ...prefillData
-      }))
-      setIsPrefilledFromOffer(true)
-      toast({
-        title: "Offre sélectionnée",
-        description: `Vous postulez pour: ${searchParams.get('titre')} chez ${searchParams.get('entreprise')}`,
-      })
-    }
-  }, [searchParams, toast])
+    // fallback: clear
+    setSelectedOfferReferences([]);
+    setIsPrefilledFromOffer(false);
+  }, [searchParams, toast]);
 
 
 
@@ -191,7 +187,8 @@ export default function DemandeStage() {
         specialite: formData.specialite.trim() === '',
         typeStage: formData.typeStage === '',
         niveau: formData.niveau.trim() === '',
-        pfeReference: isPFEStage && formData.pfeReference.trim() === '',
+        // Only require pfeReference for single-offer PFE
+        pfeReference: isPFEStage && selectedOfferIds.length <= 1 && formData.pfeReference.trim() === '',
       }
       setErrors(newErrors)
       if (Object.values(newErrors).some(Boolean)) return
@@ -237,7 +234,6 @@ export default function DemandeStage() {
       submitData.append('specialite', formData.specialite)
       submitData.append('type_stage', formData.typeStage)
       submitData.append('niveau', formData.niveau)
-      submitData.append('pfe_reference', formData.pfeReference)
       submitData.append('date_debut', formData.dateDebut)
       submitData.append('date_fin', formData.dateFin)
       submitData.append('stage_binome', formData.stageBinome.toString())
@@ -275,6 +271,14 @@ export default function DemandeStage() {
         }
       }
       
+      // Add offer_ids for grouped PFE
+      if (selectedOfferIds.length > 0) {
+        selectedOfferIds.forEach(id => submitData.append('offer_ids', id.toString()))
+      } else if (formData.pfeReference) {
+        // Only send pfeReference for single-offer PFE
+        submitData.append('pfe_reference', formData.pfeReference)
+      }
+      
       // Submit to API
       await apiClient.createApplication(submitData)
       
@@ -290,7 +294,6 @@ export default function DemandeStage() {
         router.push('/public/demande-stage/confirmation')
       }, 2000)
     } catch (error: any) {
-      console.error('Error submitting application:', error)
       let errorMsg = error.message || "Échec de la soumission de la demande. Veuillez réessayer."
       // Try to extract detailed validation errors if present
       if (error.response && typeof error.response === 'object') {
@@ -306,6 +309,7 @@ export default function DemandeStage() {
         description: errorMsg,
         variant: "destructive",
       })
+      console.error('API Error:', error)
     } finally {
       setSubmitting(false)
     }
@@ -324,7 +328,11 @@ export default function DemandeStage() {
                                formData.specialite.trim() !== '' && 
                                formData.typeStage !== '' && 
                                formData.niveau.trim() !== ''
-        // For PFE stages, PFE reference is required
+        // For grouped PFE, do NOT require pfeReference
+        if (isPFEStage && selectedOfferIds.length > 1) {
+          return basicValidation
+        }
+        // For single-offer PFE, require pfeReference
         if (isPFEStage) {
           return basicValidation && formData.pfeReference.trim() !== ''
         }
@@ -577,7 +585,17 @@ export default function DemandeStage() {
                     />
                   </div>
                   {/* Référence PFE */}
-                  {isPFEStage && (
+                  {isPFEStage && selectedOfferIds.length > 1 && (
+                    <div className="mb-6 p-4 bg-gradient-to-r from-yellow-50 to-yellow-100 border border-yellow-200 rounded-lg">
+                      <div className="font-semibold text-yellow-800 mb-2">Références des projets PFE sélectionnés :</div>
+                      <ul className="flex flex-wrap gap-4">
+                        {selectedOfferReferences.map(ref => (
+                          <li key={ref} className="text-gray-800 text-sm">{ref}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {isPFEStage && selectedOfferIds.length === 1 && (
                     <div>
                       <Label htmlFor="pfeReference" className="flex items-center gap-2">
                         Référence du Projet PFE *
@@ -587,7 +605,6 @@ export default function DemandeStage() {
                           </Badge>
                         )}
                       </Label>
-
                       <Input
                         id="pfeReference"
                         value={formData.pfeReference}

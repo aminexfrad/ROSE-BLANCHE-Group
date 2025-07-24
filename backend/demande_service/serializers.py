@@ -9,7 +9,8 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
 from shared.security import SecurityValidator
 from shared.utils import FileUploadValidator
-from .models import Demande
+from .models import Demande, DemandeOffre
+from shared.models import OffreStage
 
 
 class DemandeSerializer(serializers.ModelSerializer):
@@ -20,6 +21,14 @@ class DemandeSerializer(serializers.ModelSerializer):
     cv_binome = serializers.FileField(required=False, allow_null=True)
     lettre_motivation_binome = serializers.FileField(required=False, allow_null=True)
     demande_stage_binome = serializers.FileField(required=False, allow_null=True)
+    offer_ids = serializers.ListField(
+        child=serializers.IntegerField(),
+        write_only=True,
+        required=False,
+        allow_empty=True,
+        help_text="IDs des offres sélectionnées (max 4 pour PFE)"
+    )
+    offres = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Demande
@@ -31,10 +40,23 @@ class DemandeSerializer(serializers.ModelSerializer):
             'telephone_binome', 'cin_binome',
             'cv', 'lettre_motivation', 'demande_stage',
             'cv_binome', 'lettre_motivation_binome', 'demande_stage_binome',
-            'status', 'raison_refus', 'created_at', 'updated_at'
+            'status', 'raison_refus', 'created_at', 'updated_at',
+            'offer_ids', 'offres'
         ]
-        read_only_fields = ['id', 'status', 'raison_refus', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'status', 'raison_refus', 'created_at', 'updated_at', 'offres']
     
+    def get_offres(self, obj):
+        # Return offers with per-offer status
+        return [
+            {
+                'id': do.offre.id,
+                'reference': do.offre.reference,
+                'title': do.offre.title,
+                'status': do.status
+            }
+            for do in obj.demande_offres.select_related('offre').all()
+        ]
+
     def validate_nom(self, value):
         """Validate and sanitize nom field"""
         try:
@@ -184,32 +206,33 @@ class DemandeSerializer(serializers.ModelSerializer):
         """Validate binôme demande stage file"""
         return self.validate_file_field(value, 'demande de stage binôme')
     
+    def validate_offer_ids(self, value):
+        if value and len(value) > 4:
+            raise serializers.ValidationError('Vous pouvez sélectionner jusqu’à 4 offres maximum.')
+        return value
+
     def validate(self, data):
-        """Validate demande data"""
-        # Check if stage dates are valid
-        if data.get('date_debut') and data.get('date_fin'):
-            if data['date_debut'] >= data['date_fin']:
-                raise serializers.ValidationError(
-                    'La date de fin doit être postérieure à la date de début.'
-                )
-        
-        # Validate PFE reference for PFE stages
-        if data.get('type_stage') in ['Stage PFE', 'Stage de Fin d\'Études']:
-            if not data.get('pfe_reference'):
-                raise serializers.ValidationError(
-                    'La référence du projet PFE est obligatoire pour les stages PFE.'
-                )
-        
-        # Validate binôme data if stage_binome is True
-        if data.get('stage_binome'):
-            required_binome_fields = ['nom_binome', 'prenom_binome', 'email_binome']
-            for field in required_binome_fields:
-                if not data.get(field):
-                    raise serializers.ValidationError(
-                        f'Le champ {field} est requis pour un stage en binôme.'
-                    )
-        
+        data = super().validate(data)
+        offer_ids = data.get('offer_ids', [])
+        type_stage = data.get('type_stage')
+        if type_stage in ['Stage PFE', "Stage de Fin d'Études"]:
+            if offer_ids and len(offer_ids) > 0:
+                if len(offer_ids) > 4:
+                    raise serializers.ValidationError('Vous pouvez sélectionner jusqu’à 4 offres maximum.')
+            else:
+                # Single-offer: require pfe_reference
+                if not data.get('pfe_reference'):
+                    raise serializers.ValidationError('La référence du projet PFE est obligatoire pour une demande PFE à une seule offre.')
         return data
+
+    def create(self, validated_data):
+        offer_ids = validated_data.pop('offer_ids', [])
+        demande = super().create(validated_data)
+        if offer_ids:
+            from shared.models import OffreStage
+            offres = OffreStage.objects.filter(id__in=offer_ids)
+            demande.offres.set(offres)
+        return demande
 
 
 class DemandeListSerializer(DemandeSerializer):
@@ -219,6 +242,7 @@ class DemandeListSerializer(DemandeSerializer):
     nom_complet_binome = serializers.CharField(read_only=True)
     duree_stage = serializers.IntegerField(read_only=True)
     is_pfe_stage = serializers.BooleanField(read_only=True)
+    offres = serializers.SerializerMethodField(read_only=True)
     
     class Meta(DemandeSerializer.Meta):
         fields = [
@@ -228,6 +252,7 @@ class DemandeListSerializer(DemandeSerializer):
             'is_pfe_stage', 'status', 'created_at',
             'cv', 'lettre_motivation', 'demande_stage',
             'cv_binome', 'lettre_motivation_binome', 'demande_stage_binome',
+            'offres'
         ]
 
 
@@ -238,10 +263,11 @@ class DemandeDetailSerializer(DemandeSerializer):
     nom_complet_binome = serializers.CharField(read_only=True)
     duree_stage = serializers.IntegerField(read_only=True)
     is_pfe_stage = serializers.BooleanField(read_only=True)
+    offres = serializers.SerializerMethodField(read_only=True)
     
     class Meta(DemandeSerializer.Meta):
         fields = DemandeSerializer.Meta.fields + [
-            'nom_complet', 'nom_complet_binome', 'duree_stage', 'is_pfe_stage'
+            'nom_complet', 'nom_complet_binome', 'duree_stage', 'is_pfe_stage', 'offres'
         ]
 
 
@@ -272,3 +298,14 @@ class DemandeApprovalSerializer(serializers.Serializer):
                 'Une raison est requise pour rejeter une demande.'
             )
         return data 
+
+
+class DemandeOffreStatusUpdateSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(choices=[('accepted', 'Acceptée'), ('rejected', 'Rejetée')])
+    
+    def validate_status(self, value):
+        if value not in ['accepted', 'rejected']:
+            raise serializers.ValidationError(
+                'Le statut doit être "accepted" ou "rejected".'
+            )
+        return value 

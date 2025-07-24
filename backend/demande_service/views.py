@@ -14,10 +14,10 @@ from django.shortcuts import get_object_or_404
 import secrets
 import string
 
-from .models import Demande
+from .models import Demande, DemandeOffre
 from .serializers import (
     DemandeSerializer, DemandeListSerializer, DemandeDetailSerializer,
-    DemandeApprovalSerializer
+    DemandeApprovalSerializer, DemandeOffreStatusUpdateSerializer
 )
 from auth_service.models import User
 from shared.utils import MailService
@@ -27,8 +27,24 @@ class DemandeCreateView(generics.CreateAPIView):
     """Public endpoint for submitting demande de stage"""
     serializer_class = DemandeSerializer
     permission_classes = [AllowAny]
-    
+    # The serializer now handles offer_ids and pfe_reference logic for grouped/single-offer PFE
     def perform_create(self, serializer):
+        from rest_framework.exceptions import APIException
+        # Check for existing pending/approved PFE demande for this candidate
+        email = serializer.validated_data.get('email')
+        cin = serializer.validated_data.get('cin')
+        type_stage = serializer.validated_data.get('type_stage')
+        offer_ids = serializer.validated_data.get('offer_ids', [])
+        if type_stage in ['Stage PFE', "Stage de Fin d'Études"]:
+            existing = Demande.objects.filter(
+                email=email,
+                type_stage__in=['Stage PFE', "Stage de Fin d'Études"],
+                status__in=[Demande.Status.PENDING, Demande.Status.APPROVED]
+            )
+            if existing.exists():
+                raise APIException("Vous avez déjà une demande PFE en attente ou en cours.")
+            if offer_ids and len(offer_ids) > 4:
+                raise APIException("Vous pouvez sélectionner jusqu’à 4 offres maximum.")
         try:
             demande = serializer.save()
             
@@ -214,6 +230,58 @@ def reject_demande(request, pk):
             {'error': f'Erreur lors du rejet: {str(e)}'}, 
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def update_demande_offre_status(request, demande_id, offre_id):
+    """RH: Update the status of a specific offer in a grouped demande (accept/reject) with PFE business rules"""
+    if request.user.role not in ['rh', 'admin']:
+        return Response({'error': 'Permission refusée'}, status=status.HTTP_403_FORBIDDEN)
+    try:
+        do = DemandeOffre.objects.get(demande_id=demande_id, offre_id=offre_id)
+    except DemandeOffre.DoesNotExist:
+        return Response({'error': 'Demande-offre introuvable.'}, status=status.HTTP_404_NOT_FOUND)
+    serializer = DemandeOffreStatusUpdateSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    new_status = serializer.validated_data['status']
+
+    # Business rule: Only one accepted PFE offer per demande
+    demande = do.demande
+    is_pfe = demande.is_pfe_stage
+
+    if new_status == 'accepted' and is_pfe:
+        # Reject all other offers for this demande
+        DemandeOffre.objects.filter(demande=demande).exclude(offre=do.offre).update(status='rejected')
+        # Accept this offer
+        do.status = 'accepted'
+        do.save()
+        # Send acceptance email for the accepted offer
+        from shared.utils import MailService
+        MailService.send_acceptance_email(demande)
+        return Response({'id': do.id, 'demande': do.demande_id, 'offre': do.offre_id, 'status': do.status}, status=status.HTTP_200_OK)
+
+    elif new_status == 'rejected' and is_pfe:
+        do.status = 'rejected'
+        do.save()
+        # If all offers are now rejected, send global refusal email
+        if not demande.demande_offres.filter(status='accepted').exists() and not demande.demande_offres.filter(status='pending').exists():
+            from shared.utils import MailService
+            MailService.send_rejection_email(demande, 'Toutes vos candidatures PFE ont été refusées.')
+        return Response({'id': do.id, 'demande': do.demande_id, 'offre': do.offre_id, 'status': do.status}, status=status.HTTP_200_OK)
+
+    # For non-PFE or fallback: just update status and send emails as before
+    do.status = new_status
+    do.save()
+    if new_status == 'accepted':
+        from shared.utils import MailService
+        MailService.send_acceptance_email(demande)
+    elif new_status == 'rejected':
+        # If all offers are now rejected, send global refusal email
+        if not demande.demande_offres.filter(status='accepted').exists() and not demande.demande_offres.filter(status='pending').exists():
+            from shared.utils import MailService
+            MailService.send_rejection_email(demande, 'Toutes vos candidatures ont été refusées.')
+    return Response({'id': do.id, 'demande': do.demande_id, 'offre': do.offre_id, 'status': do.status}, status=status.HTTP_200_OK)
 
 
 

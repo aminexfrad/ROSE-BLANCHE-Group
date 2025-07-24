@@ -71,6 +71,7 @@ export interface Application {
   status: 'pending' | 'approved' | 'rejected'
   created_at: string
   updated_at: string
+  offres?: { id: number; reference: string; title: string }[]
 }
 
 export interface Stage {

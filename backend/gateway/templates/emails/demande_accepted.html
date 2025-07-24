@@ -32,6 +32,17 @@ Intellectual Property – Protected by international copyright law.
             
             <p>Nous avons le plaisir de vous informer que votre demande de stage a été <strong>acceptée</strong> !</p>
             
+            {% if accepted_offres and accepted_offres|length > 0 %}
+                <div style="margin: 20px 0; padding: 15px; background: #e0f2fe; border-radius: 6px;">
+                    <strong>Offres de stage acceptées :</strong>
+                    <ul style="margin-top: 10px;">
+                        {% for offre in accepted_offres %}
+                            <li><b>{{ offre.title }}</b> <span style="color: #6b7280;">({{ offre.reference }})</span></li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+            
             {% if is_existing_user %}
                 <p>Votre compte stagiaire existant a été mis à jour sur la plateforme StageBloom.</p>
                 <p>Vous pouvez vous connecter avec votre mot de passe actuel.</p>

@@ -15,10 +15,12 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { FileText, Search, Filter, Download, Eye, Calendar, Users, Loader2, AlertCircle, BookOpen, MapPin, Clock, Star, ArrowRight, Building2, GraduationCap } from "lucide-react"
+import { Checkbox } from "@/components/ui/checkbox"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
+import { toast } from "@/hooks/use-toast"
 
 interface OffreStage {
   reference: string;
@@ -30,6 +32,7 @@ interface OffreStage {
   specialite: string;
   nombre_postes: number;
   ville: string;
+  id: string; // Added id for selection
 }
 
 export default function PFEBookPage() {
@@ -43,6 +46,8 @@ export default function PFEBookPage() {
   const [villeFilter, setVilleFilter] = useState("all")
   // Add state for expanded descriptions
   const [expandedDescriptions, setExpandedDescriptions] = useState<{ [ref: string]: boolean }>({});
+  const [selectedOffers, setSelectedOffers] = useState<OffreStage[]>([])
+  const [selectionError, setSelectionError] = useState<string | null>(null)
 
   const toggleDescription = (ref: string) => {
     setExpandedDescriptions(prev => ({ ...prev, [ref]: !prev[ref] }));
@@ -88,6 +93,35 @@ export default function PFEBookPage() {
       keywords: offer.keywords,
       nombre_postes: offer.nombre_postes.toString()
     })
+    router.push(`/public/demande-stage?${params.toString()}`)
+  }
+
+  const handleToggleOffer = (offer: OffreStage) => {
+    const alreadySelected = selectedOffers.some(o => o.id === offer.id)
+    if (alreadySelected) {
+      setSelectedOffers(selectedOffers.filter(o => o.id !== offer.id))
+      setSelectionError(null)
+    } else {
+      if (selectedOffers.length >= 4) {
+        setSelectionError("Vous pouvez sélectionner jusqu'à 4 offres maximum.")
+        toast({ title: "Limite atteinte", description: "Vous ne pouvez pas sélectionner plus de 4 offres.", variant: "destructive" })
+        return
+      }
+      setSelectedOffers([...selectedOffers, offer])
+      setSelectionError(null)
+    }
+  }
+
+  const handleSendGroupedDemande = () => {
+    if (selectedOffers.length === 0) {
+      setSelectionError("Veuillez sélectionner au moins une offre.")
+      toast({ title: "Aucune offre sélectionnée", description: "Sélectionnez au moins une offre pour postuler.", variant: "destructive" })
+      return
+    }
+    // Redirect to demande-stage with offer IDs as query params
+    const params = new URLSearchParams()
+    params.append('type', 'PFE')
+    selectedOffers.forEach(o => params.append('offerIds', o.id.toString()))
     router.push(`/public/demande-stage?${params.toString()}`)
   }
 
@@ -298,75 +332,91 @@ export default function PFEBookPage() {
           {/* Liste des offres */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
             {offers.length > 0 ? (
-              offers.map((offer, index) => (
-                <Card
-                  key={offer.reference}
-                  className="group relative overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 bg-white/80 backdrop-blur-sm hover:bg-white"
-                >
-                  <CardHeader className="bg-gradient-to-r from-red-50 to-rose-100 border-b border-red-100 pb-6">
-                    <CardTitle className="text-xl font-bold text-gray-900 mb-3 group-hover:text-red-600 transition-colors">
-                      {offer.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6">
-                    <div className="space-y-4">
-                      <p className={`text-gray-600 text-sm leading-relaxed ${expandedDescriptions[offer.reference] ? '' : 'line-clamp-3'}`}>
-                        {offer.description}
-                      </p>
-                      {offer.description.length > 180 && (
-                        <button
-                          className="text-red-600 hover:text-red-800 text-xs font-semibold focus:outline-none transition-colors"
-                          onClick={() => toggleDescription(offer.reference)}
-                        >
-                          {expandedDescriptions[offer.reference] ? 'Afficher moins' : 'Afficher plus'}
-                        </button>
-                      )}
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center gap-2 text-gray-500">
-                          <GraduationCap className="h-4 w-4 text-purple-500" />
-                          <span>{offer.diplome}</span>
+              offers.map((offer, index) => {
+                const checked = selectedOffers.some(o => o.id === offer.id)
+                return (
+                  <Card
+                    key={offer.reference}
+                    className="group relative overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 bg-white/80 backdrop-blur-sm hover:bg-white"
+                  >
+                    <CardHeader className="bg-gradient-to-r from-red-50 to-rose-100 border-b border-red-100 pb-6">
+                      <CardTitle className="text-xl font-bold text-gray-900 mb-3 group-hover:text-red-600 transition-colors">
+                        {offer.title}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="p-6">
+                      <div className="space-y-4">
+                        <p className={`text-gray-600 text-sm leading-relaxed ${expandedDescriptions[offer.reference] ? '' : 'line-clamp-3'}`}>
+                          {offer.description}
+                        </p>
+                        {offer.description.length > 180 && (
+                          <button
+                            className="text-red-600 hover:text-red-800 text-xs font-semibold focus:outline-none transition-colors"
+                            onClick={() => toggleDescription(offer.reference)}
+                          >
+                            {expandedDescriptions[offer.reference] ? 'Afficher moins' : 'Afficher plus'}
+                          </button>
+                        )}
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="flex items-center gap-2 text-gray-500">
+                            <GraduationCap className="h-4 w-4 text-purple-500" />
+                            <span>{offer.diplome}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-500">
+                            <BookOpen className="h-4 w-4 text-red-500" />
+                            <span className="font-medium">{offer.specialite}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-500">
+                            <MapPin className="h-4 w-4 text-red-400" />
+                            <span className="font-medium">{offer.ville}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-gray-500">
+                            <Users className="h-4 w-4 text-red-300" />
+                            <span className="font-medium">{offer.nombre_postes} postes</span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2 text-gray-500">
-                          <BookOpen className="h-4 w-4 text-red-500" />
-                          <span className="font-medium">{offer.specialite}</span>
+                        <div className="flex flex-wrap gap-2">
+                          {offer.keywords.split(',').map((kw, idx) => (
+                            <Badge key={idx} variant="outline" className="text-xs bg-red-50 border-red-200 text-red-700">
+                              {kw.trim()}
+                            </Badge>
+                          ))}
                         </div>
-                        <div className="flex items-center gap-2 text-gray-500">
-                          <MapPin className="h-4 w-4 text-red-400" />
-                          <span className="font-medium">{offer.ville}</span>
+                        <div className="pt-2">
+                          <span className="block text-xs text-gray-400 font-mono">Réf: {offer.reference}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-gray-500">
-                          <Users className="h-4 w-4 text-red-300" />
-                          <span className="font-medium">{offer.nombre_postes} postes</span>
+                        <div className="pt-4 flex justify-between items-center">
+                          <Checkbox checked={checked} onCheckedChange={() => handleToggleOffer(offer)} id={`offer-${offer.id}`} />
+                          <label htmlFor={`offer-${offer.id}`} className="ml-2 text-sm font-medium text-gray-700 cursor-pointer">
+                            {checked ? "Sélectionnée" : "Sélectionner"}
+                          </label>
                         </div>
                       </div>
-                      <div className="flex flex-wrap gap-2">
-                        {offer.keywords.split(',').map((kw, idx) => (
-                          <Badge key={idx} variant="outline" className="text-xs bg-red-50 border-red-200 text-red-700">
-                            {kw.trim()}
-                          </Badge>
-                        ))}
-                      </div>
-                      <div className="pt-2">
-                        <span className="block text-xs text-gray-400 font-mono">Réf: {offer.reference}</span>
-                      </div>
-                      <div className="pt-4 flex justify-end">
-                        <Button 
-                          className="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg shadow-md transition-all duration-300"
-                          onClick={() => handleApplyToOffer(offer)}
-                        >
-                          Postuler
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                )
+              })
             ) : (
               <div className="col-span-full text-center text-gray-500 py-12">
                 Aucune offre trouvée.
               </div>
             )}
           </div>
+          {/* Floating summary and submit button */}
+          {selectedOffers.length > 0 && (
+            <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-white/90 border border-red-200 rounded-xl shadow-2xl px-8 py-4 flex flex-col items-center gap-2">
+              <div className="font-semibold text-red-700 mb-2">Offres sélectionnées ({selectedOffers.length}/4):</div>
+              <ul className="mb-2">
+                {selectedOffers.map(o => (
+                  <li key={o.id} className="text-gray-800 text-sm">{o.title} <span className="text-xs text-gray-400">({o.reference})</span></li>
+                ))}
+              </ul>
+              <Button className="bg-gradient-to-r from-red-600 to-red-700 text-white" onClick={handleSendGroupedDemande}>
+                Envoyer la demande PFE
+              </Button>
+              {selectionError && <div className="text-xs text-red-600 mt-1">{selectionError}</div>}
+            </div>
+          )}
 
           {/* Pagination ou "Voir plus" */}
           {offers.length > 0 && (
