@@ -196,38 +196,30 @@ export default function PublicHomePage() {
 
   // Refined story progression indicator
   const StoryProgress = () => (
-    <div className="fixed right-4 top-1/2 transform -translate-y-1/2 z-50 hidden lg:block">
-      <div className="flex flex-col items-center space-y-3">
+    <div className="fixed right-6 top-1/2 transform -translate-y-1/2 z-50 hidden lg:flex flex-col items-center">
+      {/* Vertical line */}
+      <div className="absolute left-1/2 top-0 h-full w-1 -translate-x-1/2 bg-gradient-to-b from-gray-200 via-gray-100 to-gray-200 rounded-full opacity-70" style={{height: '120px', zIndex: 0}} />
+      <div className="flex flex-col items-center space-y-6 relative z-10">
         {[
           { key: 'hero', label: 'Accueil' },
           { key: 'stats', label: 'Chiffres' },
-          { key: 'about', label: 'À propos' },
-          { key: 'process', label: 'Processus' },
-          { key: 'testimonials', label: 'Témoignages' }
+          { key: 'process', label: 'Processus' }
         ].map((section, index) => (
           <button
             key={section.key}
             onClick={() => {
-              const element = document.querySelector(`[data-section="${section.key}"]`)
+              const element = document.querySelector(`[data-section=\"${section.key}\"]`)
               element?.scrollIntoView({ behavior: 'smooth' })
             }}
-            className={`group relative transition-all duration-300 ${
-              activeSection === index 
-                ? 'scale-110' 
-                : 'hover:scale-105'
-            }`}
+            className="group relative flex items-center focus:outline-none"
             title={`Section ${index + 1}`}
+            style={{zIndex: 2}}
           >
-            <div className={`w-2 h-2 rounded-full transition-all duration-300 ${
+            <div className={`w-5 h-5 rounded-full border-2 transition-all duration-300 flex items-center justify-center shadow-md bg-white ${
               activeSection === index 
-                ? 'bg-red-500 shadow-sm shadow-red-200' 
-                : 'bg-gray-300 hover:bg-red-400'
+                ? 'border-red-500 bg-red-500 animate-pulse' 
+                : 'border-gray-300 bg-gray-200'
             }`} />
-            <div className={`absolute right-4 top-1/2 transform -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 bg-gray-800 text-white text-xs px-2 py-1 rounded whitespace-nowrap ${
-              activeSection === index ? 'opacity-100' : ''
-            }`}>
-              {section.label}
-            </div>
           </button>
         ))}
       </div>
@@ -387,9 +379,6 @@ export default function PublicHomePage() {
 
       <Navbar isPublic />
 
-      {/* Story Progress Indicator */}
-      <StoryProgress />
-
       {/* Hero Section - Refined Design */}
       <section 
         ref={heroRef} 
@@ -413,10 +402,10 @@ export default function PublicHomePage() {
                   Plateforme
                 </span> qui Révolutionne
                 <span className="block text-red-300 bg-gradient-to-r from-red-300 to-red-400 bg-clip-text text-transparent drop-shadow-2xl">
-                  l'Expérience des Stages
+                  l'Expérience Stagiaire
                 </span>
                 <span className="block text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-white mt-2 drop-shadow-2xl">
-                  Chez Rose Blanche Group
+                  Chez ROSE BLANCHE Group
                 </span>
               </h1>
             </div>
