@@ -508,7 +508,7 @@ class PFEReport(models.Model):
     year = models.IntegerField(_('année'), default=timezone.now().year)
     
     # Files
-    pdf_file = models.FileField(_('rapport PDF'), upload_to='pfe_reports/')
+    pdf_file = models.FileField(_('rapport PDF'), upload_to='pfe_reports/', blank=True, null=True)
     presentation_file = models.FileField(_('présentation'), upload_to='pfe_presentations/', blank=True)
     additional_files = models.FileField(_('fichiers additionnels'), upload_to='pfe_additional/', blank=True)
     

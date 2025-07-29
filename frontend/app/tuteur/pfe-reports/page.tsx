@@ -94,7 +94,7 @@ export default function TuteurPFEReportsPage() {
   const fetchReports = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/pfe-reports/', {
+      const response = await fetch('http://localhost:8000/api/pfe-reports/', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -117,7 +117,7 @@ export default function TuteurPFEReportsPage() {
     if (!selectedReport) return
 
     try {
-      const response = await fetch(`/api/pfe-reports/${selectedReport.id}/validate/`, {
+      const response = await fetch(`http://localhost:8000/api/pfe-reports/${selectedReport.id}/validate/`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

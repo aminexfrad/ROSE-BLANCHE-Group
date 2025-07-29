@@ -1,12 +1,6 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 """
-© 2025 Mohamed Amine FRAD. All rights reserved.
-Unauthorized use, reproduction, or modification of this code is strictly prohibited.
-Intellectual Property – Protected by international copyright law.
-"""
-
-"""
-Test script to check API endpoints and identify issues.
+Script pour tester les endpoints de l'API et vérifier les stages actifs
 """
 
 import os
@@ -14,151 +8,132 @@ import sys
 import django
 import requests
 import json
-from pathlib import Path
-
-# Add the project root to Python path
-project_root = Path(__file__).resolve().parent
-sys.path.insert(0, str(project_root))
 
 # Setup Django
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'gateway.stagebloom.settings')
 django.setup()
 
-from django.contrib.auth import get_user_model
+from auth_service.models import User
 from shared.models import Stage
-
-User = get_user_model()
+from demande_service.models import Demande
 
 def test_api_endpoints():
-    """Test various API endpoints to identify issues."""
+    print("Test des endpoints de l'API...")
     
     base_url = "http://localhost:8000/api"
     
-    print("🔍 Testing API endpoints...")
-    print("=" * 50)
+    # Test 1: Vérifier les utilisateurs stagiaires
+    print("\n1. Vérification des utilisateurs stagiaires...")
+    stagiaires = User.objects.filter(role='stagiaire')
+    print(f"Nombre de stagiaires: {stagiaires.count()}")
     
-    # Test 1: Check if server is running
+    for stagiaire in stagiaires:
+        print(f"  - {stagiaire.prenom} {stagiaire.nom} ({stagiaire.email})")
+    
+    # Test 2: Vérifier les stages actifs
+    print("\n2. Vérification des stages actifs...")
+    stages_actifs = Stage.objects.filter(status='active')
+    print(f"Nombre de stages actifs: {stages_actifs.count()}")
+    
+    for stage in stages_actifs:
+        print(f"  - Stage {stage.id}: {stage.title}")
+        print(f"    Stagiaire: {stage.stagiaire.prenom} {stage.stagiaire.nom}")
+        print(f"    Entreprise: {stage.company}")
+        print(f"    Progression: {stage.progress}%")
+        print(f"    Tuteur: {stage.tuteur.prenom + ' ' + stage.tuteur.nom if stage.tuteur else 'Non assigné'}")
+    
+    # Test 3: Vérifier les demandes approuvées
+    print("\n3. Vérification des demandes approuvées...")
+    demandes_approuvees = Demande.objects.filter(status='approved')
+    print(f"Nombre de demandes approuvées: {demandes_approuvees.count()}")
+    
+    for demande in demandes_approuvees:
+        print(f"  - Demande {demande.id}: {demande.prenom} {demande.nom}")
+        print(f"    Email: {demande.email}")
+        print(f"    Type: {demande.type_stage}")
+    
+    # Test 4: Test de l'API avec authentification
+    print("\n4. Test de l'API avec authentification...")
+    
+    # Trouver l'utilisateur avec le stage actif
+    stage_actif = Stage.objects.filter(status='active').first()
+    if not stage_actif:
+        print("  ❌ Aucun stage actif trouvé")
+        return
+    
+    test_user = stage_actif.stagiaire
+    print(f"  Utilisateur de test: {test_user.email}")
+    
+    # Login
+    login_data = {
+        "email": test_user.email,
+        "password": "test1234"
+    }
+    
     try:
-        response = requests.get(f"{base_url}/docs/", timeout=5)
-        print(f"✅ Server is running (Status: {response.status_code})")
+        response = requests.post(f"{base_url}/auth/login/", json=login_data)
+        if response.status_code == 200:
+            token_data = response.json()
+            access_token = token_data.get('access')
+            print(f"  ✅ Login réussi")
+            
+            # Test de l'endpoint du stage actif
+            headers = {"Authorization": f"Bearer {access_token}"}
+            stage_response = requests.get(f"{base_url}/stagiaire/internship/", headers=headers)
+            
+            if stage_response.status_code == 200:
+                stage_data = stage_response.json()
+                print(f"  ✅ Stage actif trouvé:")
+                print(f"    - Titre: {stage_data.get('title')}")
+                print(f"    - Entreprise: {stage_data.get('company')}")
+                print(f"    - Progression: {stage_data.get('progress')}%")
+                print(f"    - Statut: {stage_data.get('status')}")
+            elif stage_response.status_code == 404:
+                print(f"  ❌ Aucun stage actif trouvé pour {test_user.email}")
+                print(f"    Réponse: {stage_response.text}")
+            else:
+                print(f"  ❌ Erreur API: {stage_response.status_code}")
+                print(f"    Réponse: {stage_response.text}")
+                
+        else:
+            print(f"  ❌ Échec du login: {response.status_code}")
+            print(f"    Réponse: {response.text}")
+            
     except requests.exceptions.ConnectionError:
-        print("❌ Server is not running. Please start the Django server.")
-        return False
+        print(f"  ❌ Impossible de se connecter au serveur Django")
+        print(f"    Assurez-vous que le serveur Django fonctionne sur http://localhost:8000")
     except Exception as e:
-        print(f"❌ Error connecting to server: {e}")
-        return False
-    
-    # Test 2: Check auth endpoints
-    auth_endpoints = [
-        "/auth/login/",
-        "/auth/profile/",
-        "/auth/check-auth/",
-    ]
-    
-    print("\n🔐 Testing authentication endpoints:")
-    for endpoint in auth_endpoints:
-        try:
-            response = requests.get(f"{base_url}{endpoint}", timeout=5)
-            print(f"  {endpoint}: {response.status_code}")
-        except Exception as e:
-            print(f"  {endpoint}: Error - {e}")
-    
-    # Test 3: Check stagiaire endpoints
-    stagiaire_endpoints = [
-        "/stagiaire/internship/",
-        "/stagiaire/internship/steps/",
-        "/stagiaire/internship/documents/",
-    ]
-    
-    print("\n👨‍🎓 Testing stagiaire endpoints:")
-    for endpoint in stagiaire_endpoints:
-        try:
-            response = requests.get(f"{base_url}{endpoint}", timeout=5)
-            print(f"  {endpoint}: {response.status_code}")
-        except Exception as e:
-            print(f"  {endpoint}: Error - {e}")
-    
-    # Test 4: Check database for users and stages
-    print("\n🗄️  Checking database:")
-    try:
-        user_count = User.objects.count()
-        print(f"  Users in database: {user_count}")
-        
-        stage_count = Stage.objects.count()
-        print(f"  Stages in database: {stage_count}")
-        
-        # Check for stagiaire users
-        stagiaire_users = User.objects.filter(role='stagiaire')
-        print(f"  Stagiaire users: {stagiaire_users.count()}")
-        
-        # Check for active stages
-        active_stages = Stage.objects.filter(status='active')
-        print(f"  Active stages: {active_stages.count()}")
-        
-        if stagiaire_users.exists() and not active_stages.exists():
-            print("  ⚠️  Warning: Stagiaire users exist but no active stages found!")
-            
-    except Exception as e:
-        print(f"  ❌ Error checking database: {e}")
-    
-    print("\n" + "=" * 50)
-    print("✅ API endpoint test completed!")
-    
-    return True
+        print(f"  ❌ Erreur lors du test: {str(e)}")
 
-def create_test_data():
-    """Create test data if needed."""
-    print("\n🔧 Creating test data...")
+def check_database_state():
+    print("\n=== État de la base de données ===")
     
-    try:
-        # Create a test stagiaire user
-        user, created = User.objects.get_or_create(
-            email='test@example.com',
-            defaults={
-                'nom': 'Test',
-                'prenom': 'User',
-                'role': 'stagiaire',
-                'is_active': True,
-            }
-        )
-        
-        if created:
-            user.set_password('testpass123')
-            user.save()
-            print("  ✅ Created test stagiaire user: test@example.com / testpass123")
-        else:
-            print("  ℹ️  Test user already exists")
-        
-        # Create a test stage
-        stage, created = Stage.objects.get_or_create(
-            stagiaire=user,
-            defaults={
-                'title': 'Test Stage',
-                'company': 'Test Company',
-                'location': 'Test Location',
-                'status': 'active',
-                'duration_days': 30,
-                'days_remaining': 30,
-            }
-        )
-        
-        if created:
-            print("  ✅ Created test active stage")
-        else:
-            print("  ℹ️  Test stage already exists")
-            
-    except Exception as e:
-        print(f"  ❌ Error creating test data: {e}")
+    # Compter les objets
+    users_count = User.objects.count()
+    stages_count = Stage.objects.count()
+    demandes_count = Demande.objects.count()
+    
+    print(f"Utilisateurs: {users_count}")
+    print(f"Stages: {stages_count}")
+    print(f"Demandes: {demandes_count}")
+    
+    # Détails par rôle
+    print("\nUtilisateurs par rôle:")
+    for role in ['stagiaire', 'tuteur', 'rh', 'admin']:
+        count = User.objects.filter(role=role).count()
+        print(f"  {role}: {count}")
+    
+    # Stages par statut
+    print("\nStages par statut:")
+    for status in ['active', 'completed', 'suspended', 'cancelled']:
+        count = Stage.objects.filter(status=status).count()
+        print(f"  {status}: {count}")
 
-if __name__ == "__main__":
-    print("🚀 StageBloom API Test Script")
-    print("=" * 50)
+if __name__ == '__main__':
+    print("=== Test des endpoints de l'API StageBloom ===")
     
-    # Test endpoints
-    if test_api_endpoints():
-        # Ask if user wants to create test data
-        response = input("\n🤔 Would you like to create test data? (y/n): ")
-        if response.lower() in ['y', 'yes']:
-            create_test_data()
+    check_database_state()
+    test_api_endpoints()
     
-    print("\n🎉 Test script completed!") 
+    print("\n=== Test terminé ===") 

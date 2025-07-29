@@ -20,9 +20,10 @@ from datetime import date, timedelta
 def create_test_data():
     print("Création des données de test...")
     
-    # Créer un utilisateur stagiaire
+    # Créer un utilisateur stagiaire avec un email unique
+    test_email = 'stagiaire.test@example.com'
     stagiaire, created = User.objects.get_or_create(
-        email='stagiaire@test.com',
+        email=test_email,
         defaults={
             'nom': 'Test',
             'prenom': 'Stagiaire',
@@ -39,54 +40,55 @@ def create_test_data():
     else:
         print(f"Utilisateur stagiaire existant: {stagiaire.email}")
     
-    # Créer une demande de stage
-    demande, created = Demande.objects.get_or_create(
-        email='stagiaire@test.com',
-        defaults={
-            'nom': 'Test',
-            'prenom': 'Stagiaire',
-            'telephone': '0123456789',
-            'cin': 'AB123456',
-            'institut': 'Institut Test',
-            'specialite': 'Informatique',
-            'type_stage': 'PFE',
-            'niveau': 'Master',
-            'date_debut': date.today(),
-            'date_fin': date.today() + timedelta(days=90),
-            'stage_binome': False,
-            'status': 'approved'
-        }
-    )
-    
-    if created:
+    # Vérifier s'il existe déjà une demande pour cet utilisateur
+    existing_demande = Demande.objects.filter(email=test_email).first()
+    if existing_demande:
+        print(f"Demande existante trouvée: {existing_demande.id}")
+        demande = existing_demande
+    else:
+        # Créer une nouvelle demande de stage
+        demande = Demande.objects.create(
+            nom='Test',
+            prenom='Stagiaire',
+            email=test_email,
+            telephone='0123456789',
+            cin='AB123456',
+            institut='Institut Test',
+            specialite='Informatique',
+            type_stage='Stage PFE',
+            niveau='Master',
+            date_debut=date.today(),
+            date_fin=date.today() + timedelta(days=90),
+            stage_binome=False,
+            status='approved',
+            user_created=stagiaire
+        )
         print(f"Demande de stage créée: {demande.id}")
+    
+    # Vérifier s'il existe déjà un stage pour cette demande
+    existing_stage = Stage.objects.filter(demande=demande).first()
+    if existing_stage:
+        print(f"Stage existant trouvé: {existing_stage.id}")
+        stage = existing_stage
     else:
-        print(f"Demande de stage existante: {demande.id}")
-    
-    # Créer un stage
-    stage, created = Stage.objects.get_or_create(
-        demande=demande,
-        defaults={
-            'stagiaire': stagiaire,
-            'title': 'Stage Test',
-            'description': 'Description du stage test',
-            'company': 'Entreprise Test',
-            'location': 'Casablanca',
-            'start_date': date.today(),
-            'end_date': date.today() + timedelta(days=90),
-            'status': 'active',
-            'progress': 50
-        }
-    )
-    
-    if created:
+        # Créer un nouveau stage
+        stage = Stage.objects.create(
+            demande=demande,
+            stagiaire=stagiaire,
+            title='Stage Test',
+            description='Description du stage test',
+            company='Entreprise Test',
+            location='Casablanca',
+            start_date=date.today(),
+            end_date=date.today() + timedelta(days=90),
+            status='active',
+            progress=50
+        )
         print(f"Stage créé: {stage.id}")
-    else:
-        print(f"Stage existant: {stage.id}")
     
     print("\nDonnées de test créées avec succès!")
-    print(f"Email: stagiaire@test.com")
-    print(f"Mot de passe: test123")
+    print(f"Email: {test_email}")
+    print(f"Mot de passe: test1234")
     print(f"Stage ID: {stage.id}")
     
     return stagiaire, stage

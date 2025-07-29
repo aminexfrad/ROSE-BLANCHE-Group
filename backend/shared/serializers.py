@@ -270,10 +270,31 @@ class PFEReportCreateSerializer(serializers.ModelSerializer):
         fields = ['title', 'abstract', 'keywords', 'speciality', 'year',
                  'pdf_file', 'presentation_file', 'additional_files']
     
+    def validate_pdf_file(self, value):
+        # Rendre le fichier PDF optionnel
+        return value
+    
     def create(self, validated_data):
-        validated_data['stagiaire'] = self.context['request'].user
-        validated_data['stage'] = self.context['request'].user.stages_stagiaire.filter(status='active').first()
-        validated_data['tuteur'] = validated_data['stage'].tuteur if validated_data['stage'] else None
+        user = self.context['request'].user
+        validated_data['stagiaire'] = user
+        
+        # Trouver le stage actif de l'utilisateur
+        stage = Stage.objects.filter(stagiaire=user, status='active').first()
+        if not stage:
+            raise serializers.ValidationError("Aucun stage actif trouvé pour cet utilisateur")
+        
+        # Vérifier si un rapport PFE existe déjà pour ce stage
+        existing_report = PFEReport.objects.filter(stage=stage).first()
+        if existing_report:
+            # Mettre à jour le rapport existant au lieu d'en créer un nouveau
+            for field, value in validated_data.items():
+                if hasattr(existing_report, field):
+                    setattr(existing_report, field, value)
+            existing_report.save()
+            return existing_report
+        
+        validated_data['stage'] = stage
+        validated_data['tuteur'] = stage.tuteur
         return super().create(validated_data)
 
 class PFEReportUpdateSerializer(serializers.ModelSerializer):

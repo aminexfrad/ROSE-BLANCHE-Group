@@ -11,7 +11,7 @@ import random
 
 from auth_service.models import User
 from demande_service.models import Demande
-from shared.models import Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage
+from shared.models import Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage, PFEReport
 
 
 class Command(BaseCommand):
@@ -46,6 +46,9 @@ class Command(BaseCommand):
         
         # Create PFE documents
         self.create_pfe_documents()
+        
+        # Create PFE reports
+        self.create_pfe_reports()
         
         # Create internship offers
         self.create_internship_offers()
@@ -183,34 +186,30 @@ class Command(BaseCommand):
 
     def create_steps(self):
         stages = Stage.objects.all()
-        step_titles = [
-            'Analyse des besoins',
-            'Conception de l\'architecture',
-            'Développement du prototype',
-            'Tests unitaires',
-            'Tests d\'intégration',
-            'Documentation technique',
-            'Présentation finale',
-            'Déploiement en production'
+        step_templates = [
+            {'title': 'Analyse des besoins', 'description': 'Comprendre les besoins du projet'},
+            {'title': 'Conception', 'description': 'Concevoir l\'architecture du système'},
+            {'title': 'Développement', 'description': 'Implémenter les fonctionnalités'},
+            {'title': 'Tests', 'description': 'Tester les fonctionnalités développées'},
+            {'title': 'Déploiement', 'description': 'Mettre en production'},
+            {'title': 'Documentation', 'description': 'Rédiger la documentation'},
         ]
         
         for stage in stages:
-            for i in range(random.randint(4, 8)):
+            for i, step_template in enumerate(step_templates):
                 step, created = Step.objects.get_or_create(
                     stage=stage,
-                    order=i + 1,
+                    title=step_template['title'],
                     defaults={
-                        'title': step_titles[i],
-                        'description': f'Description de l\'étape: {step_titles[i]}',
+                        'description': step_template['description'],
+                        'order': i + 1,
                         'status': random.choice(['pending', 'in_progress', 'completed', 'validated']),
                         'due_date': stage.start_date + timedelta(days=random.randint(10, 50)),
                     }
                 )
                 
                 if created and step.status in ['completed', 'validated']:
-                    step.completed_date = stage.start_date + timedelta(days=random.randint(10, 40))
-                    if step.status == 'validated':
-                        step.validated_date = step.completed_date + timedelta(days=random.randint(1, 5))
+                    step.completed_date = stage.start_date + timedelta(days=random.randint(10, 50))
                     step.save()
 
     def create_documents(self):
@@ -276,45 +275,46 @@ class Command(BaseCommand):
                     'is_active': True,
                 }
             )
+            
+            if created:
+                self.stdout.write(f'Created KPI question: {q_data["question"]}')
 
     def create_evaluations(self):
         stages = Stage.objects.all()
         evaluation_types = ['stagiaire_self', 'tuteur_stagiaire', 'stagiaire_tuteur', 'rh_global']
         
         for stage in stages:
-            # Create self-evaluation
-            if random.choice([True, False]):
-                scores = {f'question_{i}': random.randint(3, 5) for i in range(1, 6)}
-                eval_self, created = Evaluation.objects.get_or_create(
-                    stage=stage,
-                    evaluator=stage.stagiaire,
-                    evaluated=stage.stagiaire,
-                    evaluation_type='stagiaire_self',
-                    defaults={
-                        'scores': scores,
-                        'comments': 'Auto-évaluation positive du stage',
-                        'overall_score': sum(scores.values()) / len(scores),
-                        'is_completed': True,
-                        'completed_at': timezone.now(),
-                    }
-                )
-            
-            # Create tuteur evaluation of stagiaire
-            if stage.tuteur and random.choice([True, False]):
-                scores = {f'question_{i}': random.randint(3, 5) for i in range(1, 6)}
-                eval_tuteur, created = Evaluation.objects.get_or_create(
-                    stage=stage,
-                    evaluator=stage.tuteur,
-                    evaluated=stage.stagiaire,
-                    evaluation_type='tuteur_stagiaire',
-                    defaults={
-                        'scores': scores,
-                        'comments': 'Évaluation positive du stagiaire',
-                        'overall_score': sum(scores.values()) / len(scores),
-                        'is_completed': True,
-                        'completed_at': timezone.now(),
-                    }
-                )
+            for eval_type in evaluation_types:
+                if eval_type == 'stagiaire_self':
+                    evaluator = stage.stagiaire
+                    evaluated = stage.stagiaire
+                elif eval_type == 'tuteur_stagiaire':
+                    evaluator = stage.tuteur
+                    evaluated = stage.stagiaire
+                elif eval_type == 'stagiaire_tuteur':
+                    evaluator = stage.stagiaire
+                    evaluated = stage.tuteur
+                else:  # rh_global
+                    evaluator = User.objects.filter(role='rh').first()
+                    evaluated = stage.stagiaire
+                
+                if evaluator and evaluated:
+                    evaluation, created = Evaluation.objects.get_or_create(
+                        stage=stage,
+                        evaluator=evaluator,
+                        evaluated=evaluated,
+                        evaluation_type=eval_type,
+                        defaults={
+                            'scores': {'technical': random.randint(1, 5), 'soft_skills': random.randint(1, 5)},
+                            'comments': f'Évaluation {eval_type} pour {stage.title}',
+                            'overall_score': random.randint(1, 5),
+                            'is_completed': random.choice([True, False]),
+                        }
+                    )
+                    
+                    if created and evaluation.is_completed:
+                        evaluation.completed_at = timezone.now()
+                        evaluation.save()
 
     def create_testimonials(self):
         stages = Stage.objects.filter(status='completed')
@@ -338,61 +338,39 @@ class Command(BaseCommand):
         ]
         
         for stage in stages:
-            if random.choice([True, False]):
-                template = random.choice(testimonial_templates)
-                testimonial, created = Testimonial.objects.get_or_create(
-                    stage=stage,
-                    author=stage.stagiaire,
-                    defaults={
-                        'title': template['title'],
-                        'content': template['content'],
-                        'testimonial_type': template['testimonial_type'],
-                        'status': random.choice(['pending', 'approved', 'approved']),
-                    }
-                )
-                
-                if created and testimonial.status == 'approved':
-                    testimonial.moderated_by = User.objects.filter(role='rh').first()
-                    testimonial.moderated_at = timezone.now()
-                    testimonial.save()
+            template = random.choice(testimonial_templates)
+            testimonial, created = Testimonial.objects.get_or_create(
+                stage=stage,
+                author=stage.stagiaire,
+                title=template['title'],
+                defaults={
+                    'content': template['content'],
+                    'testimonial_type': template['testimonial_type'],
+                    'status': random.choice(['pending', 'approved', 'approved', 'approved']),
+                }
+            )
+            
+            if created:
+                self.stdout.write(f'Created testimonial: {testimonial.title}')
 
     def create_notifications(self):
         users = User.objects.all()
-        notification_templates = [
-            {
-                'title': 'Nouveau document téléversé',
-                'message': 'Un nouveau document a été téléversé pour votre stage.',
-                'notification_type': 'info'
-            },
-            {
-                'title': 'Étape validée',
-                'message': 'Félicitations ! Une étape de votre stage a été validée.',
-                'notification_type': 'success'
-            },
-            {
-                'title': 'Évaluation en attente',
-                'message': 'Vous avez une évaluation en attente de completion.',
-                'notification_type': 'warning'
-            },
-            {
-                'title': 'Stage terminé',
-                'message': 'Votre stage a été marqué comme terminé.',
-                'notification_type': 'success'
-            }
-        ]
+        notification_types = ['info', 'success', 'warning', 'error']
         
         for user in users:
-            for i in range(random.randint(0, 3)):
-                template = random.choice(notification_templates)
+            for i in range(random.randint(1, 3)):
                 notification, created = Notification.objects.get_or_create(
                     recipient=user,
-                    title=template['title'],
+                    title=f'Notification {i + 1}',
+                    message=f'Ceci est un message de notification {i + 1} pour {user.get_full_name()}',
                     defaults={
-                        'message': template['message'],
-                        'notification_type': template['notification_type'],
+                        'notification_type': random.choice(notification_types),
                         'is_read': random.choice([True, False]),
                     }
                 )
+                
+                if created:
+                    self.stdout.write(f'Created notification for {user.get_full_name()}')
 
     def create_pfe_documents(self):
         specialities = ['Informatique', 'Génie Civil', 'Management', 'Architecture', 'Électrique']
@@ -418,6 +396,59 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write(f'Created PFE document: {pfe_doc.title}')
 
+    def create_pfe_reports(self):
+        """Create sample PFE reports for testing"""
+        stages = Stage.objects.all()
+        specialities = ['Informatique', 'Génie Civil', 'Management', 'Architecture', 'Électrique']
+        statuses = ['draft', 'submitted', 'under_review', 'approved', 'rejected', 'archived']
+        
+        pfe_titles = [
+            'Système de gestion des ressources humaines',
+            'Application mobile de e-commerce',
+            'Plateforme de gestion de projets',
+            'Système de reconnaissance faciale',
+            'Application web de réservation en ligne',
+            'Système de monitoring IoT',
+            'Plateforme de formation en ligne',
+            'Application de gestion de stock',
+            'Système de paiement électronique',
+            'Plateforme de collaboration en équipe'
+        ]
+        
+        for i, stage in enumerate(stages):
+            if i < len(pfe_titles):  # Limit to available titles
+                report, created = PFEReport.objects.get_or_create(
+                    stage=stage,
+                    defaults={
+                        'stagiaire': stage.stagiaire,
+                        'tuteur': stage.tuteur,
+                        'title': pfe_titles[i],
+                        'abstract': f'Ce projet PFE présente une solution innovante pour {pfe_titles[i].lower()}. Le projet a été développé en utilisant les technologies modernes et suit les meilleures pratiques de développement.',
+                        'keywords': 'PFE, développement, innovation, technologie',
+                        'speciality': random.choice(specialities),
+                        'year': random.randint(2022, 2024),
+                        'status': random.choice(statuses),
+                        'version': random.randint(1, 3),
+                        'download_count': random.randint(0, 50),
+                        'view_count': random.randint(10, 200),
+                        'tuteur_feedback': 'Excellent travail, bien structuré et documenté.' if random.choice([True, False]) else '',
+                        'stagiaire_comment': 'Projet très enrichissant qui m\'a permis d\'acquérir de nouvelles compétences.' if random.choice([True, False]) else '',
+                        'rejection_reason': '' if random.choice([True, False]) else 'Manque de documentation technique',
+                    }
+                )
+                
+                # Set dates based on status
+                if report.status in ['submitted', 'under_review', 'approved', 'rejected']:
+                    report.submitted_at = timezone.now() - timedelta(days=random.randint(10, 60))
+                    if report.status in ['under_review', 'approved', 'rejected']:
+                        report.reviewed_at = report.submitted_at + timedelta(days=random.randint(1, 10))
+                        if report.status == 'approved':
+                            report.approved_at = report.reviewed_at + timedelta(days=random.randint(1, 5))
+                    report.save()
+                
+                if created:
+                    self.stdout.write(f'Created PFE report: {report.title}')
+
     def create_internship_offers(self):
         companies = [
             'Rose Blanche Group', 'Microsoft Maroc', 'Google Casablanca', 'Apple Store Maroc',
@@ -432,23 +463,21 @@ class Command(BaseCommand):
         
         for i in range(25):
             offre, created = OffreStage.objects.get_or_create(
-                title=f'Stage {i+1}: {random.choice(["Développeur Full Stack", "Data Scientist", "DevOps Engineer", "UI/UX Designer", "Marketing Digital", "Ingénieur Civil", "Architecte", "Ingénieur Électrique"])}',
+                reference=f'REF{i+1:03d}',
                 defaults={
-                    'description': f'Description détaillée du poste de stage {i+1}. Nous recherchons un(e) stagiaire motivé(e) pour rejoindre notre équipe dynamique.',
-                    'speciality': random.choice(specialities),
-                    'location': random.choice(locations),
-                    'duration': random.choice(durations),
-                    'salary': f'{random.randint(2000, 8000)} MAD/mois',
-                    'requirements': f'Étudiant(e) en {random.choice(specialities)}, niveau Bac+3 minimum, maîtrise des outils informatiques, esprit d\'équipe.',
-                    'benefits': 'Environnement de travail moderne, formation continue, possibilité d\'embauche, tickets restaurant.',
-                    'company': random.choice(companies),
-                    'contact_email': f'rh@{random.choice(companies).lower().replace(" ", "").replace("é", "e")}.com',
-                    'contact_phone': f'+212 5{random.randint(20, 29)}{random.randint(1000000, 9999999)}',
-                    'status': random.choice(['active', 'active', 'active', 'inactive']),
-                    'view_count': random.randint(10, 200),
-                    'application_count': random.randint(0, 15),
+                    'title': f'Stage en {random.choice(["Développement", "Data Science", "DevOps", "UI/UX", "Marketing"])}',
+                    'description': f'Description détaillée du stage {i+1}',
+                    'objectifs': f'Objectifs du stage {i+1}',
+                    'keywords': 'stage, développement, formation, expérience',
+                    'diplome': random.choice(['Bac+3', 'Bac+4', 'Bac+5']),
+                    'specialite': random.choice(specialities),
+                    'nombre_postes': random.randint(1, 3),
+                    'ville': random.choice(locations),
+                    'status': random.choice(['open', 'open', 'open', 'closed']),
+                    'type': random.choice(['Classique', 'PFE']),
+                    'validated': random.choice([True, True, True, False]),
                 }
             )
             
             if created:
-                self.stdout.write(f'Created internship offer: {offre.title} at {offre.company}') 
+                self.stdout.write(f'Created internship offer: {offre.title}') 

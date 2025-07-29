@@ -15,6 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
+import { apiClient, PFEReport } from "@/lib/api"
 import {
   FileText,
   Search,
@@ -33,42 +34,6 @@ import {
   TrendingUp,
   Database,
 } from "lucide-react"
-
-interface PFEReport {
-  id: number
-  title: string
-  abstract: string
-  keywords: string
-  speciality: string
-  year: number
-  status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'archived'
-  submitted_at: string | null
-  reviewed_at: string | null
-  approved_at: string | null
-  version: number
-  download_count: number
-  view_count: number
-  created_at: string
-  updated_at: string
-  tuteur_feedback: string
-  stagiaire_comment: string
-  rejection_reason: string
-  pdf_file: string
-  presentation_file: string | null
-  additional_files: string | null
-  stagiaire: {
-    id: number
-    first_name: string
-    last_name: string
-    email: string
-  }
-  tuteur: {
-    id: number
-    first_name: string
-    last_name: string
-    email: string
-  } | null
-}
 
 export default function RHPFEDigitalHubPage() {
   const { user } = useAuth()
@@ -98,18 +63,8 @@ export default function RHPFEDigitalHubPage() {
   const fetchReports = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/pfe-reports/', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      
-      if (!response.ok) {
-        throw new Error('Erreur lors du chargement des rapports')
-      }
-      
-      const data = await response.json()
-      setReports(data.results || [])
+      const response = await apiClient.getPFEReports()
+      setReports(response.results || [])
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement des rapports')
     } finally {
@@ -126,8 +81,8 @@ export default function RHPFEDigitalHubPage() {
         report.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         report.abstract.toLowerCase().includes(searchTerm.toLowerCase()) ||
         report.keywords.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        report.stagiaire.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        report.stagiaire.last_name.toLowerCase().includes(searchTerm.toLowerCase())
+        report.stagiaire.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        report.stagiaire.prenom.toLowerCase().includes(searchTerm.toLowerCase())
       )
     }
 
@@ -151,18 +106,8 @@ export default function RHPFEDigitalHubPage() {
 
   const handleArchiveReport = async (reportId: number) => {
     try {
-      const response = await fetch(`/api/pfe-reports/${reportId}/archive/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de l\'archivage du rapport')
-      }
-
+      await apiClient.archivePFEReport(reportId)
+      
       toast({
         title: "Succès",
         description: "Rapport archivé avec succès",
@@ -180,22 +125,13 @@ export default function RHPFEDigitalHubPage() {
 
   const handleDownloadReport = async (reportId: number) => {
     try {
-      const response = await fetch(`/api/pfe-reports/${reportId}/download/`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Erreur lors du téléchargement')
-      }
-
-      const data = await response.json()
+      const response = await apiClient.downloadPFEReport(reportId)
       
       // Create a temporary link to download the file
       const link = document.createElement('a')
-      link.href = data.download_url
-      link.download = data.filename
+      link.href = response.download_url
+      link.download = response.filename
+      link.target = '_blank'
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -207,7 +143,27 @@ export default function RHPFEDigitalHubPage() {
     } catch (err: any) {
       toast({
         title: "Erreur",
-        description: err.message,
+        description: err.message || "Erreur lors du téléchargement",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleViewReport = async (reportId: number) => {
+    try {
+      const response = await apiClient.downloadPFEReport(reportId)
+      
+      // Open the report in a new tab
+      window.open(response.download_url, '_blank')
+
+      toast({
+        title: "Succès",
+        description: "Rapport ouvert dans un nouvel onglet",
+      })
+    } catch (err: any) {
+      toast({
+        title: "Erreur",
+        description: err.message || "Erreur lors de l'ouverture du rapport",
         variant: "destructive",
       })
     }
@@ -438,11 +394,11 @@ export default function RHPFEDigitalHubPage() {
                           <span>•</span>
                           <span>Année: {report.year}</span>
                           <span>•</span>
-                          <span>Stagiaire: {report.stagiaire.first_name} {report.stagiaire.last_name}</span>
+                          <span>Stagiaire: {report.stagiaire.prenom} {report.stagiaire.nom}</span>
                           {report.tuteur && (
                             <>
                               <span>•</span>
-                              <span>Tuteur: {report.tuteur.first_name} {report.tuteur.last_name}</span>
+                              <span>Tuteur: {report.tuteur.prenom} {report.tuteur.nom}</span>
                             </>
                           )}
                         </div>
@@ -473,7 +429,7 @@ export default function RHPFEDigitalHubPage() {
                           <Download className="mr-2 h-4 w-4" />
                           Télécharger
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => handleViewReport(report.id)}>
                           <Eye className="mr-2 h-4 w-4" />
                           Voir
                         </Button>

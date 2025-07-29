@@ -13,11 +13,13 @@ urlpatterns = [
     
     # Dashboard and stats
     path('stats/', views.DashboardStatsView.as_view(), name='dashboard-stats'),
+    path('dashboard/stats/', views.DashboardStatsView.as_view(), name='dashboard-stats-alt'),
     path('users/', views.UsersListView.as_view(), name='users-list'),
     
     # Stages
     path('stages/', views.StagesListView.as_view(), name='stages-list'),
     path('stages/<int:pk>/', views.StageDetailView.as_view(), name='stage-detail'),
+    path('stages/my-internship/', views.MyInternshipView.as_view(), name='my-internship'),
     
     # Steps
     path('steps/', views.StepsListView.as_view(), name='steps-list'),

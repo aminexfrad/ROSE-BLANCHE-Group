@@ -14,7 +14,8 @@ if (typeof window !== 'undefined') {
   validateEnvironment()
 }
 
-const API_BASE_URL = apiConfig.baseUrl
+// Use direct backend URL instead of proxy
+const API_BASE_URL = 'http://localhost:8000/api'
 
 // Request deduplication cache
 const pendingRequests = new Map<string, Promise<any>>()
@@ -539,59 +540,92 @@ class ApiClient {
 
   // Authentication methods
   async login(email: string, password: string): Promise<{ access: string; refresh: string; user: User }> {
-    // Sanitize inputs
-    const sanitizedEmail = sanitizeInput(email)
-    const sanitizedPassword = sanitizeInput(password)
-    
-    const response = await this.request<{ access: string; refresh: string; user: User }>('/auth/login/', {
-      method: 'POST',
-      body: JSON.stringify({ email: sanitizedEmail, password: sanitizedPassword }),
-    }, { skipCache: true })
-    
-    this.token = response.access
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', response.access)
-      localStorage.setItem('refresh_token', response.refresh)
+    try {
+      const response = await this.request<{
+        access: string
+        refresh: string
+        user: User
+      }>('/auth/login/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      }, { skipCache: true })
+
+      // Store tokens
+      this.token = response.access
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', response.access)
+        localStorage.setItem('refreshToken', response.refresh)
+        localStorage.setItem('user', JSON.stringify(response.user))
+      }
+
+      return response
+    } catch (error) {
+      console.error('Login error:', error)
+      throw error
     }
-    
-    return response
   }
 
   async logout(): Promise<void> {
     try {
-      await this.request('/auth/logout/', { method: 'POST' }, { skipCache: true })
+      const refreshToken = localStorage.getItem('refreshToken')
+      if (refreshToken) {
+        await this.request('/auth/logout/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ refresh: refreshToken }),
+        }, { skipCache: true })
+      }
     } catch (error) {
       console.error('Logout error:', error)
     } finally {
+      // Clear all stored data
       this.token = null
       if (typeof window !== 'undefined') {
-        localStorage.removeItem('auth_token')
-        localStorage.removeItem('refresh_token')
+        localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('user')
       }
-      // Clear cache on logout
-      this.clearCache()
     }
   }
 
   async refreshToken(): Promise<{ access: string }> {
-    const refresh = localStorage.getItem('refresh_token')
-    if (!refresh) throw new Error('No refresh token available')
-    
-    const response = await this.request<{ access: string }>('/auth/refresh/', {
-      method: 'POST',
-      body: JSON.stringify({ refresh }),
-    }, { skipCache: true })
-    
-    this.token = response.access
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('auth_token', response.access)
+    try {
+      const refreshToken = localStorage.getItem('refreshToken')
+      if (!refreshToken) {
+        throw new Error('No refresh token available')
+      }
+
+      const response = await this.request<{ access: string }>('/auth/refresh/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ refresh: refreshToken }),
+      }, { skipCache: true })
+
+      // Update stored token
+      this.token = response.access
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', response.access)
+      }
+
+      return response
+    } catch (error) {
+      // Clear invalid tokens
+      this.logout()
+      throw error
     }
-    
-    return response
   }
 
   isAuthenticated(): boolean {
-    return !!this.token
+    if (typeof window === 'undefined') return false
+    const token = localStorage.getItem('token')
+    return !!token
   }
 
   // User profile methods with caching
@@ -1268,6 +1302,22 @@ class ApiClient {
     return this.request<{ download_url: string; filename: string }>(`/pfe-reports/${id}/download/`)
   }
 
+  async getPfeReports(): Promise<{ results: any[] }> {
+    return this.request('/pfe-reports/')
+  }
+
+  async createPfeReport(data: FormData): Promise<any> {
+    return this.request('/pfe-reports/create/', {
+      method: 'POST',
+      body: data
+    })
+  }
+
+  async submitPfeReport(reportId: number): Promise<any> {
+    return this.request(`/pfe-reports/${reportId}/submit/`, {
+      method: 'POST'
+    })
+  }
 }
 
 export const apiClient = new ApiClient()

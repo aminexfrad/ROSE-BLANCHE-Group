@@ -25,6 +25,9 @@ import {
   Database,
   BarChart3,
   Cog,
+  Archive,
+  Download,
+  Eye,
 } from "lucide-react"
 
 interface DashboardStats {
@@ -38,10 +41,32 @@ interface DashboardStats {
   current_progression: number;
   status_stats: Array<{ status: string; count: number }>;
   role_stats: Array<{ role: string; count: number }>;
+  pfe_reports_stats: {
+    total: number;
+    approved: number;
+    archived: number;
+    submitted: number;
+  };
 }
 
 interface RecentUser extends User {
   // Extends the User interface which already has the correct field names
+}
+
+interface PFEReport {
+  id: number;
+  title: string;
+  stagiaire: {
+    nom: string;
+    prenom: string;
+  };
+  status: string;
+  year: number;
+  speciality: string;
+  created_at: string;
+  submitted_at?: string;
+  approved_at?: string;
+  archived_at?: string;
 }
 
 const quickActions = [
@@ -52,7 +77,13 @@ const quickActions = [
     href: "/admin/utilisateurs",
     color: "bg-blue-500",
   },
-
+  {
+    title: "PFE Reports Archive",
+    description: "Manage archived PFE reports",
+    icon: Archive,
+    href: "/admin/pfe-reports",
+    color: "bg-indigo-500",
+  },
   {
     title: "Database Management",
     description: "Manage database and backups",
@@ -90,6 +121,7 @@ export default function AdminDashboard() {
   const { user } = useAuth()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([])
+  const [pfeReports, setPfeReports] = useState<PFEReport[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -99,78 +131,126 @@ export default function AdminDashboard() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const [statsResponse, usersResponse] = await Promise.all([
-          apiClient.getDashboardStats(),
-          apiClient.getUsers({ limit: 5 }),
-        ])
-
+        
+        // Fetch dashboard stats
+        const statsData = await apiClient.getDashboardStats()
         setStats({
-          total_users: statsResponse.stats.total_users ?? 0,
-          total_applications: statsResponse.stats.total_applications ?? 0,
-          total_stages: statsResponse.stats.total_stages ?? 0,
-          recent_applications: statsResponse.stats.recent_applications ?? 0,
-          active_stages: statsResponse.stats.active_stages ?? 0,
-          completed_stages: statsResponse.stats.completed_stages ?? 0,
-          avg_progression: statsResponse.stats.avg_progression ?? 0,
-          current_progression: statsResponse.stats.current_progression ?? 0,
-          status_stats: statsResponse.stats.status_stats ?? [],
-          role_stats: statsResponse.stats.role_stats ?? [],
-        });
-        setRecentUsers(usersResponse.results || []);
+          total_users: statsData.stats?.total_users ?? 0,
+          total_applications: statsData.stats?.total_applications ?? 0,
+          total_stages: statsData.stats?.total_stages ?? 0,
+          recent_applications: statsData.stats?.recent_applications ?? 0,
+          active_stages: statsData.stats?.active_stages ?? 0,
+          completed_stages: statsData.stats?.completed_stages ?? 0,
+          avg_progression: statsData.stats?.avg_progression ?? 0,
+          current_progression: statsData.stats?.current_progression ?? 0,
+          status_stats: statsData.stats?.status_stats ?? [],
+          role_stats: statsData.stats?.role_stats ?? [],
+          pfe_reports_stats: {
+            total: 0,
+            approved: 0,
+            archived: 0,
+            submitted: 0
+          }
+        })
+        
+        // Fetch recent users
+        const usersData = await apiClient.getUsers({ limit: 5 })
+        setRecentUsers(usersData.results || [])
+        
+        // Fetch PFE reports
+        const reportsData = await apiClient.getPfeReports()
+        setPfeReports(reportsData.results || [])
+        
       } catch (err: any) {
-        console.error('Error fetching data:', err);
-        setError(err.message || 'Failed to load dashboard data');
+        setError(err.message || "Erreur lors du chargement des données")
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
-
-    if (user) {
-      fetchData();
     }
-  }, [user]);
+
+    fetchData()
+  }, [])
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-800'
+      case 'completed':
+        return 'bg-blue-100 text-blue-800'
+      case 'archived':
+        return 'bg-gray-100 text-gray-800'
+      case 'approved':
+        return 'bg-green-100 text-green-800'
+      case 'submitted':
+        return 'bg-yellow-100 text-yellow-800'
+      case 'draft':
+        return 'bg-orange-100 text-orange-800'
+      default:
+        return 'bg-gray-100 text-gray-800'
+    }
+  }
 
   const getRoleColor = (role: string) => {
-    switch (role.toLowerCase()) {
+    switch (role) {
       case 'admin':
-        return 'bg-red-100 text-red-800';
+        return 'bg-red-100 text-red-800'
       case 'rh':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-purple-100 text-purple-800'
       case 'tuteur':
-        return 'bg-green-100 text-green-800';
+        return 'bg-blue-100 text-blue-800'
       case 'stagiaire':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-green-100 text-green-800'
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gray-100 text-gray-800'
     }
-  };
+  }
 
-  // Role badge color mapping
-  const roleInfo = {
-    rh: { label: "Responsable RH", color: "bg-gradient-to-r from-orange-500 to-red-600 text-white" },
-    stagiaire: { label: "Stagiaire", color: "bg-gradient-to-r from-blue-500 to-cyan-600 text-white" },
-    tuteur: { label: "Tuteur", color: "bg-gradient-to-r from-green-500 to-emerald-600 text-white" },
-    admin: { label: "Administrateur", color: "bg-gradient-to-r from-purple-500 to-pink-600 text-white" },
-  }[user?.role || "admin"]
+  const handleDownloadReport = async (reportId: number) => {
+    try {
+      const response = await apiClient.downloadPFEReport(reportId)
+      const link = document.createElement('a')
+      link.href = response.download_url
+      link.download = response.filename
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (err: any) {
+      console.error('Erreur lors du téléchargement:', err)
+    }
+  }
+
+  const handleViewReport = async (reportId: number) => {
+    try {
+      const response = await apiClient.downloadPFEReport(reportId)
+      window.open(response.download_url, '_blank')
+    } catch (err: any) {
+      console.error('Erreur lors de l\'ouverture:', err)
+    }
+  }
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
-      </div>
-    );
+      <DashboardLayout allowedRoles={["admin"]} breadcrumbs={breadcrumbs}>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        </div>
+      </DashboardLayout>
+    )
   }
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error</h2>
-          <p className="text-gray-600">{error}</p>
+      <DashboardLayout allowedRoles={["admin"]} breadcrumbs={breadcrumbs}>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <AlertTriangle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Erreur</h3>
+            <p className="text-gray-600">{error}</p>
+          </div>
         </div>
-      </div>
-    );
+      </DashboardLayout>
+    )
   }
 
   return (
@@ -178,214 +258,214 @@ export default function AdminDashboard() {
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <h1 className="text-3xl font-bold text-gray-900">Welcome back, {user?.prenom || ''}!</h1>
-            <Badge className={roleInfo.color}>{roleInfo.label}</Badge>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard Administrateur</h1>
+            <p className="text-gray-600 mt-2">
+              Gestion complète de la plateforme StageBloom
+            </p>
           </div>
-          <div className="flex gap-3">
-            <Button variant="outline" size="sm">
-              <Activity className="mr-2 h-4 w-4" />
-              System Status
-            </Button>
-            <Button size="sm" className="bg-red-600 hover:bg-red-700">
-              <Settings className="mr-2 h-4 w-4" />
-              System Settings
-            </Button>
+          <div className="flex items-center space-x-4">
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+              Système Opérationnel
+            </Badge>
           </div>
         </div>
 
-        {/* Stats Overview */}
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {quickActions.map((action) => (
+            <Card key={action.title} className="hover:shadow-lg transition-shadow cursor-pointer">
+              <CardHeader className="pb-3">
+                <div className="flex items-center space-x-3">
+                  <div className={`p-2 rounded-lg ${action.color}`}>
+                    <action.icon className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <CardTitle className="text-lg">{action.title}</CardTitle>
+                    <CardDescription>{action.description}</CardDescription>
+                  </div>
+                </div>
+              </CardHeader>
+            </Card>
+          ))}
+        </div>
+
+        {/* Statistics Overview */}
         {stats && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Users</CardTitle>
+                <CardTitle className="text-sm font-medium">Utilisateurs</CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.total_users}</div>
                 <p className="text-xs text-muted-foreground">
-                  Registered users
+                  Total des utilisateurs
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Applications</CardTitle>
-                <FileText className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{stats.total_applications}</div>
-                <p className="text-xs text-muted-foreground">
-                  Internship applications
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Active Internships</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Stages Actifs</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">{stats.active_stages}</div>
                 <p className="text-xs text-muted-foreground">
-                  Currently active
+                  Stages en cours
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Avg Progress</CardTitle>
-                <Progress className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Rapports PFE</CardTitle>
+                <FileText className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.avg_progression}%</div>
+                <div className="text-2xl font-bold">{stats.pfe_reports_stats?.total || 0}</div>
                 <p className="text-xs text-muted-foreground">
-                  Overall completion
+                  Total des rapports
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Archivés</CardTitle>
+                <Archive className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{stats.pfe_reports_stats?.archived || 0}</div>
+                <p className="text-xs text-muted-foreground">
+                  Rapports archivés
                 </p>
               </CardContent>
             </Card>
           </div>
         )}
 
-        {/* System Overview */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Users */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                Recent Users
-              </CardTitle>
-              <CardDescription>Latest registered users</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {recentUsers.length === 0 ? (
-                <div className="text-center py-8">
-                  <Users className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">No Users</h3>
-                  <p className="text-gray-600">No users found at the moment.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {recentUsers.map((user) => (
-                    <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <Avatar>
-                          <AvatarImage src={user.avatar} />
-                          <AvatarFallback>
-                            {(user.prenom?.charAt(0) || '')}{(user.nom?.charAt(0) || '')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h4 className="font-semibold">
-                            {user.prenom || ''} {user.nom || ''}
-                          </h4>
-                          <p className="text-sm text-gray-600">{user.email}</p>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center space-x-2">
-                        <Badge className={getRoleColor(user.role)}>
-                          {user.role}
-                        </Badge>
-                        <span className="text-xs text-gray-500">
-                          {new Date(user.date_joined).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* System Status */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                System Status
-              </CardTitle>
-              <CardDescription>Current system health and performance</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Database</span>
-                  <Badge className="bg-green-100 text-green-800">Healthy</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">API Services</span>
-                  <Badge className="bg-green-100 text-green-800">Online</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">File Storage</span>
-                  <Badge className="bg-green-100 text-green-800">Available</Badge>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">Email Service</span>
-                  <Badge className="bg-yellow-100 text-yellow-800">Warning</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions */}
+        {/* PFE Reports Section */}
         <Card>
           <CardHeader>
-            <CardTitle>Quick Actions</CardTitle>
-            <CardDescription>Access frequently used administrative functions</CardDescription>
+            <CardTitle className="flex items-center space-x-2">
+              <Archive className="h-5 w-5" />
+              <span>Rapports PFE - Archive</span>
+            </CardTitle>
+            <CardDescription>
+              Gestion des rapports PFE archivés et approuvés
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {quickActions.map((action) => (
-                <Button
-                  key={action.title}
-                  variant="outline"
-                  className="h-auto p-4 flex flex-col items-start space-y-2 hover:shadow-md transition-shadow"
-                  onClick={() => window.location.href = action.href}
-                >
-                  <div className={`p-2 rounded-lg ${action.color}`}>
-                    <action.icon className="h-5 w-5 text-white" />
+            <div className="space-y-4">
+              {/* Statistics */}
+              {stats?.pfe_reports_stats && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  <div className="text-center p-3 bg-blue-50 rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">{stats.pfe_reports_stats.total}</div>
+                    <div className="text-sm text-blue-600">Total</div>
                   </div>
-                  <div className="text-left">
-                    <h4 className="font-semibold">{action.title}</h4>
-                    <p className="text-sm text-gray-600">{action.description}</p>
+                  <div className="text-center p-3 bg-green-50 rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">{stats.pfe_reports_stats.approved}</div>
+                    <div className="text-sm text-green-600">Approuvés</div>
                   </div>
-                </Button>
-              ))}
+                  <div className="text-center p-3 bg-gray-50 rounded-lg">
+                    <div className="text-2xl font-bold text-gray-600">{stats.pfe_reports_stats.archived}</div>
+                    <div className="text-sm text-gray-600">Archivés</div>
+                  </div>
+                  <div className="text-center p-3 bg-yellow-50 rounded-lg">
+                    <div className="text-2xl font-bold text-yellow-600">{stats.pfe_reports_stats.submitted}</div>
+                    <div className="text-sm text-yellow-600">Soumis</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Reports List */}
+              <div className="space-y-3">
+                {pfeReports.slice(0, 5).map((report) => (
+                  <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
+                    <div className="flex items-center space-x-4">
+                      <div className="flex-shrink-0">
+                        <Avatar>
+                          <AvatarFallback>
+                            {report.stagiaire.prenom?.[0]}{report.stagiaire.nom?.[0]}
+                          </AvatarFallback>
+                        </Avatar>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-900">{report.title}</h4>
+                        <p className="text-sm text-gray-600">
+                          {report.stagiaire.prenom} {report.stagiaire.nom} • {report.year} • {report.speciality}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge className={getStatusColor(report.status)}>
+                        {report.status}
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDownloadReport(report.id)}
+                      >
+                        <Download className="h-4 w-4 mr-1" />
+                        Télécharger
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleViewReport(report.id)}
+                      >
+                        <Eye className="h-4 w-4 mr-1" />
+                        Voir
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {pfeReports.length > 5 && (
+                <div className="text-center pt-4">
+                  <Button variant="outline" onClick={() => window.location.href = '/admin/pfe-reports'}>
+                    Voir tous les rapports ({pfeReports.length})
+                  </Button>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* System Actions */}
+        {/* Recent Users */}
         <Card>
           <CardHeader>
-            <CardTitle>System Management</CardTitle>
-            <CardDescription>Advanced system configuration and maintenance</CardDescription>
+            <CardTitle>Utilisateurs Récents</CardTitle>
+            <CardDescription>
+              Les derniers utilisateurs inscrits sur la plateforme
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {systemActions.map((action) => (
-                <Button
-                  key={action.title}
-                  variant="outline"
-                  className="h-auto p-4 flex flex-col items-start space-y-2 hover:shadow-md transition-shadow"
-                  onClick={() => window.location.href = action.href}
-                >
-                  <div className={`p-2 rounded-lg ${action.color}`}>
-                    <action.icon className="h-5 w-5 text-white" />
+            <div className="space-y-4">
+              {recentUsers.map((user) => (
+                <div key={user.id} className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <Avatar>
+                      <AvatarFallback>
+                        {user.prenom?.[0]}{user.nom?.[0]}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h4 className="font-medium text-gray-900">
+                        {user.prenom} {user.nom}
+                      </h4>
+                      <p className="text-sm text-gray-600">{user.email}</p>
+                    </div>
                   </div>
-                  <div className="text-left">
-                    <h4 className="font-semibold">{action.title}</h4>
-                    <p className="text-sm text-gray-600">{action.description}</p>
-                  </div>
-                </Button>
+                  <Badge className={getRoleColor(user.role)}>
+                    {user.role}
+                  </Badge>
+                </div>
               ))}
             </div>
           </CardContent>

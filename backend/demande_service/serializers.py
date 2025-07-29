@@ -246,7 +246,7 @@ class DemandeListSerializer(DemandeSerializer):
     
     class Meta(DemandeSerializer.Meta):
         fields = [
-            'id', 'nom_complet', 'email', 'institut', 'specialite',
+            'id', 'nom', 'prenom', 'nom_complet', 'email', 'institut', 'specialite',
             'type_stage', 'niveau', 'pfe_reference', 'date_debut', 'date_fin',
             'duree_stage', 'stage_binome', 'nom_complet_binome',
             'is_pfe_stage', 'status', 'created_at',

@@ -881,6 +881,27 @@ class TestimonialUpdateView(generics.UpdateAPIView):
         # Reset status to pending when updating
         serializer.save(status='pending')
 
+class MyInternshipView(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = StageSerializer
+
+    def get_object(self):
+        user = self.request.user
+        if user.role == 'stagiaire':
+            return Stage.objects.filter(stagiaire=user, status='active').first()
+        else:
+            return None
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if not instance:
+            return Response(
+                {'error': 'Aucun stage actif trouvé pour cet utilisateur'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
 class PFEReportsListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = PFEReportListSerializer

@@ -33,6 +33,7 @@ import {
   User,
   Building,
 } from "lucide-react"
+import { apiClient } from '@/lib/api'
 
 interface PFEReport {
   id: number
@@ -102,17 +103,7 @@ export default function StagiairePFEReportsPage() {
   const fetchReports = async () => {
     try {
       setLoading(true)
-      const response = await fetch('/api/pfe-reports/', {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      })
-      
-      if (!response.ok) {
-        throw new Error('Erreur lors du chargement des rapports')
-      }
-      
-      const data = await response.json()
+      const data = await apiClient.getPfeReports()
       setReports(data.results || [])
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement des rapports')
@@ -140,17 +131,7 @@ export default function StagiairePFEReportsPage() {
         formDataObj.append('additional_files', formData.additional_files)
       }
 
-      const response = await fetch('/api/pfe-reports/create/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formDataObj
-      })
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de la création du rapport')
-      }
+      await apiClient.createPfeReport(formDataObj)
 
       toast({
         title: "Succès",
@@ -180,17 +161,7 @@ export default function StagiairePFEReportsPage() {
 
   const handleSubmitReport = async (reportId: number) => {
     try {
-      const response = await fetch(`/api/pfe-reports/${reportId}/submit/`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error('Erreur lors de la soumission du rapport')
-      }
+      await apiClient.submitPfeReport(reportId)
 
       toast({
         title: "Succès",
@@ -201,7 +172,53 @@ export default function StagiairePFEReportsPage() {
     } catch (err: any) {
       toast({
         title: "Erreur",
-        description: err.message,
+        description: err.message || "Erreur lors de la soumission",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDownloadReport = async (reportId: number) => {
+    try {
+      const response = await apiClient.downloadPFEReport(reportId)
+      
+      // Create a temporary link to download the file
+      const link = document.createElement('a')
+      link.href = response.download_url
+      link.download = response.filename
+      link.target = '_blank'
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+
+      toast({
+        title: "Succès",
+        description: "Téléchargement démarré",
+      })
+    } catch (err: any) {
+      toast({
+        title: "Erreur",
+        description: err.message || "Erreur lors du téléchargement",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleViewReport = async (reportId: number) => {
+    try {
+      const response = await apiClient.downloadPFEReport(reportId)
+      
+      // Open the report in a new tab
+      window.open(response.download_url, '_blank')
+
+      toast({
+        title: "Succès",
+        description: "Rapport ouvert dans un nouvel onglet",
+      })
+    } catch (err: any) {
+      toast({
+        title: "Erreur",
+        description: err.message || "Erreur lors de l'ouverture du rapport",
         variant: "destructive",
       })
     }
@@ -442,12 +459,20 @@ export default function StagiairePFEReportsPage() {
                           </Button>
                         )}
                         {report.status === 'approved' && (
-                          <Button variant="outline" size="sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleDownloadReport(report.id)}
+                          >
                             <Download className="mr-2 h-4 w-4" />
                             Télécharger
                           </Button>
                         )}
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleViewReport(report.id)}
+                        >
                           <Eye className="mr-2 h-4 w-4" />
                           Voir
                         </Button>
