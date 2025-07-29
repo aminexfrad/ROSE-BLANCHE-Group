@@ -18,6 +18,7 @@ import { Eye, EyeOff, LogIn, ArrowLeft, Sparkles, Shield, UserCheck, Lock } from
 import Link from "next/link"
 import { useEffect } from "react"
 import { loginSchema, sanitizeInput, RateLimiter } from "@/lib/security"
+import Image from 'next/image'
 
 // Rate limiter instance
 const loginRateLimiter = new RateLimiter(5, 15 * 60 * 1000) // 5 attempts per 15 minutes
@@ -135,11 +136,17 @@ export default function LoginPage() {
     <div className="min-h-screen relative overflow-hidden">
       {/* Animated Background Image */}
       <div className="absolute inset-0 w-full h-full z-0">
-        <img
+        <Image
           src="/two-graduates-classmates-shake-hands-smiling-holding-diplomas.jpg"
           alt="Graduates background"
-          className="w-full h-full object-cover object-center scale-110 blur-sm brightness-75 animate-bgZoom"
+          fill
+          priority
+          quality={85}
+          sizes="100vw"
+          className="object-cover object-center scale-110 blur-sm brightness-75 animate-bgZoom"
           style={{ transition: 'transform 10s linear', willChange: 'transform' }}
+          placeholder="blur"
+          blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAv/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBAAIRAxEAPwCdABmX/9k="
         />
         {/* Dark overlay for readability */}
         <div className="absolute inset-0 bg-black/40" />
@@ -159,10 +166,13 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center">
             <div className="flex justify-center mb-6">
-              <img
+              <Image
                 src="/RoseBlancheLOGO.png"
                 alt="Rose Blanche Logo"
+                width={120}
+                height={40}
                 className="h-10 w-auto object-contain rounded-lg"
+                priority
               />
             </div>
             <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">

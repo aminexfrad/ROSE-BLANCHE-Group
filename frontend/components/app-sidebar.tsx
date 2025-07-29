@@ -10,6 +10,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { usePathname } from "next/navigation"
 import Link from "next/link"
 import { useState } from "react"
+import Image from "next/image"
 import {
   Sidebar,
   SidebarContent,
@@ -133,11 +134,14 @@ export function AppSidebar() {
     <Sidebar variant="inset" className="border-r border-gray-200/50 backdrop-blur-sm">
       <SidebarHeader className="border-b border-gray-200/50 p-4 bg-gradient-to-r from-white to-gray-50/50">
         <div className="flex items-center gap-3 group">
-          <img
+          <Image
             src="/RoseBlancheLOGO.png"
             alt="Rose Blanche Logo"
+            width={120}
+            height={40}
             className="h-16 w-auto max-h-20 object-contain mx-auto"
             style={{ flex: 1, background: 'white' }}
+            priority
           />
         </div>
       </SidebarHeader>

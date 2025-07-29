@@ -1,142 +1,157 @@
 'use client'
 
-import React, { useEffect, useState } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { apiClient } from '@/lib/api'
-import { usePerformanceMonitor } from './performance-optimizer'
+import { useEffect, useState } from 'react'
 
 interface PerformanceMetrics {
-  requestCount: number
-  cacheHits: number
-  averageResponseTime: number
-  totalResponseTime: number
-  cacheStats: {
-    size: number
-    maxSize: number
-    keys: string[]
-  }
+  lcp: number | null
+  fid: number | null
+  cls: number | null
+  ttfb: number | null
 }
 
-export const PerformanceMonitor: React.FC = () => {
-  const [metrics, setMetrics] = useState<PerformanceMetrics | null>(null)
-  const [isVisible, setIsVisible] = useState(false)
-  
-  // Use performance monitoring hook
-  usePerformanceMonitor()
+export function PerformanceMonitor() {
+  const [metrics, setMetrics] = useState<PerformanceMetrics>({
+    lcp: null,
+    fid: null,
+    cls: null,
+    ttfb: null
+  })
+
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    const updateMetrics = () => {
-      const currentMetrics = apiClient.getPerformanceMetrics()
-      setMetrics(currentMetrics)
+    if (typeof window === 'undefined') return
+
+    try {
+      // Check if PerformanceObserver is available
+      if (!('PerformanceObserver' in window)) {
+        setError('PerformanceObserver not supported')
+        return
+      }
+
+      // LCP (Largest Contentful Paint)
+      try {
+        const lcpObserver = new PerformanceObserver((list) => {
+          try {
+            const entries = list.getEntries()
+            if (entries.length > 0) {
+              const lastEntry = entries[entries.length - 1] as PerformanceEntry
+              setMetrics(prev => ({ ...prev, lcp: lastEntry.startTime }))
+            }
+          } catch (err) {
+            console.warn('LCP measurement error:', err)
+          }
+        })
+        lcpObserver.observe({ entryTypes: ['largest-contentful-paint'] })
+      } catch (err) {
+        console.warn('LCP observer error:', err)
+      }
+
+      // FID (First Input Delay)
+      try {
+        const fidObserver = new PerformanceObserver((list) => {
+          try {
+            const entries = list.getEntries()
+            if (entries.length > 0) {
+              const firstEntry = entries[0] as any
+              if (firstEntry.processingStart && firstEntry.startTime) {
+                setMetrics(prev => ({ ...prev, fid: firstEntry.processingStart - firstEntry.startTime }))
+              }
+            }
+          } catch (err) {
+            console.warn('FID measurement error:', err)
+          }
+        })
+        fidObserver.observe({ entryTypes: ['first-input'] })
+      } catch (err) {
+        console.warn('FID observer error:', err)
+      }
+
+      // CLS (Cumulative Layout Shift)
+      try {
+        const clsObserver = new PerformanceObserver((list) => {
+          try {
+            let clsValue = 0
+            for (const entry of list.getEntries()) {
+              const layoutShiftEntry = entry as any
+              if (layoutShiftEntry && !layoutShiftEntry.hadRecentInput && layoutShiftEntry.value) {
+                clsValue += layoutShiftEntry.value
+              }
+            }
+            setMetrics(prev => ({ ...prev, cls: clsValue }))
+          } catch (err) {
+            console.warn('CLS measurement error:', err)
+          }
+        })
+        clsObserver.observe({ entryTypes: ['layout-shift'] })
+      } catch (err) {
+        console.warn('CLS observer error:', err)
+      }
+
+      // TTFB (Time to First Byte)
+      try {
+        const navigationEntries = performance.getEntriesByType('navigation')
+        if (navigationEntries.length > 0) {
+          const navigationEntry = navigationEntries[0] as PerformanceNavigationTiming
+          if (navigationEntry.responseStart && navigationEntry.requestStart) {
+            setMetrics(prev => ({ ...prev, ttfb: navigationEntry.responseStart - navigationEntry.requestStart }))
+          }
+        }
+      } catch (err) {
+        console.warn('TTFB measurement error:', err)
+      }
+
+    } catch (err) {
+      console.error('Performance monitor error:', err)
+      setError('Performance monitoring failed')
     }
-
-    // Update metrics every 5 seconds
-    const interval = setInterval(updateMetrics, 5000)
-    updateMetrics() // Initial update
-
-    return () => clearInterval(interval)
   }, [])
 
-  if (!metrics || !isVisible) {
-    return (
-      <button
-        onClick={() => setIsVisible(true)}
-        className="fixed bottom-4 right-4 z-50 bg-blue-500 text-white p-2 rounded-full shadow-lg hover:bg-blue-600 transition-colors"
-        title="Show Performance Monitor"
-      >
-        📊
-      </button>
-    )
+  const getLCPStatus = (lcp: number | null) => {
+    if (!lcp) return 'Loading...'
+    if (lcp < 2500) return 'Good'
+    if (lcp < 4000) return 'Needs Improvement'
+    return 'Poor'
   }
 
-  const cacheHitRate = metrics.requestCount > 0 
-    ? (metrics.cacheHits / metrics.requestCount * 100).toFixed(1)
-    : '0'
+  const getFIDStatus = (fid: number | null) => {
+    if (!fid) return 'Loading...'
+    if (fid < 100) return 'Good'
+    if (fid < 300) return 'Needs Improvement'
+    return 'Poor'
+  }
 
-  const avgResponseTime = metrics.averageResponseTime.toFixed(2)
+  const getCLSStatus = (cls: number | null) => {
+    if (!cls) return 'Loading...'
+    if (cls < 0.1) return 'Good'
+    if (cls < 0.25) return 'Needs Improvement'
+    return 'Poor'
+  }
 
-  return (
-    <div className="fixed bottom-4 right-4 z-50">
-      <Card className="w-80 shadow-xl">
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm">Performance Monitor</CardTitle>
-            <button
-              onClick={() => setIsVisible(false)}
-              className="text-gray-500 hover:text-gray-700"
-            >
-              ✕
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-2 gap-2 text-xs">
-            <div>
-              <div className="text-gray-600">Requests</div>
-              <div className="font-semibold">{metrics.requestCount}</div>
-            </div>
-            <div>
-              <div className="text-gray-600">Cache Hits</div>
-              <div className="font-semibold">{metrics.cacheHits}</div>
-            </div>
-            <div>
-              <div className="text-gray-600">Avg Response</div>
-              <div className="font-semibold">{avgResponseTime}ms</div>
-            </div>
-            <div>
-              <div className="text-gray-600">Cache Hit Rate</div>
-              <div className="font-semibold">{cacheHitRate}%</div>
-            </div>
-          </div>
-          
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span>Cache Usage</span>
-              <span>{metrics.cacheStats.size}/{metrics.cacheStats.maxSize}</span>
-            </div>
-            <Progress 
-              value={(metrics.cacheStats.size / metrics.cacheStats.maxSize) * 100} 
-              className="h-2"
-            />
-          </div>
-          
-          <div className="flex gap-2">
-            <Badge 
-              variant={parseFloat(cacheHitRate) > 50 ? "default" : "secondary"}
-              className="text-xs"
-            >
-              Cache: {cacheHitRate}%
-            </Badge>
-            <Badge 
-              variant={parseFloat(avgResponseTime) < 500 ? "default" : "destructive"}
-              className="text-xs"
-            >
-              Avg: {avgResponseTime}ms
-            </Badge>
-          </div>
-          
-          <button
-            onClick={() => {
-              apiClient.clearCache()
-              setMetrics(apiClient.getPerformanceMetrics())
-            }}
-            className="w-full text-xs bg-red-500 text-white py-1 px-2 rounded hover:bg-red-600 transition-colors"
-          >
-            Clear Cache
-          </button>
-        </CardContent>
-      </Card>
-    </div>
-  )
-}
-
-// Development-only performance monitor
-export const DevPerformanceMonitor: React.FC = () => {
+  // Don't show in production
   if (process.env.NODE_ENV === 'production') {
     return null
   }
-  
-  return <PerformanceMonitor />
+
+  // Show error state
+  if (error) {
+    return (
+      <div className="fixed bottom-4 right-4 bg-red-500 text-white p-4 rounded-lg text-xs font-mono z-50">
+        <div className="mb-2 font-bold">Performance Monitor</div>
+        <div>Error: {error}</div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="fixed bottom-4 right-4 bg-black/80 text-white p-4 rounded-lg text-xs font-mono z-50">
+      <div className="mb-2 font-bold">Performance Monitor</div>
+      <div className="space-y-1">
+        <div>LCP: {metrics.lcp ? `${Math.round(metrics.lcp)}ms` : '...'} ({getLCPStatus(metrics.lcp)})</div>
+        <div>FID: {metrics.fid ? `${Math.round(metrics.fid)}ms` : '...'} ({getFIDStatus(metrics.fid)})</div>
+        <div>CLS: {metrics.cls ? metrics.cls.toFixed(3) : '...'} ({getCLSStatus(metrics.cls)})</div>
+        <div>TTFB: {metrics.ttfb ? `${Math.round(metrics.ttfb)}ms` : '...'}</div>
+      </div>
+    </div>
+  )
 } 

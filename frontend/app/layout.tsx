@@ -110,6 +110,7 @@ export default function RootLayout({
             <AuthProvider>
               {children}
               <Toaster />
+              {/* Performance monitor temporarily disabled for stability */}
             </AuthProvider>
           </ThemeProvider>
         </ErrorBoundary>

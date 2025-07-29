@@ -25,7 +25,12 @@
     "performance:monitor": "npm run dev",
     "performance:build": "npm run build && npm run analyze",
     "cache:clear": "echo 'Cache cleared'",
-    "bundle:analyze": "npm run analyze"
+    "bundle:analyze": "npm run analyze",
+    "dev:clean": "powershell -ExecutionPolicy Bypass -File clear-cache.ps1",
+    "dev:start": "npm run dev:clean && npm run dev",
+    "hard-refresh": "npm run dev:clean && npm run dev",
+    "optimize:images": "node scripts/optimize-images.js",
+    "performance:optimize": "npm run optimize:images && npm run dev:clean && npm run dev"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

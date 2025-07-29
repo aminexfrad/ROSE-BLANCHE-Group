@@ -45,6 +45,7 @@ import {
 import { apiClient } from "@/lib/api"
 import type { Testimonial } from "@/lib/api"
 import { useHydrationSuppression } from "@/hooks/use-hydration-suppression"
+import Image from 'next/image'
 
 export default function PublicHomePage() {
   const [isVisible, setIsVisible] = useState(false)
@@ -78,6 +79,8 @@ export default function PublicHomePage() {
 
   useEffect(() => {
     setIsVisible(true)
+    
+
     
     const handleScroll = () => {
       setScrollY(window.scrollY)

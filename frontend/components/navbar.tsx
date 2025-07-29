@@ -11,6 +11,7 @@ import { usePathname } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Menu, X, Sparkles } from "lucide-react"
 import { useState, useEffect } from "react"
+import Image from "next/image"
 
 interface NavbarProps {
   isPublic?: boolean
