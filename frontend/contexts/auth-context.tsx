@@ -37,12 +37,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     } catch (error: any) {
       console.error('Profile refresh error:', error)
       // If token is invalid, clear user state
-      if (error.message?.includes('jeton') || error.message?.includes('token') || error.message?.includes('401')) {
+      if (error.message?.includes('jeton') || error.message?.includes('token') || error.message?.includes('401') || error.message?.includes('Session expirée')) {
         setUser(null)
         // Clear invalid tokens
         if (typeof window !== 'undefined') {
-          localStorage.removeItem('auth_token')
-          localStorage.removeItem('refresh_token')
+          localStorage.removeItem('token')
+          localStorage.removeItem('refreshToken')
+          localStorage.removeItem('user')
         }
       }
     } finally {

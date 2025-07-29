@@ -478,6 +478,36 @@ class ApiClient {
         }
         
         if (response.status === 401) {
+          // Try to refresh token if we have one
+          const refreshToken = localStorage.getItem('refreshToken')
+          if (refreshToken) {
+            try {
+              await this.refreshToken()
+              // Retry the original request with new token
+              const retryResponse = await fetch(url, {
+                ...config,
+                headers: {
+                  ...config.headers,
+                  'Authorization': `Bearer ${this.token}`,
+                },
+                signal: controller.signal,
+              })
+              
+              if (retryResponse.ok) {
+                const text = await retryResponse.text()
+                let result: T
+                try {
+                  result = text ? JSON.parse(text) : ({} as T)
+                } catch {
+                  result = {} as T
+                }
+                return result
+              }
+            } catch (refreshError) {
+              // If refresh fails, logout and throw original error
+              this.logout()
+            }
+          }
           throw new Error('Session expirée. Veuillez vous reconnecter.');
         }
         
