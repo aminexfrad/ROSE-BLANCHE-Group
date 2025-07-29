@@ -81,10 +81,27 @@ export default function LoginPage() {
         description: "Vous êtes maintenant connecté à StageBloom.",
       })
       setRedirecting(true)
-    } catch (error) {
+    } catch (error: any) {
+      console.error('Login error:', error)
+      
+      // Handle specific error messages
+      let errorMessage = "Email ou mot de passe incorrect."
+      
+      if (error.message?.includes('validation')) {
+        errorMessage = error.message
+      } else if (error.message?.includes('désactivé')) {
+        errorMessage = "Ce compte a été désactivé. Veuillez contacter votre administrateur."
+      } else if (error.message?.includes('réseau')) {
+        errorMessage = "Erreur de connexion réseau. Veuillez vérifier votre connexion internet."
+      } else if (error.message?.includes('timeout')) {
+        errorMessage = "Délai d'attente dépassé. Veuillez réessayer."
+      } else if (error.message?.includes('serveur')) {
+        errorMessage = "Erreur serveur. Veuillez réessayer plus tard."
+      }
+      
       toast({
         title: "Erreur de connexion",
-        description: "Email ou mot de passe incorrect.",
+        description: errorMessage,
         variant: "destructive",
       })
     } finally {

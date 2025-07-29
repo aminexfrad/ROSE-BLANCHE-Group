@@ -22,6 +22,9 @@ const pendingRequests = new Map<string, Promise<any>>()
 // Performance monitoring
 const performanceMetrics = {
   requestCount: 0,
+  totalRequests: 0,
+  successfulRequests: 0,
+  failedRequests: 0,
   cacheHits: 0,
   averageResponseTime: 0,
   totalResponseTime: 0,
@@ -303,6 +306,13 @@ class ApiClient {
     options: RequestInit = {},
     cacheOptions?: { ttl?: number; skipCache?: boolean }
   ): Promise<T> {
+    const controller = new AbortController()
+    const REQUEST_TIMEOUT = apiConfig.timeout
+
+    const timeoutId = setTimeout(() => {
+      controller.abort()
+    }, REQUEST_TIMEOUT)
+
     // Don't set Content-Type for FormData, let browser set it automatically
     const headers: Record<string, string> = {
       'X-Requested-With': 'XMLHttpRequest', // CSRF protection
@@ -331,10 +341,6 @@ class ApiClient {
       }
     }
 
-    // Add timeout
-    const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), apiConfig.timeout)
-    
     try {
       const response = await fetch(url, {
         ...config,
@@ -343,8 +349,25 @@ class ApiClient {
       
       clearTimeout(timeoutId)
       
+      // Update performance metrics
+      performanceMetrics.totalRequests++
+      if (response.ok) {
+        performanceMetrics.successfulRequests++
+      } else {
+        performanceMetrics.failedRequests++
+      }
+      
       // Handle 401 Unauthorized - try to refresh token
       if (response.status === 401 && this.token && typeof window !== 'undefined') {
+        // Store the original response text before attempting refresh
+        const originalResponseText = await response.text();
+        let originalErrorData;
+        try {
+          originalErrorData = originalResponseText ? JSON.parse(originalResponseText) : {};
+        } catch {
+          originalErrorData = {};
+        }
+        
         try {
           await this.refreshToken()
           // Retry the request with new token
@@ -372,11 +395,31 @@ class ApiClient {
           this.token = null
           localStorage.removeItem('auth_token')
           localStorage.removeItem('refresh_token')
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
+          
+          // Handle specific error cases for the original response
+          if (originalErrorData.error === 'No active internship found') {
+            throw new Error('Aucun stage actif trouvé. Veuillez contacter votre administrateur.');
+          }
+          
+          // Handle validation errors
+          if (originalErrorData.email) {
+            throw new Error(`Erreur de validation email: ${originalErrorData.email.join(', ')}`);
+          }
+          if (originalErrorData.password) {
+            throw new Error(`Erreur de validation mot de passe: ${originalErrorData.password.join(', ')}`);
+          }
+          if (originalErrorData.non_field_errors) {
+            throw new Error(originalErrorData.non_field_errors.join(', '));
+          }
+          if (originalErrorData.detail) {
+            throw new Error(originalErrorData.detail);
+          }
+          
+          // Default error message
+          throw new Error(originalErrorData.detail || originalErrorData.message || originalErrorData.error || `Erreur HTTP ${response.status}`);
         }
       }
-      
+
       if (!response.ok) {
         const text = await response.text();
         let errorData;
@@ -385,7 +428,42 @@ class ApiClient {
         } catch {
           errorData = {};
         }
-        throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`);
+        
+        // Handle specific error cases
+        if (response.status === 404 && errorData.error === 'No active internship found') {
+          throw new Error('Aucun stage actif trouvé. Veuillez contacter votre administrateur.');
+        }
+        
+        if (response.status === 400) {
+          // Handle validation errors
+          if (errorData.email) {
+            throw new Error(`Erreur de validation email: ${errorData.email.join(', ')}`);
+          }
+          if (errorData.password) {
+            throw new Error(`Erreur de validation mot de passe: ${errorData.password.join(', ')}`);
+          }
+          if (errorData.non_field_errors) {
+            throw new Error(errorData.non_field_errors.join(', '));
+          }
+          if (errorData.detail) {
+            throw new Error(errorData.detail);
+          }
+        }
+        
+        if (response.status === 401) {
+          throw new Error('Session expirée. Veuillez vous reconnecter.');
+        }
+        
+        if (response.status === 403) {
+          throw new Error('Accès refusé. Vous n\'avez pas les permissions nécessaires.');
+        }
+        
+        if (response.status === 500) {
+          throw new Error('Erreur serveur. Veuillez réessayer plus tard.');
+        }
+        
+        // Default error message
+        throw new Error(errorData.detail || errorData.message || errorData.error || `Erreur HTTP ${response.status}`);
       }
 
       const text = await response.text();
@@ -407,12 +485,12 @@ class ApiClient {
       
       // Handle timeout errors
       if (error.name === 'AbortError') {
-        throw new Error('Request timeout')
+        throw new Error('Délai d\'attente dépassé. Veuillez réessayer.')
       }
       
       // Handle network errors
       if (error instanceof TypeError) {
-        throw new Error('Network error - please check your connection')
+        throw new Error('Erreur réseau. Veuillez vérifier votre connexion.')
       }
       
       console.error('API request failed:', error)
@@ -625,8 +703,49 @@ class ApiClient {
     })
     
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
+      const text = await response.text();
+      let errorData;
+      try {
+        errorData = text ? JSON.parse(text) : {};
+      } catch {
+        errorData = {};
+      }
+      
+      // Handle specific error cases
+      if (response.status === 404 && errorData.error === 'No active internship found') {
+        throw new Error('Aucun stage actif trouvé. Veuillez contacter votre administrateur.');
+      }
+      
+      if (response.status === 400) {
+        // Handle validation errors
+        if (errorData.email) {
+          throw new Error(`Erreur de validation email: ${errorData.email.join(', ')}`);
+        }
+        if (errorData.password) {
+          throw new Error(`Erreur de validation mot de passe: ${errorData.password.join(', ')}`);
+        }
+        if (errorData.non_field_errors) {
+          throw new Error(errorData.non_field_errors.join(', '));
+        }
+        if (errorData.detail) {
+          throw new Error(errorData.detail);
+        }
+      }
+      
+      if (response.status === 401) {
+        throw new Error('Session expirée. Veuillez vous reconnecter.');
+      }
+      
+      if (response.status === 403) {
+        throw new Error('Accès refusé. Vous n\'avez pas les permissions nécessaires.');
+      }
+      
+      if (response.status === 500) {
+        throw new Error('Erreur serveur. Veuillez réessayer plus tard.');
+      }
+      
+      // Default error message
+      throw new Error(errorData.detail || errorData.message || errorData.error || `Erreur HTTP ${response.status}`);
     }
     
     return response.json()

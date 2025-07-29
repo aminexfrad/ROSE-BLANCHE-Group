@@ -53,8 +53,13 @@ export default function StagiaireDashboard() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const [internshipData, stepsData, documentsData] = await Promise.all([
-          apiClient.getMyInternship(),
+        setError(null)
+        
+        // Try to fetch internship data
+        const internshipData = await apiClient.getMyInternship()
+        
+        // If we have an internship, fetch related data
+        const [stepsData, documentsData] = await Promise.all([
           apiClient.getMyInternshipSteps(),
           apiClient.getMyInternshipDocuments()
         ])
@@ -69,7 +74,13 @@ export default function StagiaireDashboard() {
         setDocuments(documentsData.documents)
       } catch (err: any) {
         console.error('Error fetching internship data:', err)
-        setError(err.message || 'Failed to load internship data')
+        
+        // Handle specific "No active internship found" error
+        if (err.message?.includes('Aucun stage actif trouvé') || err.message?.includes('No active internship found')) {
+          setError('Aucun stage actif trouvé. Veuillez contacter votre administrateur pour vous assigner un stage.')
+        } else {
+          setError(err.message || 'Erreur lors du chargement des données de stage')
+        }
       } finally {
         setLoading(false)
       }
@@ -130,13 +141,27 @@ export default function StagiaireDashboard() {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Error</h2>
-          <p className="text-gray-600">{error}</p>
+      <DashboardLayout allowedRoles={["stagiaire"]} breadcrumbs={[{ label: "Tableau de bord" }]}>
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center max-w-md">
+            <AlertCircle className="h-16 w-16 text-amber-500 mx-auto mb-4" />
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Aucun stage actif</h2>
+            <p className="text-gray-600 mb-4">{error}</p>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-500">
+                Si vous pensez qu'il s'agit d'une erreur, veuillez contacter votre administrateur.
+              </p>
+              <Button 
+                onClick={() => window.location.reload()} 
+                variant="outline"
+                className="mt-4"
+              >
+                Actualiser la page
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
+      </DashboardLayout>
     )
   }
 
