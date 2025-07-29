@@ -47,6 +47,8 @@ export function Navbar({ isPublic = false }: NavbarProps) {
           ? "bg-white/70 shadow-md border-b border-gray-200 backdrop-blur-sm"
           : "bg-white/50 backdrop-blur-sm"
       }`}
+      data-fixed="true"
+      id="navbar"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -56,6 +58,8 @@ export function Navbar({ isPublic = false }: NavbarProps) {
               src="/RoseBlancheLOGO.webp"
               alt="Rose Blanche Logo"
               className="h-10 w-auto object-contain rounded-lg group-hover:scale-105 transition-all duration-300"
+              width={40}
+              height={40}
             />
           </Link>
 

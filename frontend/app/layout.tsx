@@ -90,11 +90,6 @@ export default function RootLayout({
         {/* Preload critical resources */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="//localhost" />
-        
-        {/* Preload critical images */}
-        <link rel="preload" href="/two-graduates-classmates-shake-hands-smiling-holding-diplomas.webp" as="image" />
-        <link rel="preload" href="/RoseBlancheLOGO.webp" as="image" />
         
         {/* Favicon and manifest */}
         <link rel="icon" href="/favicon.ico" />

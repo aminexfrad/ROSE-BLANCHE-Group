@@ -401,10 +401,10 @@ export default function PublicHomePage() {
               </div>
               
               <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-6 leading-tight cursor-pointer hover:text-red-100 transition-all duration-300 transform hover:scale-105 drop-shadow-2xl">
-                Une <span className="text-red-300 bg-gradient-to-r from-red-300 to-red-400 bg-clip-text text-transparent drop-shadow-2xl">
+                Une <span className="text-red-600 font-extrabold bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent drop-shadow-2xl">
                   Plateforme
                 </span> qui Révolutionne
-                <span className="block text-red-300 bg-gradient-to-r from-red-300 to-red-400 bg-clip-text text-transparent drop-shadow-2xl">
+                <span className="block text-red-600 font-extrabold bg-gradient-to-r from-red-500 to-red-700 bg-clip-text text-transparent drop-shadow-2xl">
                   l'Expérience Stagiaire
                 </span>
                 <span className="block text-base sm:text-lg md:text-xl lg:text-2xl font-semibold text-white mt-2 drop-shadow-2xl">

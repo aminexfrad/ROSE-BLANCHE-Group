@@ -166,14 +166,13 @@ export default function LoginPage() {
           {/* Header */}
           <div className="text-center">
             <div className="flex justify-center mb-6">
-              <Image
-                src="/RoseBlancheLOGO.png"
-                alt="Rose Blanche Logo"
-                width={120}
-                height={40}
-                className="h-10 w-auto object-contain rounded-lg"
-                priority
-              />
+              <div className="h-10 flex items-center justify-center">
+                <img
+                  src="/RoseBlancheLOGO.webp"
+                  alt="Rose Blanche Logo"
+                  className="h-8 w-auto object-contain rounded-lg"
+                />
+              </div>
             </div>
             <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
               Connexion à <span className="text-red-400">StageBloom</span>

@@ -108,6 +108,7 @@
   }
   body {
     @apply bg-background text-foreground;
+    scroll-margin-top: 4rem; /* Account for fixed navbar */
   }
   html {
     @apply bg-background;
@@ -125,6 +126,28 @@
 
   .btn-secondary {
     @apply bg-white hover:bg-gray-50 text-red-600 border border-red-600 font-medium py-2 px-4 rounded-lg transition-colors duration-200;
+  }
+
+  /* Improve scroll behavior with fixed navbar */
+  :target {
+    scroll-margin-top: 5rem;
+  }
+
+  /* Ensure proper scroll behavior with fixed navbar */
+  html {
+    scroll-padding-top: 4rem;
+    scroll-behavior: smooth;
+  }
+
+  /* Optimize fixed navbar for better scroll behavior */
+  [data-fixed="true"] {
+    contain: layout style paint;
+    will-change: transform;
+  }
+
+  /* Ensure smooth scrolling and proper spacing */
+  body {
+    scroll-behavior: smooth;
   }
 }
 
