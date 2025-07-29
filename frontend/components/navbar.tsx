@@ -53,7 +53,7 @@ export function Navbar({ isPublic = false }: NavbarProps) {
           {/* Logo Simple */}
           <Link href="/public" className="flex items-center h-full group">
             <img
-              src="/RoseBlancheLOGO.png"
+              src="/RoseBlancheLOGO.webp"
               alt="Rose Blanche Logo"
               className="h-10 w-auto object-contain rounded-lg group-hover:scale-105 transition-all duration-300"
             />

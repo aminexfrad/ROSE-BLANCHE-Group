@@ -30,7 +30,10 @@
     "dev:start": "npm run dev:clean && npm run dev",
     "hard-refresh": "npm run dev:clean && npm run dev",
     "optimize:images": "node scripts/optimize-images.js",
-    "performance:optimize": "npm run optimize:images && npm run dev:clean && npm run dev"
+    "convert:webp": "node scripts/convert-images.js",
+    "performance:monitor": "node scripts/performance-monitor.js",
+    "performance:optimize": "npm run convert:webp && npm run dev:clean && npm run dev",
+    "performance:full": "npm run convert:webp && npm run performance:monitor"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",

@@ -92,6 +92,10 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link rel="dns-prefetch" href="//localhost" />
         
+        {/* Preload critical images */}
+        <link rel="preload" href="/two-graduates-classmates-shake-hands-smiling-holding-diplomas.webp" as="image" />
+        <link rel="preload" href="/RoseBlancheLOGO.webp" as="image" />
+        
         {/* Favicon and manifest */}
         <link rel="icon" href="/favicon.ico" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -110,7 +114,7 @@ export default function RootLayout({
             <AuthProvider>
               {children}
               <Toaster />
-              {/* Performance monitor temporarily disabled for stability */}
+              {/* Performance tracker temporarily disabled */}
             </AuthProvider>
           </ThemeProvider>
         </ErrorBoundary>

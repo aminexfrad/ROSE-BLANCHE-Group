@@ -135,7 +135,7 @@ export function AppSidebar() {
       <SidebarHeader className="border-b border-gray-200/50 p-4 bg-gradient-to-r from-white to-gray-50/50">
         <div className="flex items-center gap-3 group">
           <Image
-            src="/RoseBlancheLOGO.png"
+            src="/RoseBlancheLOGO.webp"
             alt="Rose Blanche Logo"
             width={120}
             height={40}

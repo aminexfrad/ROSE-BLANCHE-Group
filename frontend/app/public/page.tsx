@@ -364,7 +364,7 @@ export default function PublicHomePage() {
       {/* Refined Hero Background */}
       <div className="absolute top-0 left-0 w-full h-[calc(100vh-4rem)] z-0 pointer-events-none">
         <img
-          src="/two-graduates-classmates-shake-hands-smiling-holding-diplomas.jpg"
+          src="/two-graduates-classmates-shake-hands-smiling-holding-diplomas.webp"
           alt="Two Graduates Classmates Shake Hands Smiling Holding Diplomas"
           className="w-full h-full object-cover"
         />
