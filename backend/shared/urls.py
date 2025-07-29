@@ -61,4 +61,14 @@ urlpatterns = [
     
     # PFE Projects
 
+    # PFE Reports
+    path('pfe-reports/', views.PFEReportsListView.as_view(), name='pfe-reports-list'),
+    path('pfe-reports/<int:pk>/', views.PFEReportDetailView.as_view(), name='pfe-report-detail'),
+    path('pfe-reports/create/', views.PFEReportCreateView.as_view(), name='pfe-report-create'),
+    path('pfe-reports/<int:pk>/update/', views.PFEReportUpdateView.as_view(), name='pfe-report-update'),
+    path('pfe-reports/<int:pk>/submit/', views.PFEReportSubmitView.as_view(), name='pfe-report-submit'),
+    path('pfe-reports/<int:pk>/validate/', views.PFEReportValidationView.as_view(), name='pfe-report-validate'),
+    path('pfe-reports/<int:pk>/archive/', views.PFEReportArchiveView.as_view(), name='pfe-report-archive'),
+    path('pfe-reports/<int:pk>/download/', views.PFEReportDownloadView.as_view(), name='pfe-report-download'),
+
 ] 

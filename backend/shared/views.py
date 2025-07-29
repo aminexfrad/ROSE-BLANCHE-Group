@@ -16,7 +16,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from django.shortcuts import get_object_or_404
 
-from .models import Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage
+from .models import Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage, PFEReport
 from .serializers import (
     StageSerializer, StageListSerializer, StepSerializer, StepListSerializer,
     DocumentSerializer, DocumentListSerializer, DocumentUploadSerializer,
@@ -24,7 +24,9 @@ from .serializers import (
     TestimonialSerializer, TestimonialCreateSerializer, TestimonialModerationSerializer,
     NotificationSerializer, NotificationListSerializer,
     PFEDocumentSerializer, PFEDocumentListSerializer, PFEDocumentCreateSerializer,
-    OffreStageSerializer, OffreStageListSerializer, OffreStageCreateSerializer
+    OffreStageSerializer, OffreStageListSerializer, OffreStageCreateSerializer,
+    PFEReportListSerializer, PFEReportSerializer, PFEReportCreateSerializer,
+    PFEReportUpdateSerializer, PFEReportValidationSerializer
 )
 from auth_service.models import User
 from auth_service.serializers import UserSerializer
@@ -878,3 +880,204 @@ class TestimonialUpdateView(generics.UpdateAPIView):
     def perform_update(self, serializer):
         # Reset status to pending when updating
         serializer.save(status='pending')
+
+class PFEReportsListView(generics.ListAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PFEReportListSerializer
+    pagination_class = PageNumberPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['status', 'year', 'speciality']
+    search_fields = ['title', 'abstract', 'keywords']
+    ordering_fields = ['created_at', 'submitted_at', 'approved_at', 'year']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        if user.role == 'admin':
+            return PFEReport.objects.all()
+        elif user.role == 'rh':
+            return PFEReport.objects.filter(status__in=['approved', 'archived'])
+        elif user.role == 'tuteur':
+            return PFEReport.objects.filter(tuteur=user)
+        elif user.role == 'stagiaire':
+            return PFEReport.objects.filter(stagiaire=user)
+        else:
+            return PFEReport.objects.none()
+
+class PFEReportDetailView(generics.RetrieveAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PFEReportSerializer
+    queryset = PFEReport.objects.all()
+
+    def get_queryset(self):
+        user = self.request.user
+        
+        if user.role == 'admin':
+            return PFEReport.objects.all()
+        elif user.role == 'rh':
+            return PFEReport.objects.filter(status__in=['approved', 'archived'])
+        elif user.role == 'tuteur':
+            return PFEReport.objects.filter(tuteur=user)
+        elif user.role == 'stagiaire':
+            return PFEReport.objects.filter(stagiaire=user)
+        else:
+            return PFEReport.objects.none()
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.increment_view_count()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+class PFEReportCreateView(generics.CreateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PFEReportCreateSerializer
+
+    def perform_create(self, serializer):
+        serializer.save()
+
+class PFEReportUpdateView(generics.UpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PFEReportUpdateSerializer
+    queryset = PFEReport.objects.all()
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == 'stagiaire':
+            return PFEReport.objects.filter(stagiaire=user, status__in=['draft', 'rejected'])
+        return PFEReport.objects.none()
+
+class PFEReportSubmitView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            report = get_object_or_404(PFEReport, id=pk, stagiaire=request.user)
+            
+            if report.status not in ['draft', 'rejected']:
+                return Response(
+                    {'error': 'Seuls les rapports en brouillon ou rejetés peuvent être soumis'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            report.submit()
+            
+            # Create notification for tuteur
+            if report.tuteur:
+                Notification.objects.create(
+                    recipient=report.tuteur,
+                    title="Nouveau rapport PFE soumis",
+                    message=f"Le stagiaire {report.stagiaire.get_full_name()} a soumis son rapport PFE '{report.title}' pour révision.",
+                    notification_type='info',
+                    related_stage=report.stage
+                )
+            
+            return Response({
+                'message': 'Rapport soumis avec succès',
+                'status': report.status
+            })
+            
+        except PFEReport.DoesNotExist:
+            return Response(
+                {'error': 'Rapport non trouvé'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la soumission: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class PFEReportValidationView(generics.UpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = PFEReportValidationSerializer
+    queryset = PFEReport.objects.all()
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role in ['tuteur', 'admin']:
+            return PFEReport.objects.filter(tuteur=user, status='submitted')
+        return PFEReport.objects.none()
+
+    def perform_update(self, serializer):
+        report = serializer.save()
+        
+        # Create notification for stagiaire
+        if report.status == PFEReport.Status.APPROVED:
+            Notification.objects.create(
+                recipient=report.stagiaire,
+                title="Rapport PFE approuvé",
+                message=f"Votre rapport PFE '{report.title}' a été approuvé par votre tuteur.",
+                notification_type='success',
+                related_stage=report.stage
+            )
+        elif report.status == PFEReport.Status.REJECTED:
+            Notification.objects.create(
+                recipient=report.stagiaire,
+                title="Rapport PFE rejeté",
+                message=f"Votre rapport PFE '{report.title}' a été rejeté. Veuillez consulter les commentaires et le corriger.",
+                notification_type='warning',
+                related_stage=report.stage
+            )
+
+class PFEReportArchiveView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            # Only RH and admin can archive reports
+            if request.user.role not in ['rh', 'admin']:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            report = get_object_or_404(PFEReport, id=pk, status='approved')
+            report.archive()
+            
+            return Response({
+                'message': 'Rapport archivé avec succès',
+                'status': report.status
+            })
+            
+        except PFEReport.DoesNotExist:
+            return Response(
+                {'error': 'Rapport approuvé non trouvé'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de l\'archivage: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class PFEReportDownloadView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        try:
+            report = get_object_or_404(PFEReport, id=pk)
+            
+            # Check permissions
+            user = request.user
+            if user.role not in ['admin', 'rh'] and user != report.stagiaire and user != report.tuteur:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Increment download count
+            report.increment_download_count()
+            
+            # Return file URL
+            return Response({
+                'download_url': request.build_absolute_uri(report.pdf_file.url),
+                'filename': report.pdf_file.name.split('/')[-1]
+            })
+            
+        except PFEReport.DoesNotExist:
+            return Response(
+                {'error': 'Rapport non trouvé'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )

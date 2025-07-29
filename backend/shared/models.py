@@ -8,6 +8,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from auth_service.models import User
 from demande_service.models import Demande
+from django.utils import timezone
 
 class Stage(models.Model):
     """
@@ -64,7 +65,6 @@ class Stage(models.Model):
     @property
     def days_remaining(self):
         """Calculate days remaining"""
-        from django.utils import timezone
         today = timezone.now().date()
         if self.end_date > today:
             return (self.end_date - today).days
@@ -482,3 +482,108 @@ class OffreStage(models.Model):
 
     def __str__(self):
         return f"{self.reference} - {self.title}"
+
+class PFEReport(models.Model):
+    """
+    PFE Report model for the PFE Digital Hub - manages PFE report submission and validation
+    """
+    class Status(models.TextChoices):
+        DRAFT = 'draft', _('Brouillon')
+        SUBMITTED = 'submitted', _('Soumis')
+        UNDER_REVIEW = 'under_review', _('En cours de révision')
+        APPROVED = 'approved', _('Approuvé')
+        REJECTED = 'rejected', _('Rejeté')
+        ARCHIVED = 'archived', _('Archivé')
+    
+    # Basic information
+    stage = models.OneToOneField(Stage, on_delete=models.CASCADE, related_name='pfe_report')
+    stagiaire = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pfe_reports')
+    tuteur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='pfe_reports_tuteur', null=True, blank=True)
+    
+    # Report details
+    title = models.CharField(_('titre'), max_length=200)
+    abstract = models.TextField(_('résumé'), blank=True)
+    keywords = models.TextField(_('mots-clés'), blank=True)
+    speciality = models.CharField(_('spécialité'), max_length=200)
+    year = models.IntegerField(_('année'), default=timezone.now().year)
+    
+    # Files
+    pdf_file = models.FileField(_('rapport PDF'), upload_to='pfe_reports/')
+    presentation_file = models.FileField(_('présentation'), upload_to='pfe_presentations/', blank=True)
+    additional_files = models.FileField(_('fichiers additionnels'), upload_to='pfe_additional/', blank=True)
+    
+    # Status and validation
+    status = models.CharField(
+        _('statut'),
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DRAFT
+    )
+    submitted_at = models.DateTimeField(_('date de soumission'), null=True, blank=True)
+    reviewed_at = models.DateTimeField(_('date de révision'), null=True, blank=True)
+    approved_at = models.DateTimeField(_('date d\'approbation'), null=True, blank=True)
+    archived_at = models.DateTimeField(_('date d\'archivage'), null=True, blank=True)
+    
+    # Feedback and comments
+    tuteur_feedback = models.TextField(_('feedback tuteur'), blank=True)
+    stagiaire_comment = models.TextField(_('commentaire stagiaire'), blank=True)
+    rejection_reason = models.TextField(_('raison du rejet'), blank=True)
+    
+    # Metadata
+    version = models.IntegerField(_('version'), default=1)
+    is_final = models.BooleanField(_('version finale'), default=False)
+    
+    # Statistics
+    download_count = models.IntegerField(_('nombre de téléchargements'), default=0)
+    view_count = models.IntegerField(_('nombre de vues'), default=0)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('rapport PFE')
+        verbose_name_plural = _('rapports PFE')
+        db_table = 'pfe_report'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.title} - {self.stagiaire.get_full_name()} ({self.year})"
+    
+    def submit(self):
+        """Submit the report for review"""
+        self.status = self.Status.SUBMITTED
+        self.submitted_at = timezone.now()
+        self.save()
+    
+    def approve(self, tuteur_feedback=""):
+        """Approve the report"""
+        self.status = self.Status.APPROVED
+        self.reviewed_at = timezone.now()
+        self.approved_at = timezone.now()
+        self.tuteur_feedback = tuteur_feedback
+        self.save()
+    
+    def reject(self, rejection_reason):
+        """Reject the report with reason"""
+        self.status = self.Status.REJECTED
+        self.reviewed_at = timezone.now()
+        self.rejection_reason = rejection_reason
+        self.save()
+    
+    def archive(self):
+        """Archive the approved report"""
+        if self.status == self.Status.APPROVED:
+            self.status = self.Status.ARCHIVED
+            self.archived_at = timezone.now()
+            self.save()
+    
+    def increment_view_count(self):
+        """Increment view count"""
+        self.view_count += 1
+        self.save(update_fields=['view_count'])
+    
+    def increment_download_count(self):
+        """Increment download count"""
+        self.download_count += 1
+        self.save(update_fields=['download_count'])

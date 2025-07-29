@@ -49,6 +49,7 @@ const menuItems = {
         { title: "Tableau de bord", url: "/stagiaire", icon: Home },
         { title: "Mon Parcours", url: "/stagiaire/parcours", icon: Calendar },
         { title: "Documents", url: "/stagiaire/documents", icon: FileText },
+        { title: "Rapports PFE", url: "/stagiaire/pfe-reports", icon: FileText },
         { title: "KPI & Évaluation", url: "/stagiaire/kpi", icon: BarChart3 },
         { title: "Témoignages", url: "/stagiaire/temoignages", icon: MessageSquare },
       ],
@@ -60,6 +61,7 @@ const menuItems = {
       items: [
         { title: "Tableau de bord", url: "/tuteur", icon: Home },
         { title: "Mes Stagiaires", url: "/tuteur/stagiaires", icon: Users },
+        { title: "Rapports PFE", url: "/tuteur/pfe-reports", icon: FileText },
         { title: "Évaluations", url: "/tuteur/evaluations", icon: CheckCircle },
         { title: "Statistiques", url: "/tuteur/statistiques", icon: BarChart3 },
       ],
@@ -82,6 +84,7 @@ const menuItems = {
         { title: "Témoignages", url: "/rh/temoignages", icon: MessageSquare },
         { title: "Demandes de stage", url: "/rh/demandes", icon: FileText },
         { title: "Rapports", url: "/rh/rapports", icon: Upload },
+        { title: "PFE Digital Hub", url: "/rh/pfe-digital-hub", icon: FileText },
         { title: "Assignation Tuteurs", url: "/rh/assignation-tuteurs", icon: UserPlus },
         { title: "Ajouter Stagiaire", url: "/rh/ajouter-stagiaire", icon: UserPlus },
       ],

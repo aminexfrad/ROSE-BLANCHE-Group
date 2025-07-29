@@ -197,6 +197,32 @@ export interface PFEProject {
   created_at: string
 }
 
+export interface PFEReport {
+  id: number;
+  title: string;
+  abstract: string;
+  keywords: string;
+  speciality: string;
+  year: number;
+  status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'archived';
+  submitted_at: string | null;
+  reviewed_at: string | null;
+  approved_at: string | null;
+  version: number;
+  download_count: number;
+  view_count: number;
+  created_at: string;
+  updated_at: string;
+  tuteur_feedback: string;
+  stagiaire_comment: string;
+  rejection_reason: string;
+  pdf_file: string;
+  presentation_file: string | null;
+  additional_files: string | null;
+  stagiaire: User;
+  tuteur: User | null;
+}
+
 
 export interface OffreStage {
   id: number
@@ -1183,6 +1209,63 @@ class ApiClient {
 
   async postAdminDatabaseBackup(): Promise<any> {
     return this.request('/admin/database/backup/', { method: 'POST' });
+  }
+
+  // PFE Reports
+  async getPFEReports(params: { status?: string; year?: number; speciality?: string } = {}): Promise<{ results: PFEReport[]; count: number }> {
+    const queryParams = new URLSearchParams()
+    if (params.status) queryParams.append('status', params.status)
+    if (params.year) queryParams.append('year', params.year.toString())
+    if (params.speciality) queryParams.append('speciality', params.speciality)
+    
+    return this.request<{ results: PFEReport[]; count: number }>(`/pfe-reports/?${queryParams.toString()}`)
+  }
+
+  async getPFEReport(id: number): Promise<PFEReport> {
+    return this.request<PFEReport>(`/pfe-reports/${id}/`)
+  }
+
+  async createPFEReport(formData: FormData): Promise<PFEReport> {
+    return this.request<PFEReport>('/pfe-reports/create/', {
+      method: 'POST',
+      body: formData,
+      headers: {
+        // Don't set Content-Type for FormData
+      }
+    })
+  }
+
+  async updatePFEReport(id: number, formData: FormData): Promise<PFEReport> {
+    return this.request<PFEReport>(`/pfe-reports/${id}/update/`, {
+      method: 'PUT',
+      body: formData,
+      headers: {
+        // Don't set Content-Type for FormData
+      }
+    })
+  }
+
+  async submitPFEReport(id: number): Promise<{ message: string; status: string }> {
+    return this.request<{ message: string; status: string }>(`/pfe-reports/${id}/submit/`, {
+      method: 'POST'
+    })
+  }
+
+  async validatePFEReport(id: number, data: { status: 'approved' | 'rejected'; tuteur_feedback?: string; rejection_reason?: string }): Promise<PFEReport> {
+    return this.request<PFEReport>(`/pfe-reports/${id}/validate/`, {
+      method: 'PUT',
+      body: JSON.stringify(data)
+    })
+  }
+
+  async archivePFEReport(id: number): Promise<{ message: string; status: string }> {
+    return this.request<{ message: string; status: string }>(`/pfe-reports/${id}/archive/`, {
+      method: 'POST'
+    })
+  }
+
+  async downloadPFEReport(id: number): Promise<{ download_url: string; filename: string }> {
+    return this.request<{ download_url: string; filename: string }>(`/pfe-reports/${id}/download/`)
   }
 
 }

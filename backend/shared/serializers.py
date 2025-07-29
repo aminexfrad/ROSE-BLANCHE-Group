@@ -5,7 +5,7 @@ Intellectual Property – Protected by international copyright law.
 """
 
 from rest_framework import serializers
-from .models import Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage
+from .models import Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage, PFEReport
 
 from auth_service.models import User
 from auth_service.serializers import UserSerializer
@@ -243,5 +243,64 @@ class OffreStageCreateSerializer(serializers.ModelSerializer):
         validated_data.setdefault('type', 'Classique')
         validated_data.setdefault('validated', False)
         return super().create(validated_data)
+
+class PFEReportSerializer(serializers.ModelSerializer):
+    stagiaire = UserSerializer(read_only=True)
+    tuteur = UserSerializer(read_only=True)
+    stage = StageSerializer(read_only=True)
+    
+    class Meta:
+        model = PFEReport
+        fields = '__all__'
+
+class PFEReportListSerializer(serializers.ModelSerializer):
+    stagiaire = UserSerializer(read_only=True)
+    tuteur = UserSerializer(read_only=True)
+    
+    class Meta:
+        model = PFEReport
+        fields = ['id', 'title', 'abstract', 'speciality', 'year', 'status', 
+                 'submitted_at', 'reviewed_at', 'approved_at', 'version',
+                 'download_count', 'view_count', 'created_at', 'updated_at',
+                 'stagiaire', 'tuteur']
+
+class PFEReportCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PFEReport
+        fields = ['title', 'abstract', 'keywords', 'speciality', 'year',
+                 'pdf_file', 'presentation_file', 'additional_files']
+    
+    def create(self, validated_data):
+        validated_data['stagiaire'] = self.context['request'].user
+        validated_data['stage'] = self.context['request'].user.stages_stagiaire.filter(status='active').first()
+        validated_data['tuteur'] = validated_data['stage'].tuteur if validated_data['stage'] else None
+        return super().create(validated_data)
+
+class PFEReportUpdateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PFEReport
+        fields = ['title', 'abstract', 'keywords', 'speciality', 'year',
+                 'pdf_file', 'presentation_file', 'additional_files', 'stagiaire_comment']
+    
+    def update(self, instance, validated_data):
+        # Increment version when updating
+        validated_data['version'] = instance.version + 1
+        return super().update(instance, validated_data)
+
+class PFEReportValidationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PFEReport
+        fields = ['status', 'tuteur_feedback', 'rejection_reason']
+    
+    def update(self, instance, validated_data):
+        status = validated_data.get('status')
+        if status == PFEReport.Status.APPROVED:
+            instance.approve(validated_data.get('tuteur_feedback', ''))
+        elif status == PFEReport.Status.REJECTED:
+            instance.reject(validated_data.get('rejection_reason', ''))
+        else:
+            instance.status = status
+            instance.save()
+        return instance 
 
  
