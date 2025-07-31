@@ -26,7 +26,7 @@ class PFEDemandeBusinessRuleTestCase(TestCase):
         self.offre3 = OffreStage.objects.create(reference='PFE3', title='PFE 3', type='PFE', status='open')
         # Create demande with 3 offers
         self.demande = Demande.objects.create(
-            nom='Cand', prenom='User', email='cand@example.com', telephone='123', cin='CIN1',
+            nom='Cand', prenom='User', email='cand@example.com', telephone='123',
             institut='Test', specialite='Info', type_stage='Stage PFE', niveau='M2',
             date_debut=timezone.now().date(), date_fin=timezone.now().date(), status='pending'
         )

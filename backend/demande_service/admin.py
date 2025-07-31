@@ -22,7 +22,7 @@ class DemandeAdmin(admin.ModelAdmin):
     
     fieldsets = (
         (_('Informations du candidat principal'), {
-            'fields': ('nom', 'prenom', 'email', 'telephone', 'cin')
+            'fields': ('nom', 'prenom', 'email', 'telephone')
         }),
         (_('Informations académiques'), {
             'fields': ('institut', 'specialite', 'type_stage', 'niveau', 'pfe_reference')
@@ -31,7 +31,7 @@ class DemandeAdmin(admin.ModelAdmin):
             'fields': ('date_debut', 'date_fin', 'duree_stage')
         }),
         (_('Stage en binôme'), {
-            'fields': ('stage_binome', 'nom_binome', 'prenom_binome', 'email_binome', 'telephone_binome', 'cin_binome'),
+            'fields': ('stage_binome', 'nom_binome', 'prenom_binome', 'email_binome', 'telephone_binome'),
             'classes': ('collapse',)
         }),
         (_('Documents du candidat principal'), {

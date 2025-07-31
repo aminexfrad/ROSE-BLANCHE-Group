@@ -52,7 +52,6 @@ export interface Application {
   prenom: string
   email: string
   telephone: string
-  cin: string
   institut: string
   specialite: string
   type_stage: string
@@ -65,7 +64,6 @@ export interface Application {
   prenom_binome?: string
   email_binome?: string
   telephone_binome?: string
-  cin_binome?: string
   cv?: string
   lettre_motivation?: string
   demande_stage?: string
@@ -602,23 +600,29 @@ class ApiClient {
     try {
       const refreshToken = localStorage.getItem('refreshToken')
       if (refreshToken) {
-        await this.request('/auth/logout/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ refresh: refreshToken }),
-        }, { skipCache: true })
+        try {
+          await this.request('/auth/logout/', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ refresh: refreshToken }),
+          }, { skipCache: true })
+        } catch (backendError) {
+          // If backend logout fails, just log it but don't throw
+          console.warn('Backend logout failed, but continuing with local cleanup:', backendError)
+        }
       }
     } catch (error) {
       console.error('Logout error:', error)
     } finally {
-      // Clear all stored data
+      // Always clear all stored data regardless of backend response
       this.token = null
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token')
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('user')
+        localStorage.removeItem('auth_token') // Also clear the old key
       }
     }
   }
@@ -677,6 +681,11 @@ class ApiClient {
 
   // Application methods
   async createApplication(formData: FormData): Promise<Application> {
+    console.log('API Client - FormData entries:')
+    for (const [key, value] of formData.entries()) {
+      console.log(`${key}: ${value}`)
+    }
+    
     const response = await fetch(`${API_BASE_URL}/demandes/create/`, {
       method: 'POST',
       body: formData,
@@ -686,7 +695,29 @@ class ApiClient {
       let errorMessage = `HTTP ${response.status}`
       try {
         const errorData = await response.json()
-        errorMessage = errorData.detail || errorData.message || errorData.error || errorMessage
+        console.error('Full error response:', errorData)
+        
+        // Handle different error response formats
+        if (errorData.detail) {
+          errorMessage = errorData.detail
+        } else if (errorData.message) {
+          errorMessage = errorData.message
+        } else if (errorData.error) {
+          errorMessage = errorData.error
+        } else if (typeof errorData === 'object') {
+          // Handle validation errors
+          const validationErrors = []
+          for (const [field, errors] of Object.entries(errorData)) {
+            if (Array.isArray(errors)) {
+              validationErrors.push(`${field}: ${errors.join(', ')}`)
+            } else if (typeof errors === 'string') {
+              validationErrors.push(`${field}: ${errors}`)
+            }
+          }
+          if (validationErrors.length > 0) {
+            errorMessage = validationErrors.join('; ')
+          }
+        }
       } catch (parseError) {
         errorMessage = response.statusText || errorMessage
       }
@@ -718,6 +749,13 @@ class ApiClient {
     return this.request<Application>(`/demandes/${id}/reject/`, {
       method: 'POST',
       body: JSON.stringify({ action: 'reject', raison: reason }),
+    })
+  }
+
+  async updateDemandeOffreStatus(demandeId: number, offreId: number, status: 'accepted' | 'rejected'): Promise<any> {
+    return this.request<any>(`/demandes/stage/${demandeId}/offre/${offreId}/status/`, {
+      method: 'POST',
+      body: JSON.stringify({ status }),
     })
   }
 
@@ -1007,99 +1045,26 @@ class ApiClient {
     return response.json()
   }
 
-  // Tuteur-specific methods
-  async getTuteurStages(): Promise<any> {
-    return this.request<any>('/tuteur/stagiaires/', {
-      method: 'GET',
-    })
+  // Offre Stage methods
+  async getOffresStage(params: { status?: string; type?: string } = {}): Promise<{ results: OffreStage[]; count: number }> {
+    const queryParams = new URLSearchParams()
+    if (params.status) queryParams.append('status', params.status)
+    if (params.type) queryParams.append('type', params.type)
+    
+    return this.request<{ results: OffreStage[]; count: number }>(`/offres-stage/?${queryParams}`)
   }
 
-  async getTuteurStagiaireDetail(stagiaireId: number): Promise<any> {
-    return this.request<any>(`/tuteur/stagiaires/${stagiaireId}/`, {
-      method: 'GET',
-    })
+  async getOffreStage(id: number): Promise<OffreStage> {
+    return this.request<OffreStage>(`/offres-stage/${id}/`)
   }
 
-  async getTuteurStageDetail(stageId: number): Promise<{ stage: Stage; student: User; steps: Step[] }> {
-    return this.request<{ stage: Stage; student: User; steps: Step[] }>(`/tuteur/stages/${stageId}/`)
-  }
-
-  async validateStep(stepId: number, action: 'validate' | 'reject', feedback?: string): Promise<any> {
-    const endpoint = action === 'validate' ? 'validate' : 'reject'
-    return this.request<any>(`/tuteur/steps/${stepId}/${endpoint}/`, {
-      method: 'POST',
-      body: JSON.stringify({ feedback }),
-    })
-  }
-
-  async getTuteurEvaluations(): Promise<{ results: Evaluation[]; count: number }> {
-    return this.request<{ results: Evaluation[]; count: number }>('/tuteur/evaluations/')
-  }
-
-  async createTuteurEvaluation(data: any): Promise<any> {
-    return this.request<any>('/tuteur/evaluations/create/', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async getTuteurDocuments(): Promise<{ results: Document[]; count: number }> {
-    return this.request<{ results: Document[]; count: number }>('/tuteur/documents/')
-  }
-
-  async approveDocument(docId: number, action: 'approve' | 'reject', feedback?: string): Promise<any> {
-    const endpoint = action === 'approve' ? 'approve' : 'reject'
-    return this.request<any>(`/tuteur/documents/${docId}/${endpoint}/`, {
-      method: 'POST',
-      body: JSON.stringify({ feedback }),
-    })
-  }
-
-  async getTuteurNotifications(): Promise<{ results: Notification[]; count: number }> {
-    return this.request<{ results: Notification[]; count: number }>('/tuteur/notifications/')
-  }
-
-  // RH-specific methods
+  // RH methods
   async getRHStagiaires(): Promise<{ results: User[]; count: number }> {
     return this.request<{ results: User[]; count: number }>('/rh/stagiaires/')
   }
 
-  async getRHStagiaireDetail(stagiaireId: number): Promise<{ stagiaire: User; stages: Stage[] }> {
-    return this.request<{ stagiaire: User; stages: Stage[] }>(`/rh/stagiaires/${stagiaireId}/`)
-  }
-
-  async getRHTestimonials(): Promise<{ results: Testimonial[]; count: number }> {
-    return this.request<{ results: Testimonial[]; count: number }>('/rh/testimonials/')
-  }
-
-  async moderateRHTestimonial(testimonialId: number, action: 'approve' | 'reject', comment?: string): Promise<Testimonial> {
-    return this.request<Testimonial>(`/rh/testimonials/${testimonialId}/moderate/`, {
-      method: 'POST',
-      body: JSON.stringify({ 
-        action: action,
-        comment: comment 
-      }),
-    })
-  }
-
-  async getRHKPIGlobaux(): Promise<any> {
-    return this.request<any>('/rh/kpi-globaux/')
-  }
-
   async getRHStages(): Promise<{ results: Stage[]; count: number }> {
     return this.request<{ results: Stage[]; count: number }>('/rh/stages/')
-  }
-
-  async getRHStageDetail(stageId: number): Promise<any> {
-    return this.request<any>(`/rh/stages/${stageId}/`)
-  }
-
-  async getRHEvaluations(): Promise<{ results: Evaluation[]; count: number }> {
-    return this.request<{ results: Evaluation[]; count: number }>('/rh/evaluations/')
-  }
-
-  async getRHNotifications(): Promise<{ results: Notification[]; count: number }> {
-    return this.request<{ results: Notification[]; count: number }>('/rh/notifications/')
   }
 
   async getRHTuteursDisponibles(): Promise<{ results: any[]; count: number }> {
@@ -1109,243 +1074,21 @@ class ApiClient {
   async assignerTuteur(stagiaireId: number, tuteurId: number): Promise<any> {
     return this.request<any>(`/rh/stagiaires/${stagiaireId}/assigner-tuteur/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
       body: JSON.stringify({ tuteur_id: tuteurId }),
     })
   }
 
-  async creerStagiaire(data: any): Promise<any> {
-    return this.request<any>('/rh/creer-stagiaire/', {
+  async createStageForStagiaire(stagiaireId: number, stageData: {
+    title: string;
+    description?: string;
+    company: string;
+    location: string;
+    start_date: string;
+    end_date: string;
+  }): Promise<any> {
+    return this.request<any>(`/rh/stagiaires/${stagiaireId}/create-stage/`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(data),
-    })
-  }
-
-  async getRHReports(reportType?: string): Promise<any> {
-    const queryParams = new URLSearchParams()
-    if (reportType) queryParams.append('type', reportType)
-    
-    return this.request<any>(`/rh/rapports/?${queryParams}`)
-  }
-
-  // Admin-specific methods
-  async getUsers(params: { limit?: number; role?: string } = {}): Promise<{ results: User[]; count: number }> {
-    const queryParams = new URLSearchParams()
-    if (params.limit) queryParams.append('limit', params.limit.toString())
-    if (params.role) queryParams.append('role', params.role)
-    
-    return this.request<{ results: User[]; count: number }>(`/admin/users/?${queryParams}`)
-  }
-
-  async getUser(id: number): Promise<User> {
-    return this.request<User>(`/admin/users/${id}/`)
-  }
-
-  async createUser(userData: Partial<User>): Promise<{ user: User; password: string; stage_created?: boolean; stage_id?: number; stage_error?: string }> {
-    return this.request<{ user: User; password: string; stage_created?: boolean; stage_id?: number; stage_error?: string }>('/admin/users/', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-    })
-  }
-
-  async updateUser(id: number, userData: Partial<User>): Promise<{ user: User }> {
-    return this.request<{ user: User }>(`/admin/users/${id}/`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData),
-    })
-  }
-
-  async deleteUser(id: number): Promise<{ message: string }> {
-    return this.request<{ message: string }>(`/admin/users/${id}/`, {
-      method: 'DELETE',
-    })
-  }
-
-  async getStagiaires(params: { limit?: number } = {}): Promise<{ results: Stagiaire[]; count: number }> {
-    const url = new URL(`${API_BASE_URL}/users/`);
-    url.searchParams.append('role', 'stagiaire');
-    if (params.limit) url.searchParams.append('limit', params.limit.toString());
-    return this.request<{ results: Stagiaire[]; count: number }>(url.toString());
-  }
-
-  // OffreStage methods
-  async getOffresStage(params: { 
-    search?: string; 
-    specialite?: string; 
-    niveau?: string; 
-    localisation?: string; 
-    featured?: boolean 
-  } = {}): Promise<{ results: any[]; count: number }> {
-    const queryParams = new URLSearchParams()
-    if (params.search) queryParams.append('search', params.search)
-    if (params.specialite) queryParams.append('specialite', params.specialite)
-    if (params.niveau) queryParams.append('niveau', params.niveau)
-    if (params.localisation) queryParams.append('localisation', params.localisation)
-    if (params.featured) queryParams.append('featured', 'true')
-    
-    // Use public endpoint for stage offers
-    return this.getPublicOffresStage(params)
-  }
-
-  // Public method for getting stage offers without authentication
-  async getPublicOffresStage(params: { 
-    search?: string; 
-    specialite?: string; 
-    niveau?: string; 
-    localisation?: string; 
-    featured?: boolean 
-  } = {}): Promise<{ results: any[]; count: number }> {
-    const queryParams = new URLSearchParams()
-    if (params.search) queryParams.append('search', params.search)
-    if (params.specialite) queryParams.append('specialite', params.specialite)
-    if (params.niveau) queryParams.append('niveau', params.niveau)
-    if (params.localisation) queryParams.append('localisation', params.localisation)
-    if (params.featured) queryParams.append('featured', 'true')
-    
-    const url = `${API_BASE_URL}/offres-stage/?${queryParams}`
-    
-    try {
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-      
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
-        throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
-      }
-
-      return await response.json()
-    } catch (error) {
-      console.error('Public API request failed:', error)
-      throw error
-    }
-  }
-
-  async getOffreStage(id: number): Promise<any> {
-    return this.request<any>(`/offres-stage/${id}/`)
-  }
-
-  async applyToOffreStage(id: number): Promise<any> {
-    return this.request<any>(`/offres-stage/${id}/apply/`, { method: 'POST' })
-  }
-
-  async createOffreStage(data: any): Promise<any> {
-    return this.request<any>('/offres-stage/create/', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async updateOffreStage(id: number, data: any): Promise<any> {
-    return this.request<any>(`/offres-stage/${id}/update/`, {
-      method: 'PUT',
-      body: JSON.stringify(data),
-    })
-  }
-
-  async deleteOffreStage(id: number): Promise<void> {
-    return this.request<void>(`/offres-stage/${id}/delete/`, { method: 'DELETE' })
-  }
-
-
-
-  async getDemandes(): Promise<{ results: Demande[]; count: number }> {
-    return this.request('/demandes/');
-  }
-
-  // Admin database methods
-  async getAdminDatabaseStats(): Promise<any> {
-    return this.request('/admin/database/stats/');
-  }
-
-  async postAdminDatabaseBackup(): Promise<any> {
-    return this.request('/admin/database/backup/', { method: 'POST' });
-  }
-
-  // PFE Reports
-  async getPFEReports(params: { status?: string; year?: number; speciality?: string } = {}): Promise<{ results: PFEReport[]; count: number }> {
-    const queryParams = new URLSearchParams()
-    if (params.status) queryParams.append('status', params.status)
-    if (params.year) queryParams.append('year', params.year.toString())
-    if (params.speciality) queryParams.append('speciality', params.speciality)
-    
-    return this.request<{ results: PFEReport[]; count: number }>(`/pfe-reports/?${queryParams.toString()}`)
-  }
-
-  async getPFEReport(id: number): Promise<PFEReport> {
-    return this.request<PFEReport>(`/pfe-reports/${id}/`)
-  }
-
-  async createPFEReport(formData: FormData): Promise<PFEReport> {
-    return this.request<PFEReport>('/pfe-reports/create/', {
-      method: 'POST',
-      body: formData,
-      headers: {
-        // Don't set Content-Type for FormData
-      }
-    })
-  }
-
-  async updatePFEReport(id: number, formData: FormData): Promise<PFEReport> {
-    return this.request<PFEReport>(`/pfe-reports/${id}/update/`, {
-      method: 'PUT',
-      body: formData,
-      headers: {
-        // Don't set Content-Type for FormData
-      }
-    })
-  }
-
-  async submitPFEReport(id: number): Promise<{ message: string; status: string }> {
-    return this.request<{ message: string; status: string }>(`/pfe-reports/${id}/submit/`, {
-      method: 'POST'
-    })
-  }
-
-  async validatePFEReport(id: number, data: { status: 'approved' | 'rejected'; tuteur_feedback?: string; rejection_reason?: string }): Promise<PFEReport> {
-    return this.request<PFEReport>(`/pfe-reports/${id}/validate/`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    })
-  }
-
-  async archivePFEReport(id: number): Promise<{ message: string; status: string }> {
-    return this.request<{ message: string; status: string }>(`/pfe-reports/${id}/archive/`, {
-      method: 'POST'
-    })
-  }
-
-  async downloadPFEReport(id: number): Promise<{ download_url: string; filename: string }> {
-    return this.request<{ download_url: string; filename: string }>(`/pfe-reports/${id}/download/`)
-  }
-
-  async getPfeReports(): Promise<{ results: any[] }> {
-    return this.request('/pfe-reports/')
-  }
-
-  async createPfeReport(data: FormData): Promise<any> {
-    return this.request('/pfe-reports/create/', {
-      method: 'POST',
-      body: data
-    })
-  }
-
-  async submitPfeReport(reportId: number): Promise<any> {
-    return this.request(`/pfe-reports/${reportId}/submit/`, {
-      method: 'POST'
+      body: JSON.stringify(stageData),
     })
   }
 }

@@ -207,22 +207,11 @@ export default function RHDemandesPage() {
     })
   }
 
-  const BACKEND_URL = 'http://localhost:8000';
-
   const handleApproveOffer = async (demandeId: number, offerId: number) => {
     const key = `${demandeId}-${offerId}`;
     setLoadingOffers((prev) => ({ ...prev, [key]: true }));
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     try {
-      await fetch(`${BACKEND_URL}/api/demandes/stage/${demandeId}/offre/${offerId}/status/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ status: 'accepted' }),
-        credentials: 'include'
-      });
+      await apiClient.updateDemandeOffreStatus(demandeId, offerId, 'accepted');
       const response = await apiClient.getApplications();
       setApplications(response.results || []);
       toast({ title: 'Succès', description: 'Offre acceptée et autres offres rejetées.' });
@@ -232,20 +221,12 @@ export default function RHDemandesPage() {
       setLoadingOffers((prev) => ({ ...prev, [key]: false }));
     }
   }
+  
   const handleRejectOffer = async (demandeId: number, offerId: number) => {
     const key = `${demandeId}-${offerId}`;
     setLoadingOffers((prev) => ({ ...prev, [key]: true }));
-    const token = typeof window !== 'undefined' ? localStorage.getItem('auth_token') : null;
     try {
-      await fetch(`${BACKEND_URL}/api/demandes/stage/${demandeId}/offre/${offerId}/status/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ status: 'rejected' }),
-        credentials: 'include'
-      });
+      await apiClient.updateDemandeOffreStatus(demandeId, offerId, 'rejected');
       const response = await apiClient.getApplications();
       setApplications(response.results || []);
       toast({ title: 'Succès', description: 'Offre rejetée.' });

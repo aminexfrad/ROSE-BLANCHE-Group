@@ -30,7 +30,6 @@ class Demande(models.Model):
     prenom = models.CharField(_('prénom'), max_length=100)
     email = models.EmailField(_('email'))
     telephone = models.CharField(_('téléphone'), max_length=20)
-    cin = models.CharField(_('CIN'), max_length=20)
     
     # Academic information
     institut = models.CharField(_('institut'), max_length=200)
@@ -55,7 +54,6 @@ class Demande(models.Model):
     prenom_binome = models.CharField(_('prénom du binôme'), max_length=100, blank=True)
     email_binome = models.EmailField(_('email du binôme'), blank=True)
     telephone_binome = models.CharField(_('téléphone du binôme'), max_length=20, blank=True)
-    cin_binome = models.CharField(_('CIN du binôme'), max_length=20, blank=True)
     
     # Documents - Candidate principal
     cv = models.FileField(_('CV'), upload_to='demandes/cv/', blank=True, null=True)

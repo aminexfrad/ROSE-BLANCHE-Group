@@ -84,7 +84,31 @@ export function AssignTuteurModal({ isOpen, onClose, stagiaire, onSuccess }: Ass
       setAssigning(true)
       setError(null)
       
-      await apiClient.assignerTuteur(stagiaire.id, parseInt(selectedTuteur))
+      try {
+        // Try to assign the tutor directly
+        await apiClient.assignerTuteur(stagiaire.id, parseInt(selectedTuteur))
+      } catch (assignError: any) {
+        // If the error is about no active stage, create one first
+        if (assignError.message && assignError.message.includes('Aucun stage actif trouvé')) {
+          // Create a default stage for the stagiaire
+          const defaultStageData = {
+            title: `Stage ${stagiaire.prenom} ${stagiaire.nom}`,
+            description: `Stage par défaut pour ${stagiaire.prenom} ${stagiaire.nom}`,
+            company: 'Entreprise par défaut',
+            location: 'Casablanca',
+            start_date: new Date().toISOString().split('T')[0], // Today
+            end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days from now
+          }
+          
+          await apiClient.createStageForStagiaire(stagiaire.id, defaultStageData)
+          
+          // Now try to assign the tutor again
+          await apiClient.assignerTuteur(stagiaire.id, parseInt(selectedTuteur))
+        } else {
+          // Re-throw the error if it's not about missing stage
+          throw assignError
+        }
+      }
       
       toast({
         title: "Succès",

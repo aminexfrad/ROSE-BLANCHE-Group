@@ -46,13 +46,9 @@ class LoginView(TokenObtainPairView):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def logout_view(request):
-    """Logout view that blacklists the refresh token"""
+    """Logout view that handles logout without blacklisting"""
     try:
-        refresh_token = request.data.get('refresh')
-        if refresh_token:
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-        
+        # Just perform Django logout without token blacklisting
         logout(request)
         return Response({'message': 'Déconnexion réussie'}, status=status.HTTP_200_OK)
     except Exception as e:

@@ -27,7 +27,6 @@ interface FormData {
   prenom: string
   email: string
   telephone: string
-  cin: string
   institut: string
   specialite: string
   typeStage: string
@@ -42,7 +41,6 @@ interface FormData {
   prenomBinome: string
   emailBinome: string
   telephoneBinome: string
-  cinBinome: string
 
   // Documents - Candidat principal
   cv: File | null
@@ -74,7 +72,6 @@ export default function DemandeStage() {
     prenom: "",
     email: "",
     telephone: "",
-    cin: "",
     institut: "",
     specialite: "",
     typeStage: "",
@@ -87,7 +84,6 @@ export default function DemandeStage() {
     prenomBinome: "",
     emailBinome: "",
     telephoneBinome: "",
-    cinBinome: "",
     cv: null,
     lettreMotivation: null,
     demandeStage: null,
@@ -110,7 +106,7 @@ export default function DemandeStage() {
       }));
       setIsPrefilledFromOffer(true);
       // Fetch offer details for summary and reference prefill
-      apiClient.getOffresStage().then(res => {
+      apiClient.getOffresStage().then((res: { results: any[]; count: number }) => {
         const all = res.results || [];
         const selected = all.filter((o: any) => offerIds.includes(o.id));
         setSelectedOfferReferences(selected.map((o: any) => o.reference));
@@ -136,7 +132,6 @@ export default function DemandeStage() {
     prenom: false,
     email: false,
     telephone: false,
-    cin: false,
     institut: false,
     specialite: false,
     typeStage: false,
@@ -166,7 +161,6 @@ export default function DemandeStage() {
         prenom: formData.prenom.trim() === '',
         email: formData.email.trim() === '',
         telephone: formData.telephone.trim() === '',
-        cin: formData.cin.trim() === '',
         institut: false,
         specialite: false,
         typeStage: false,
@@ -182,7 +176,6 @@ export default function DemandeStage() {
         prenom: false,
         email: false,
         telephone: false,
-        cin: false,
         institut: formData.institut.trim() === '',
         specialite: formData.specialite.trim() === '',
         typeStage: formData.typeStage === '',
@@ -229,7 +222,6 @@ export default function DemandeStage() {
       submitData.append('prenom', formData.prenom)
       submitData.append('email', formData.email)
       submitData.append('telephone', formData.telephone)
-      submitData.append('cin', formData.cin)
       submitData.append('institut', formData.institut)
       submitData.append('specialite', formData.specialite)
       submitData.append('type_stage', formData.typeStage)
@@ -244,7 +236,6 @@ export default function DemandeStage() {
         submitData.append('prenom_binome', formData.prenomBinome)
         submitData.append('email_binome', formData.emailBinome)
         submitData.append('telephone_binome', formData.telephoneBinome)
-        submitData.append('cin_binome', formData.cinBinome)
       }
       
       // Add candidate files
@@ -280,6 +271,26 @@ export default function DemandeStage() {
       }
       
       // Submit to API
+      console.log('Submitting form data:', {
+        nom: formData.nom,
+        prenom: formData.prenom,
+        email: formData.email,
+        telephone: formData.telephone,
+        institut: formData.institut,
+        specialite: formData.specialite,
+        type_stage: formData.typeStage,
+        niveau: formData.niveau,
+        date_debut: formData.dateDebut,
+        date_fin: formData.dateFin,
+        stage_binome: formData.stageBinome,
+        nom_binome: formData.nomBinome,
+        prenom_binome: formData.prenomBinome,
+        email_binome: formData.emailBinome,
+        telephone_binome: formData.telephoneBinome,
+        selectedOfferIds,
+        pfeReference: formData.pfeReference
+      })
+      
       await apiClient.createApplication(submitData)
       
       toast({
@@ -321,8 +332,7 @@ export default function DemandeStage() {
         return formData.nom.trim() !== '' && 
                formData.prenom.trim() !== '' && 
                validateEmail(formData.email) && 
-               formData.telephone.trim() !== '' && 
-               formData.cin.trim() !== ''
+               formData.telephone.trim() !== ''
       case 2:
         const basicValidation = formData.institut.trim() !== '' && 
                                formData.specialite.trim() !== '' && 
@@ -348,7 +358,8 @@ export default function DemandeStage() {
         return dateValidation && 
                formData.nomBinome.trim() !== '' && 
                formData.prenomBinome.trim() !== '' && 
-               validateEmail(formData.emailBinome)
+               validateEmail(formData.emailBinome) &&
+               formData.telephoneBinome.trim() !== ''
       case 4:
         return validateFile(formData.cv) && 
                validateFile(formData.lettreMotivation) && 
@@ -505,16 +516,6 @@ export default function DemandeStage() {
                       onChange={(e) => handleInputChange('telephone', e.target.value)}
                       placeholder="Entrez votre numéro de téléphone"
                       className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${errors.telephone ? 'border-red-500 ring-2 ring-red-200' : ''}`}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="cin">CIN *</Label>
-                    <Input
-                      id="cin"
-                      value={formData.cin}
-                      onChange={(e) => handleInputChange('cin', e.target.value)}
-                      placeholder="Entrez votre numéro CIN"
-                      className={`border-gray-300 focus:border-red-500 focus:ring-red-500 ${errors.cin ? 'border-red-500 ring-2 ring-red-200' : ''}`}
                     />
                   </div>
                 </div>
@@ -707,16 +708,6 @@ export default function DemandeStage() {
                           value={formData.telephoneBinome}
                           onChange={(e) => handleInputChange('telephoneBinome', e.target.value)}
                           placeholder="Téléphone du partenaire"
-                          className="border-gray-300 focus:border-red-500 focus:ring-red-500"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="cinBinome">CIN du partenaire</Label>
-                        <Input
-                          id="cinBinome"
-                          value={formData.cinBinome}
-                          onChange={(e) => handleInputChange('cinBinome', e.target.value)}
-                          placeholder="CIN du partenaire"
                           className="border-gray-300 focus:border-red-500 focus:ring-red-500"
                         />
                       </div>

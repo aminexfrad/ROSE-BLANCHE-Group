@@ -1097,4 +1097,105 @@ class RHAssignerTuteurView(APIView):
                 {'error': f'Erreur lors de l\'assignation: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class RHCreateStageForStagiaireView(APIView):
+    """
+    Vue pour créer un stage pour un stagiaire existant
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        try:
+            # Vérifier que l'utilisateur est RH ou admin
+            if request.user.role not in ['rh', 'admin']:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Récupérer le stagiaire
+            stagiaire = get_object_or_404(User, id=pk, role='stagiaire')
+            
+            # Vérifier s'il a déjà un stage actif
+            existing_stage = Stage.objects.filter(
+                stagiaire=stagiaire, 
+                status='active'
+            ).first()
+            
+            if existing_stage:
+                return Response({
+                    'message': 'Ce stagiaire a déjà un stage actif',
+                    'stage': {
+                        'id': existing_stage.id,
+                        'title': existing_stage.title,
+                        'status': existing_stage.status
+                    }
+                }, status=status.HTTP_200_OK)
+            
+            # Récupérer les données du stage
+            data = request.data
+            required_fields = ['title', 'company', 'location', 'start_date', 'end_date']
+            for field in required_fields:
+                if not data.get(field):
+                    return Response(
+                        {'error': f'Le champ {field} est obligatoire'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            # Créer une demande de stage approuvée
+            from demande_service.models import Demande as DemandeModel
+            demande = DemandeModel.objects.create(
+                nom=stagiaire.nom,
+                prenom=stagiaire.prenom,
+                email=stagiaire.email,
+                telephone=stagiaire.telephone or '',
+                cin=f"CIN{stagiaire.id:06d}",
+                institut=stagiaire.institut or '',
+                specialite=stagiaire.specialite or '',
+                niveau=data.get('niveau', 'Bac+3'),
+                type_stage=data.get('type_stage', 'Stage PFE'),
+                date_debut=data['start_date'],
+                date_fin=data['end_date'],
+                stage_binome=False,
+                status='approved',
+                user_created=stagiaire
+            )
+            
+            # Créer le stage
+            stage = Stage.objects.create(
+                demande=demande,
+                stagiaire=stagiaire,
+                title=data['title'],
+                description=data.get('description', ''),
+                company=data['company'],
+                location=data['location'],
+                start_date=data['start_date'],
+                end_date=data['end_date'],
+                status='active',
+                progress=0
+            )
+            
+            return Response({
+                'message': 'Stage créé avec succès',
+                'stage': {
+                    'id': stage.id,
+                    'title': stage.title,
+                    'company': stage.company,
+                    'location': stage.location,
+                    'start_date': stage.start_date,
+                    'end_date': stage.end_date,
+                    'status': stage.status
+                }
+            }, status=status.HTTP_201_CREATED)
+            
+        except User.DoesNotExist:
+            return Response(
+                {'error': 'Stagiaire non trouvé'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la création du stage: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 # --- END MISSING VIEWS STUBS ---

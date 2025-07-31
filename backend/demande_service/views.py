@@ -21,6 +21,7 @@ from .serializers import (
 )
 from auth_service.models import User
 from shared.utils import MailService
+from shared.models import Stage
 
 
 class DemandeCreateView(generics.CreateAPIView):
@@ -32,7 +33,6 @@ class DemandeCreateView(generics.CreateAPIView):
         from rest_framework.exceptions import APIException
         # Check for existing pending/approved PFE demande for this candidate
         email = serializer.validated_data.get('email')
-        cin = serializer.validated_data.get('cin')
         type_stage = serializer.validated_data.get('type_stage')
         offer_ids = serializer.validated_data.get('offer_ids', [])
         if type_stage in ['Stage PFE', "Stage de Fin d'Études"]:
@@ -44,7 +44,7 @@ class DemandeCreateView(generics.CreateAPIView):
             if existing.exists():
                 raise APIException("Vous avez déjà une demande PFE en attente ou en cours.")
             if offer_ids and len(offer_ids) > 4:
-                raise APIException("Vous pouvez sélectionner jusqu’à 4 offres maximum.")
+                raise APIException("Vous pouvez sélectionner jusqu'à 4 offres maximum.")
         try:
             demande = serializer.save()
             
@@ -156,6 +156,31 @@ def approve_demande(request, pk):
         # Approve demande
         demande.approve(user_created=user)
         
+        # Create active stage for the stagiaire
+        
+        # Check if stage already exists for this demande
+        existing_stage = Stage.objects.filter(demande=demande).first()
+        if not existing_stage:
+            # Create a new stage
+            stage = Stage.objects.create(
+                demande=demande,
+                stagiaire=user,
+                title=f"Stage {demande.type_stage} - {demande.prenom} {demande.nom}",
+                description=f"Stage de {demande.specialite} chez {demande.institut}",
+                company=demande.institut or "Entreprise par défaut",
+                location="Casablanca",  # Default location
+                start_date=demande.date_debut,
+                end_date=demande.date_fin,
+                status='active',
+                progress=0
+            )
+        else:
+            # Update existing stage to active
+            existing_stage.status = 'active'
+            existing_stage.stagiaire = user
+            existing_stage.save()
+            stage = existing_stage
+        
         # Send acceptance email to candidate
         if existing_user:
             # If using existing user, don't send password in email
@@ -166,6 +191,11 @@ def approve_demande(request, pk):
                     'id': user.id,
                     'email': user.email,
                     'password': None
+                },
+                'stage_created': {
+                    'id': stage.id,
+                    'title': stage.title,
+                    'status': stage.status
                 }
             }, status=status.HTTP_200_OK)
         else:
@@ -177,6 +207,11 @@ def approve_demande(request, pk):
                     'id': user.id,
                     'email': user.email,
                     'password': password
+                },
+                'stage_created': {
+                    'id': stage.id,
+                    'title': stage.title,
+                    'status': stage.status
                 }
             }, status=status.HTTP_200_OK)
         

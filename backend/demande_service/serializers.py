@@ -33,11 +33,11 @@ class DemandeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Demande
         fields = [
-            'id', 'nom', 'prenom', 'email', 'telephone', 'cin',
+            'id', 'nom', 'prenom', 'email', 'telephone',
             'institut', 'specialite', 'type_stage', 'niveau', 'pfe_reference',
             'date_debut', 'date_fin', 'stage_binome',
             'nom_binome', 'prenom_binome', 'email_binome',
-            'telephone_binome', 'cin_binome',
+            'telephone_binome',
             'cv', 'lettre_motivation', 'demande_stage',
             'cv_binome', 'lettre_motivation_binome', 'demande_stage_binome',
             'status', 'raison_refus', 'created_at', 'updated_at',
@@ -84,15 +84,6 @@ class DemandeSerializer(serializers.ModelSerializer):
             return SecurityValidator.validate_phone(value)
         except ValidationError as e:
             raise serializers.ValidationError(str(e))
-    
-    def validate_cin(self, value):
-        """Validate and sanitize CIN field"""
-        if value:
-            try:
-                return SecurityValidator.validate_text(value, max_length=20, allow_html=False)
-            except ValidationError as e:
-                raise serializers.ValidationError(str(e))
-        return value
     
     def validate_institut(self, value):
         """Validate and sanitize institut field"""
@@ -153,15 +144,6 @@ class DemandeSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError(str(e))
         return value
     
-    def validate_cin_binome(self, value):
-        """Validate and sanitize cin_binome field"""
-        if value:
-            try:
-                return SecurityValidator.validate_text(value, max_length=20, allow_html=False)
-            except ValidationError as e:
-                raise serializers.ValidationError(str(e))
-        return value
-    
     def validate_file_field(self, value, field_name):
         """Generic file validation for PDF files only"""
         if value:
@@ -208,17 +190,32 @@ class DemandeSerializer(serializers.ModelSerializer):
     
     def validate_offer_ids(self, value):
         if value and len(value) > 4:
-            raise serializers.ValidationError('Vous pouvez sélectionner jusqu’à 4 offres maximum.')
+            raise serializers.ValidationError('Vous pouvez sélectionner jusqu\'à 4 offres maximum.')
         return value
 
     def validate(self, data):
         data = super().validate(data)
         offer_ids = data.get('offer_ids', [])
         type_stage = data.get('type_stage')
+        
+        # Validate binôme fields when stage_binome is True
+        stage_binome = data.get('stage_binome', False)
+        if stage_binome:
+            required_binome_fields = ['nom_binome', 'prenom_binome', 'email_binome', 'telephone_binome']
+            missing_fields = []
+            for field in required_binome_fields:
+                if not data.get(field):
+                    missing_fields.append(field)
+            
+            if missing_fields:
+                raise serializers.ValidationError(
+                    f'Les champs suivants sont obligatoires pour un stage en binôme: {", ".join(missing_fields)}'
+                )
+        
         if type_stage in ['Stage PFE', "Stage de Fin d'Études"]:
             if offer_ids and len(offer_ids) > 0:
                 if len(offer_ids) > 4:
-                    raise serializers.ValidationError('Vous pouvez sélectionner jusqu’à 4 offres maximum.')
+                    raise serializers.ValidationError('Vous pouvez sélectionner jusqu\'à 4 offres maximum.')
             else:
                 # Single-offer: require pfe_reference
                 if not data.get('pfe_reference'):
