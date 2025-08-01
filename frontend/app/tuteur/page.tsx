@@ -56,17 +56,17 @@ export default function TuteurDashboard() {
         setLoading(true)
         const [internshipsResponse, statsResponse] = await Promise.all([
           apiClient.getTuteurStages(),
-          apiClient.getDashboardStats()
+          apiClient.getTuteurStatistics()
         ])
         
         setInternships(internshipsResponse.results || [])
         setStats({
-          total_interns: statsResponse.stats.total_stages || 0,
-          active_interns: statsResponse.stats.active_stages || 0,
-          completed_interns: statsResponse.stats.completed_stages || 0,
-          avg_progress: statsResponse.stats.avg_progression || 0,
-          pending_evaluations: 0, // Will be updated when evaluations are implemented
-          recent_activities: statsResponse.stats.recent_applications || 0,
+          total_interns: statsResponse.total_stages || 0,
+          active_interns: statsResponse.active_stages || 0,
+          completed_interns: statsResponse.completed_stages || 0,
+          avg_progress: statsResponse.avg_progress || 0,
+          pending_evaluations: statsResponse.pending_evaluations || 0,
+          recent_activities: 0, // Not available in tuteur stats
         })
       } catch (err: any) {
         console.error('Error fetching data:', err)

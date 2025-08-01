@@ -14,7 +14,8 @@ from django.utils import timezone
 from datetime import timedelta
 
 from demande_service.models import Demande as DemandeModel
-from shared.models import Stage, User, Testimonial, Evaluation, Notification
+from shared.models import Stage, Testimonial, Evaluation, Notification, Survey, SurveyQuestion, SurveyResponse, KPIDashboard
+from auth_service.models import User
 from auth_service.serializers import UserSerializer
 
 
@@ -33,6 +34,8 @@ class RHStagiairesView(APIView):
                 
                 stagiaire_data = {
                     "id": stagiaire.id,
+                    "prenom": stagiaire.prenom,
+                    "nom": stagiaire.nom,
                     "first_name": stagiaire.prenom,
                     "last_name": stagiaire.nom,
                     "email": stagiaire.email,
@@ -50,6 +53,8 @@ class RHStagiairesView(APIView):
                         "end_date": active_stage.end_date.isoformat(),
                         "tuteur": {
                             "id": active_stage.tuteur.id,
+                            "prenom": active_stage.tuteur.prenom,
+                            "nom": active_stage.tuteur.nom,
                             "first_name": active_stage.tuteur.prenom,
                             "last_name": active_stage.tuteur.nom,
                             "email": active_stage.tuteur.email
@@ -99,6 +104,8 @@ class RHStagiaireDetailView(APIView):
                     "description": stage.description,
                     "tuteur": {
                         "id": stage.tuteur.id,
+                        "prenom": stage.tuteur.prenom,
+                        "nom": stage.tuteur.nom,
                         "first_name": stage.tuteur.prenom,
                         "last_name": stage.tuteur.nom,
                         "email": stage.tuteur.email
@@ -113,6 +120,8 @@ class RHStagiaireDetailView(APIView):
             response_data = {
                 "stagiaire": {
                     "id": stagiaire.id,
+                    "prenom": stagiaire.prenom,
+                    "nom": stagiaire.nom,
                     "first_name": stagiaire.prenom,
                     "last_name": stagiaire.nom,
                     "email": stagiaire.email,
@@ -163,6 +172,8 @@ class RHTestimonialsView(APIView):
                     "moderation_comment": testimonial.moderation_comment,
                     "author": {
                         "id": testimonial.author.id,
+                        "prenom": testimonial.author.prenom,
+                        "nom": testimonial.author.nom,
                         "first_name": testimonial.author.prenom,
                         "last_name": testimonial.author.nom,
                         "email": testimonial.author.email
@@ -174,6 +185,8 @@ class RHTestimonialsView(APIView):
                     },
                     "moderated_by": {
                         "id": testimonial.moderated_by.id,
+                        "prenom": testimonial.moderated_by.prenom,
+                        "nom": testimonial.moderated_by.nom,
                         "first_name": testimonial.moderated_by.prenom,
                         "last_name": testimonial.moderated_by.nom
                     } if testimonial.moderated_by else None
@@ -294,7 +307,7 @@ class RHKPIGlobauxView(APIView):
             
             # Calculate average satisfaction from evaluations
             avg_satisfaction = Evaluation.objects.aggregate(avg=Avg('overall_score'))['avg'] or 4.5
-            satisfaction_moyenne = round(avg_satisfaction, 1)
+            satisfaction_moyenne = round(float(avg_satisfaction), 1)
             
             # Calculate average stage duration (in months)
             stages_with_dates = Stage.objects.filter(start_date__isnull=False, end_date__isnull=False)
@@ -323,7 +336,7 @@ class RHKPIGlobauxView(APIView):
             
             evolution = {
                 "taux_reussite": taux_reussite - objectifs["taux_reussite"],
-                "satisfaction": satisfaction_moyenne - objectifs["satisfaction"],
+                "satisfaction": float(satisfaction_moyenne) - objectifs["satisfaction"],
                 "nombre_stagiaires": 17
             }
             
@@ -357,6 +370,9 @@ class RHKPIGlobauxView(APIView):
             })
             
         except Exception as e:
+            import traceback
+            print(f"KPI Error: {str(e)}")
+            print(f"Traceback: {traceback.format_exc()}")
             return Response(
                 {'error': f'Error fetching KPI data: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
@@ -411,111 +427,123 @@ class RHKPIGlobauxView(APIView):
 
     def calculate_institute_performance(self):
         """Calculate performance metrics by institute"""
-        institutes = User.objects.filter(role='stagiaire').values_list('institut', flat=True).distinct()
-        performance_data = []
-        
-        for institut in institutes:
-            if not institut:
-                continue
+        try:
+            institutes = User.objects.filter(role='stagiaire').values_list('institut', flat=True).distinct()
+            performance_data = []
+            
+            for institut in institutes:
+                if not institut:
+                    continue
+                    
+                stagiaires = User.objects.filter(role='stagiaire', institut=institut)
+                stages = Stage.objects.filter(stagiaire__in=stagiaires)
                 
-            stagiaires = User.objects.filter(role='stagiaire', institut=institut)
-            stages = Stage.objects.filter(stagiaire__in=stagiaires)
+                total_stagiaires = stagiaires.count()
+                completed_stages = stages.filter(status='completed').count()
+                total_stages = stages.count()
+                
+                reussite = round((completed_stages / total_stages * 100), 1) if total_stages > 0 else 0
+                
+                # Calculate average satisfaction
+                evaluations = Evaluation.objects.filter(evaluated__in=stagiaires)
+                satisfaction = evaluations.aggregate(avg=Avg('overall_score'))['avg'] or 4.5
+                
+                # Calculate abandonment rate
+                abandoned = stages.filter(status='cancelled').count()
+                abandon = round((abandoned / total_stages * 100), 1) if total_stages > 0 else 0
+                
+                performance_data.append({
+                    "institut": institut,
+                    "stagiaires": total_stagiaires,
+                    "reussite": reussite,
+                    "satisfaction": round(float(satisfaction), 1),
+                    "abandon": abandon
+                })
             
-            total_stagiaires = stagiaires.count()
-            completed_stages = stages.filter(status='completed').count()
-            total_stages = stages.count()
-            
-            reussite = round((completed_stages / total_stages * 100), 1) if total_stages > 0 else 0
-            
-            # Calculate average satisfaction
-            evaluations = Evaluation.objects.filter(evaluated__in=stagiaires)
-            satisfaction = evaluations.aggregate(avg=Avg('overall_score'))['avg'] or 4.5
-            
-            # Calculate abandonment rate
-            abandoned = stages.filter(status='cancelled').count()
-            abandon = round((abandoned / total_stages * 100), 1) if total_stages > 0 else 0
-            
-            performance_data.append({
-                "institut": institut,
-                "stagiaires": total_stagiaires,
-                "reussite": reussite,
-                "satisfaction": round(satisfaction, 1),
-                "abandon": abandon
-            })
-        
-        return performance_data
+            return performance_data
+        except Exception as e:
+            print(f"Error in calculate_institute_performance: {str(e)}")
+            return []
 
     def generate_kpi_alerts(self, taux_reussite, satisfaction_moyenne, taux_abandon):
         """Generate alerts based on KPI thresholds"""
-        alertes = []
-        
-        # Check success rate
-        if taux_reussite < 80:
+        try:
+            alertes = []
+            
+            # Check success rate
+            if taux_reussite < 80:
+                alertes.append({
+                    "type": "warning",
+                    "titre": "Taux de réussite faible",
+                    "description": f"Le taux de réussite ({taux_reussite}%) est en dessous de l'objectif (80%)",
+                    "niveau": "warning",
+                    "icon": "AlertTriangle"
+                })
+            
+            # Check satisfaction
+            if satisfaction_moyenne < 4.0:
+                alertes.append({
+                    "type": "error",
+                    "titre": "Satisfaction en baisse",
+                    "description": f"La satisfaction moyenne ({satisfaction_moyenne}/5) nécessite une attention",
+                    "niveau": "error",
+                    "icon": "Star"
+                })
+            
+            # Check abandonment rate
+            if taux_abandon > 15:
+                alertes.append({
+                    "type": "error",
+                    "titre": "Taux d'abandon élevé",
+                    "description": f"Le taux d'abandon ({taux_abandon}%) dépasse le seuil acceptable (15%)",
+                    "niveau": "error",
+                    "icon": "Users"
+                })
+            
+            # Add general info alerts
             alertes.append({
-                "type": "warning",
-                "titre": "Taux de réussite faible",
-                "description": f"Le taux de réussite ({taux_reussite}%) est en dessous de l'objectif (80%)",
-                "niveau": "warning",
-                "icon": "AlertTriangle"
+                "type": "info",
+                "titre": "Progression des stagiaires",
+                "description": "12 stagiaires avec progression < 30%",
+                "niveau": "info",
+                "icon": "TrendingUp"
             })
-        
-        # Check satisfaction
-        if satisfaction_moyenne < 4.0:
-            alertes.append({
-                "type": "error",
-                "titre": "Satisfaction en baisse",
-                "description": f"La satisfaction moyenne ({satisfaction_moyenne}/5) nécessite une attention",
-                "niveau": "error",
-                "icon": "Star"
-            })
-        
-        # Check abandonment rate
-        if taux_abandon > 15:
-            alertes.append({
-                "type": "error",
-                "titre": "Taux d'abandon élevé",
-                "description": f"Le taux d'abandon ({taux_abandon}%) dépasse le seuil acceptable (15%)",
-                "niveau": "error",
-                "icon": "Users"
-            })
-        
-        # Add general info alerts
-        alertes.append({
-            "type": "info",
-            "titre": "Progression des stagiaires",
-            "description": "12 stagiaires avec progression < 30%",
-            "niveau": "info",
-            "icon": "TrendingUp"
-        })
-        
-        return alertes
+            
+            return alertes
+        except Exception as e:
+            print(f"Error in generate_kpi_alerts: {str(e)}")
+            return []
 
     def generate_positive_points(self, taux_reussite, satisfaction_moyenne, nombre_stagiaires):
         """Generate positive points based on good performance"""
-        points = []
-        
-        if taux_reussite >= 90:
-            points.append({
-                "titre": "Objectifs dépassés",
-                "description": "Taux de réussite supérieur aux attentes",
-                "icon": "Award"
-            })
-        
-        if satisfaction_moyenne >= 4.5:
-            points.append({
-                "titre": "Satisfaction élevée",
-                "description": "Note moyenne en amélioration continue",
-                "icon": "Star"
-            })
-        
-        if nombre_stagiaires >= 200:
-            points.append({
-                "titre": "Croissance soutenue",
-                "description": "+17% de stagiaires par rapport à l'objectif",
-                "icon": "TrendingUp"
-            })
-        
-        return points
+        try:
+            points = []
+            
+            if taux_reussite >= 90:
+                points.append({
+                    "titre": "Objectifs dépassés",
+                    "description": "Taux de réussite supérieur aux attentes",
+                    "icon": "Award"
+                })
+            
+            if satisfaction_moyenne >= 4.5:
+                points.append({
+                    "titre": "Satisfaction élevée",
+                    "description": "Note moyenne en amélioration continue",
+                    "icon": "Star"
+                })
+            
+            if nombre_stagiaires >= 200:
+                points.append({
+                    "titre": "Croissance soutenue",
+                    "description": "+17% de stagiaires par rapport à l'objectif",
+                    "icon": "TrendingUp"
+                })
+            
+            return points
+        except Exception as e:
+            print(f"Error in generate_positive_points: {str(e)}")
+            return []
 
 class RHStagesView(APIView):
     permission_classes = [IsAuthenticated]
@@ -544,6 +572,8 @@ class RHStagesView(APIView):
                     "description": stage.description,
                     "stagiaire": {
                         "id": stage.stagiaire.id,
+                        "prenom": stage.stagiaire.prenom,
+                        "nom": stage.stagiaire.nom,
                         "first_name": stage.stagiaire.prenom,
                         "last_name": stage.stagiaire.nom,
                         "email": stage.stagiaire.email,
@@ -552,6 +582,8 @@ class RHStagesView(APIView):
                     },
                     "tuteur": {
                         "id": stage.tuteur.id,
+                        "prenom": stage.tuteur.prenom,
+                        "nom": stage.tuteur.nom,
                         "first_name": stage.tuteur.prenom,
                         "last_name": stage.tuteur.nom,
                         "email": stage.tuteur.email
@@ -1306,4 +1338,442 @@ class RHCreateStageForStagiaireView(APIView):
                 {'error': f'Erreur lors de la création du stage: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-# --- END MISSING VIEWS STUBS ---
+
+
+class RHSurveyManagementView(APIView):
+    """
+    Vue pour la gestion des sondages KPI par RH
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Récupérer tous les sondages créés par RH"""
+        try:
+            if request.user.role not in ['rh', 'admin']:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            surveys = Survey.objects.filter(created_by=request.user).order_by('-created_at')
+            
+            surveys_data = []
+            for survey in surveys:
+                # Get response statistics
+                total_targets = survey.get_target_stagiaires().count()
+                completed_responses = survey.responses.filter(is_completed=True).count()
+                response_rate = round((completed_responses / total_targets * 100), 1) if total_targets > 0 else 0
+                
+                survey_data = {
+                    "id": survey.id,
+                    "title": survey.title,
+                    "description": survey.description,
+                    "status": survey.status,
+                    "target_type": survey.target_type,
+                    "total_targets": total_targets,
+                    "completed_responses": completed_responses,
+                    "response_rate": response_rate,
+                    "average_score": survey.average_score,
+                    "scheduled_start": survey.scheduled_start.isoformat() if survey.scheduled_start else None,
+                    "scheduled_end": survey.scheduled_end.isoformat() if survey.scheduled_end else None,
+                    "actual_start": survey.actual_start.isoformat() if survey.actual_start else None,
+                    "actual_end": survey.actual_end.isoformat() if survey.actual_end else None,
+                    "created_at": survey.created_at.isoformat(),
+                    "questions_count": survey.questions.count()
+                }
+                surveys_data.append(survey_data)
+            
+            return Response({
+                "results": surveys_data
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error fetching surveys: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def post(self, request):
+        """Créer un nouveau sondage"""
+        try:
+            if request.user.role not in ['rh', 'admin']:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            data = request.data
+            
+            # Create survey
+            survey = Survey.objects.create(
+                title=data.get('title'),
+                description=data.get('description', ''),
+                created_by=request.user,
+                target_type=data.get('target_type', Survey.TargetType.ALL_STAGIAIRES),
+                target_institutes=data.get('target_institutes', []),
+                target_specialities=data.get('target_specialities', []),
+                scheduled_start=data.get('scheduled_start'),
+                scheduled_end=data.get('scheduled_end'),
+                kpi_threshold_warning=data.get('kpi_threshold_warning', 3.0),
+                kpi_threshold_critical=data.get('kpi_threshold_critical', 2.0)
+            )
+            
+            # Add specific stagiaires if target type is specific
+            if data.get('target_type') == Survey.TargetType.SPECIFIC_STAGIAIRES:
+                stagiaire_ids = data.get('target_stagiaire_ids', [])
+                stagiaires = User.objects.filter(id__in=stagiaire_ids, role='stagiaire')
+                survey.target_stagiaires.set(stagiaires)
+            
+            # Create questions
+            questions_data = data.get('questions', [])
+            for i, question_data in enumerate(questions_data):
+                SurveyQuestion.objects.create(
+                    survey=survey,
+                    question_text=question_data.get('question_text'),
+                    question_type=question_data.get('question_type', SurveyQuestion.QuestionType.RATING),
+                    category=question_data.get('category', SurveyQuestion.Category.OTHER),
+                    order=i,
+                    is_required=question_data.get('is_required', True),
+                    choices=question_data.get('choices', []),
+                    kpi_weight=question_data.get('kpi_weight', 1.00)
+                )
+            
+            # Create KPI dashboard
+            KPIDashboard.objects.create(survey=survey)
+            
+            return Response({
+                'message': 'Sondage créé avec succès',
+                'survey_id': survey.id
+            }, status=status.HTTP_201_CREATED)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error creating survey: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class RHSurveyDetailView(APIView):
+    """
+    Vue pour les détails d'un sondage spécifique
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        """Récupérer les détails d'un sondage"""
+        try:
+            if request.user.role not in ['rh', 'admin']:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            survey = get_object_or_404(Survey, id=pk, created_by=request.user)
+            
+            # Get questions
+            questions = survey.questions.all().order_by('order')
+            questions_data = []
+            for question in questions:
+                question_data = {
+                    "id": question.id,
+                    "question_text": question.question_text,
+                    "question_type": question.question_type,
+                    "category": question.category,
+                    "order": question.order,
+                    "is_required": question.is_required,
+                    "choices": question.choices,
+                    "kpi_weight": question.kpi_weight
+                }
+                questions_data.append(question_data)
+            
+            # Get responses summary
+            responses = survey.responses.all()
+            responses_data = []
+            for response in responses:
+                response_data = {
+                    "id": response.id,
+                    "stagiaire": {
+                        "id": response.stagiaire.id,
+                        "prenom": response.stagiaire.prenom,
+                        "nom": response.stagiaire.nom,
+                        "first_name": response.stagiaire.prenom,
+                        "last_name": response.stagiaire.nom,
+                        "email": response.stagiaire.email,
+                        "institut": response.stagiaire.institut,
+                        "specialite": response.stagiaire.specialite
+                    },
+                    "is_completed": response.is_completed,
+                    "completed_at": response.completed_at.isoformat() if response.completed_at else None,
+                    "overall_score": response.overall_score,
+                    "category_scores": response.category_scores
+                }
+                responses_data.append(response_data)
+            
+            survey_data = {
+                "id": survey.id,
+                "title": survey.title,
+                "description": survey.description,
+                "status": survey.status,
+                "target_type": survey.target_type,
+                "target_institutes": survey.target_institutes,
+                "target_specialities": survey.target_specialities,
+                "scheduled_start": survey.scheduled_start.isoformat() if survey.scheduled_start else None,
+                "scheduled_end": survey.scheduled_end.isoformat() if survey.scheduled_end else None,
+                "actual_start": survey.actual_start.isoformat() if survey.actual_start else None,
+                "actual_end": survey.actual_end.isoformat() if survey.actual_end else None,
+                "kpi_threshold_warning": survey.kpi_threshold_warning,
+                "kpi_threshold_critical": survey.kpi_threshold_critical,
+                "created_at": survey.created_at.isoformat(),
+                "questions": questions_data,
+                "responses": responses_data,
+                "response_rate": survey.response_rate,
+                "average_score": survey.average_score
+            }
+            
+            return Response(survey_data)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error fetching survey details: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def put(self, request, pk):
+        """Modifier un sondage"""
+        try:
+            if request.user.role not in ['rh', 'admin']:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            survey = get_object_or_404(Survey, id=pk, created_by=request.user)
+            data = request.data
+            
+            # Update survey fields
+            survey.title = data.get('title', survey.title)
+            survey.description = data.get('description', survey.description)
+            survey.target_type = data.get('target_type', survey.target_type)
+            survey.target_institutes = data.get('target_institutes', survey.target_institutes)
+            survey.target_specialities = data.get('target_specialities', survey.target_specialities)
+            survey.scheduled_start = data.get('scheduled_start', survey.scheduled_start)
+            survey.scheduled_end = data.get('scheduled_end', survey.scheduled_end)
+            survey.kpi_threshold_warning = data.get('kpi_threshold_warning', survey.kpi_threshold_warning)
+            survey.kpi_threshold_critical = data.get('kpi_threshold_critical', survey.kpi_threshold_critical)
+            survey.save()
+            
+            # Update specific stagiaires if target type is specific
+            if data.get('target_type') == Survey.TargetType.SPECIFIC_STAGIAIRES:
+                stagiaire_ids = data.get('target_stagiaire_ids', [])
+                stagiaires = User.objects.filter(id__in=stagiaire_ids, role='stagiaire')
+                survey.target_stagiaires.set(stagiaires)
+            
+            # Update questions if provided
+            if 'questions' in data:
+                # Delete existing questions
+                survey.questions.all().delete()
+                
+                # Create new questions
+                questions_data = data.get('questions', [])
+                for i, question_data in enumerate(questions_data):
+                    SurveyQuestion.objects.create(
+                        survey=survey,
+                        question_text=question_data.get('question_text'),
+                        question_type=question_data.get('question_type', SurveyQuestion.QuestionType.RATING),
+                        category=question_data.get('category', SurveyQuestion.Category.OTHER),
+                        order=i,
+                        is_required=question_data.get('is_required', True),
+                        choices=question_data.get('choices', []),
+                        kpi_weight=question_data.get('kpi_weight', 1.00)
+                    )
+            
+            return Response({
+                'message': 'Sondage modifié avec succès'
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error updating survey: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def delete(self, request, pk):
+        """Supprimer un sondage"""
+        try:
+            if request.user.role not in ['rh', 'admin']:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            survey = get_object_or_404(Survey, id=pk, created_by=request.user)
+            survey.delete()
+            
+            return Response({
+                'message': 'Sondage supprimé avec succès'
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error deleting survey: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class RHSurveyActionView(APIView):
+    """
+    Vue pour les actions sur les sondages (envoyer, fermer, calculer KPI)
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        """Effectuer une action sur un sondage"""
+        try:
+            if request.user.role not in ['rh', 'admin']:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            survey = get_object_or_404(Survey, id=pk, created_by=request.user)
+            action = request.data.get('action')
+            
+            if action == 'send':
+                if survey.send_survey():
+                    return Response({
+                        'message': 'Sondage envoyé avec succès'
+                    })
+                else:
+                    return Response(
+                        {'error': 'Impossible d\'envoyer le sondage'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            elif action == 'close':
+                if survey.close_survey():
+                    return Response({
+                        'message': 'Sondage fermé avec succès'
+                    })
+                else:
+                    return Response(
+                        {'error': 'Impossible de fermer le sondage'}, 
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+            
+            elif action == 'calculate_kpi':
+                # Check KPI thresholds and generate alerts
+                survey.check_kpi_thresholds()
+                
+                # Update KPI dashboard
+                if hasattr(survey, 'kpi_dashboard'):
+                    survey.kpi_dashboard.calculate_kpi_data()
+                
+                return Response({
+                    'message': 'KPI calculés avec succès'
+                })
+            
+            else:
+                return Response(
+                    {'error': 'Action non reconnue'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error performing action: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class RHSurveyAnalysisView(APIView):
+    """
+    Vue pour l'analyse des sondages KPI
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Récupérer l'analyse des sondages"""
+        try:
+            if request.user.role not in ['rh', 'admin']:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Get all surveys created by this RH
+            surveys = Survey.objects.filter(created_by=request.user).order_by('-created_at')
+            
+            # Overall statistics
+            total_surveys = surveys.count()
+            active_surveys = surveys.filter(status=Survey.Status.ACTIVE).count()
+            completed_surveys = surveys.filter(status=Survey.Status.CLOSED).count()
+            
+            # Response statistics
+            total_responses = 0
+            total_targets = 0
+            overall_average_score = 0
+            total_scores = 0
+            total_completed_responses = 0
+            
+            # Critical alerts
+            critical_alerts = 0
+            warning_alerts = 0
+            
+            for survey in surveys:
+                survey_targets = survey.get_target_stagiaires().count()
+                survey_responses = survey.responses.filter(is_completed=True).count()
+                
+                total_targets += survey_targets
+                total_responses += survey_responses
+                
+                # Calculate scores
+                for response in survey.responses.filter(is_completed=True):
+                    if response.overall_score:
+                        total_scores += response.overall_score
+                        total_completed_responses += 1
+                
+                # Count alerts
+                critical_alerts += survey.responses.filter(
+                    is_completed=True,
+                    overall_score__lte=survey.kpi_threshold_critical
+                ).count()
+                
+                warning_alerts += survey.responses.filter(
+                    is_completed=True,
+                    overall_score__lte=survey.kpi_threshold_warning,
+                    overall_score__gt=survey.kpi_threshold_critical
+                ).count()
+            
+            overall_response_rate = round((total_responses / total_targets * 100), 1) if total_targets > 0 else 0
+            overall_average_score = round(total_scores / total_completed_responses, 2) if total_completed_responses > 0 else 0
+            
+            # Survey KPI data
+            surveys_kpi_data = []
+            for survey in surveys[:10]:  # Limit to 10 most recent
+                if hasattr(survey, 'kpi_dashboard'):
+                    surveys_kpi_data.append(survey.kpi_dashboard.generate_report_data())
+            
+            analysis_data = {
+                "overall_statistics": {
+                    "total_surveys": total_surveys,
+                    "active_surveys": active_surveys,
+                    "completed_surveys": completed_surveys,
+                    "total_responses": total_responses,
+                    "total_targets": total_targets,
+                    "overall_response_rate": overall_response_rate,
+                    "overall_average_score": overall_average_score
+                },
+                "alerts": {
+                    "critical_alerts": critical_alerts,
+                    "warning_alerts": warning_alerts
+                },
+                "surveys_kpi_data": surveys_kpi_data
+            }
+            
+            return Response(analysis_data)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error fetching survey analysis: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

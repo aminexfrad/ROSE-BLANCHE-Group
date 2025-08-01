@@ -31,4 +31,10 @@ urlpatterns = [
     # Testimonial management
     path('testimonials/create/', views.TestimonialCreateView.as_view(), name='testimonial-create'),
     path('testimonials/<int:pk>/', views.TestimonialDetailView.as_view(), name='testimonial-detail'),
+    
+    # Survey management
+    path('surveys/', views.StagiaireSurveysView.as_view(), name='stagiaire-surveys'),
+    path('surveys/<int:pk>/', views.StagiaireSurveyDetailView.as_view(), name='stagiaire-survey-detail'),
+    path('surveys/<int:pk>/respond/', views.StagiaireSurveyResponseView.as_view(), name='stagiaire-survey-response'),
+    path('surveys/history/', views.StagiaireSurveyHistoryView.as_view(), name='stagiaire-survey-history'),
 ] 

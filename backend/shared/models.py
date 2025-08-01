@@ -243,6 +243,412 @@ class Evaluation(models.Model):
     def __str__(self):
         return f"{self.evaluation_type} - {self.evaluator.get_full_name()} → {self.evaluated.get_full_name()}"
 
+class Survey(models.Model):
+    """
+    Survey model for KPI 360° feedback
+    """
+    class Status(models.TextChoices):
+        DRAFT = 'draft', _('Brouillon')
+        ACTIVE = 'active', _('Actif')
+        CLOSED = 'closed', _('Fermé')
+        ARCHIVED = 'archived', _('Archivé')
+    
+    class TargetType(models.TextChoices):
+        ALL_STAGIAIRES = 'all_stagiaires', _('Tous les stagiaires')
+        SPECIFIC_STAGIAIRES = 'specific_stagiaires', _('Stagiaires spécifiques')
+        BY_INSTITUTE = 'by_institute', _('Par institut')
+        BY_SPECIALITY = 'by_speciality', _('Par spécialité')
+    
+    # Basic information
+    title = models.CharField(_('titre'), max_length=200)
+    description = models.TextField(_('description'), blank=True)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_surveys')
+    
+    # Target configuration
+    target_type = models.CharField(
+        _('type de cible'),
+        max_length=20,
+        choices=TargetType.choices,
+        default=TargetType.ALL_STAGIAIRES
+    )
+    target_stagiaires = models.ManyToManyField(
+        User, 
+        blank=True, 
+        related_name='assigned_surveys',
+        limit_choices_to={'role': 'stagiaire'}
+    )
+    target_institutes = models.JSONField(_('instituts cibles'), default=list, blank=True)
+    target_specialities = models.JSONField(_('spécialités cibles'), default=list, blank=True)
+    
+    # Scheduling
+    scheduled_start = models.DateTimeField(_('début programmé'), null=True, blank=True)
+    scheduled_end = models.DateTimeField(_('fin programmée'), null=True, blank=True)
+    actual_start = models.DateTimeField(_('début réel'), null=True, blank=True)
+    actual_end = models.DateTimeField(_('fin réelle'), null=True, blank=True)
+    
+    # Status
+    status = models.CharField(
+        _('statut'),
+        max_length=20,
+        choices=Status.choices,
+        default=Status.DRAFT
+    )
+    
+    # KPI thresholds for alerts
+    kpi_threshold_warning = models.DecimalField(_('seuil d\'alerte'), max_digits=5, decimal_places=2, default=3.0)
+    kpi_threshold_critical = models.DecimalField(_('seuil critique'), max_digits=5, decimal_places=2, default=2.0)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('sondage')
+        verbose_name_plural = _('sondages')
+        db_table = 'survey'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return self.title
+    
+    @property
+    def response_rate(self):
+        """Calculate response rate percentage"""
+        total_targets = self.get_target_stagiaires().count()
+        if total_targets == 0:
+            return 0
+        responses = self.responses.filter(is_completed=True).count()
+        return round((responses / total_targets) * 100, 1)
+    
+    @property
+    def average_score(self):
+        """Calculate average score from completed responses"""
+        completed_responses = self.responses.filter(is_completed=True)
+        if not completed_responses.exists():
+            return 0
+        total_score = sum(response.overall_score or 0 for response in completed_responses)
+        return round(total_score / completed_responses.count(), 2)
+    
+    def get_target_stagiaires(self):
+        """Get all target stagiaires based on configuration"""
+        if self.target_type == Survey.TargetType.ALL_STAGIAIRES:
+            return User.objects.filter(role='stagiaire')
+        elif self.target_type == Survey.TargetType.SPECIFIC_STAGIAIRES:
+            return self.target_stagiaires.all()
+        elif self.target_type == Survey.TargetType.BY_INSTITUTE:
+            return User.objects.filter(role='stagiaire', institut__in=self.target_institutes)
+        elif self.target_type == Survey.TargetType.BY_SPECIALITY:
+            return User.objects.filter(role='stagiaire', specialite__in=self.target_specialities)
+        return User.objects.none()
+    
+    def send_survey(self):
+        """Send survey to target stagiaires"""
+        if self.status != Survey.Status.DRAFT:
+            return False
+        
+        target_stagiaires = self.get_target_stagiaires()
+        
+        # Create survey responses for each target stagiaire
+        for stagiaire in target_stagiaires:
+            SurveyResponse.objects.get_or_create(
+                survey=self,
+                stagiaire=stagiaire,
+                defaults={'is_completed': False}
+            )
+        
+        # Update survey status and dates
+        self.status = Survey.Status.ACTIVE
+        self.actual_start = timezone.now()
+        self.save()
+        
+        # Send notifications
+        for stagiaire in target_stagiaires:
+            Notification.objects.create(
+                recipient=stagiaire,
+                title=f"Nouveau sondage: {self.title}",
+                message=f"Un nouveau sondage KPI est disponible. Veuillez y répondre.",
+                notification_type=Notification.Type.INFO
+            )
+        
+        return True
+    
+    def close_survey(self):
+        """Close the survey"""
+        if self.status != Survey.Status.ACTIVE:
+            return False
+        
+        self.status = Survey.Status.CLOSED
+        self.actual_end = timezone.now()
+        self.save()
+        
+        return True
+    
+    def check_kpi_thresholds(self):
+        """Check KPI thresholds and generate alerts"""
+        completed_responses = self.responses.filter(is_completed=True)
+        
+        for response in completed_responses:
+            if response.overall_score:
+                if response.overall_score <= self.kpi_threshold_critical:
+                    # Create critical alert for RH
+                    Notification.objects.create(
+                        recipient=self.created_by,
+                        title=f"Alerte critique KPI - {response.stagiaire.get_full_name()}",
+                        message=f"Score critique ({response.overall_score}/5) pour le sondage '{self.title}'",
+                        notification_type=Notification.Type.ERROR
+                    )
+                elif response.overall_score <= self.kpi_threshold_warning:
+                    # Create warning alert for RH
+                    Notification.objects.create(
+                        recipient=self.created_by,
+                        title=f"Alerte KPI - {response.stagiaire.get_full_name()}",
+                        message=f"Score faible ({response.overall_score}/5) pour le sondage '{self.title}'",
+                        notification_type=Notification.Type.WARNING
+                    )
+
+
+class SurveyQuestion(models.Model):
+    """
+    Survey question model
+    """
+    class QuestionType(models.TextChoices):
+        RATING = 'rating', _('Évaluation (1-5)')
+        TEXT = 'text', _('Texte libre')
+        CHOICE = 'choice', _('Choix multiple')
+        BOOLEAN = 'boolean', _('Oui/Non')
+    
+    class Category(models.TextChoices):
+        TECHNICAL = 'technical', _('Technique')
+        SOFT_SKILLS = 'soft_skills', _('Soft Skills')
+        COMMUNICATION = 'communication', _('Communication')
+        TEAMWORK = 'teamwork', _('Travail d\'équipe')
+        LEADERSHIP = 'leadership', _('Leadership')
+        ADAPTABILITY = 'adaptability', _('Adaptabilité')
+        SATISFACTION = 'satisfaction', _('Satisfaction')
+        OTHER = 'other', _('Autre')
+    
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='questions')
+    question_text = models.TextField(_('question'))
+    question_type = models.CharField(
+        _('type de question'),
+        max_length=20,
+        choices=QuestionType.choices,
+        default=QuestionType.RATING
+    )
+    category = models.CharField(
+        _('catégorie'),
+        max_length=20,
+        choices=Category.choices,
+        default=Category.OTHER
+    )
+    order = models.IntegerField(_('ordre'), default=0)
+    is_required = models.BooleanField(_('obligatoire'), default=True)
+    
+    # For choice questions
+    choices = models.JSONField(_('choix'), default=list, blank=True)
+    
+    # KPI weight for scoring
+    kpi_weight = models.DecimalField(_('poids KPI'), max_digits=3, decimal_places=2, default=1.00)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('question de sondage')
+        verbose_name_plural = _('questions de sondage')
+        db_table = 'survey_question'
+        ordering = ['order']
+        unique_together = ['survey', 'order']
+    
+    def __str__(self):
+        return f"{self.survey.title}: {self.question_text[:50]}..."
+
+
+class SurveyResponse(models.Model):
+    """
+    Survey response model
+    """
+    survey = models.ForeignKey(Survey, on_delete=models.CASCADE, related_name='responses')
+    stagiaire = models.ForeignKey(User, on_delete=models.CASCADE, related_name='survey_responses')
+    
+    # Response data
+    answers = models.JSONField(_('réponses'), default=dict)  # Store question_id: answer mapping
+    overall_score = models.DecimalField(_('score global'), max_digits=5, decimal_places=2, null=True, blank=True)
+    category_scores = models.JSONField(_('scores par catégorie'), default=dict, blank=True)
+    
+    # Status
+    is_completed = models.BooleanField(_('terminé'), default=False)
+    completed_at = models.DateTimeField(_('date de completion'), null=True, blank=True)
+    
+    # Additional feedback
+    additional_comments = models.TextField(_('commentaires additionnels'), blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('réponse au sondage')
+        verbose_name_plural = _('réponses au sondage')
+        db_table = 'survey_response'
+        ordering = ['-created_at']
+        unique_together = ['survey', 'stagiaire']
+    
+    def __str__(self):
+        return f"{self.stagiaire.get_full_name()} - {self.survey.title}"
+    
+    def calculate_scores(self):
+        """Calculate overall and category scores from answers"""
+        if not self.answers or not self.is_completed:
+            return
+        
+        total_score = 0
+        total_weight = 0
+        category_scores = {}
+        category_weights = {}
+        
+        for question_id, answer in self.answers.items():
+            try:
+                question = self.survey.questions.get(id=question_id)
+                
+                # Calculate score based on question type
+                if question.question_type == SurveyQuestion.QuestionType.RATING:
+                    score = float(answer) if answer else 0
+                elif question.question_type == SurveyQuestion.QuestionType.BOOLEAN:
+                    score = 5.0 if answer else 1.0
+                elif question.question_type == SurveyQuestion.QuestionType.CHOICE:
+                    # For choice questions, assume 1-5 scale based on choice index
+                    choices = question.choices
+                    if answer in choices:
+                        score = (choices.index(answer) + 1) * (5.0 / len(choices))
+                    else:
+                        score = 0
+                else:
+                    score = 0  # Text questions don't contribute to score
+                
+                # Apply weight
+                weighted_score = score * float(question.kpi_weight)
+                total_score += weighted_score
+                total_weight += float(question.kpi_weight)
+                
+                # Category scores
+                category = question.category
+                if category not in category_scores:
+                    category_scores[category] = 0
+                    category_weights[category] = 0
+                
+                category_scores[category] += weighted_score
+                category_weights[category] += float(question.kpi_weight)
+                
+            except (SurveyQuestion.DoesNotExist, ValueError, TypeError):
+                continue
+        
+        # Calculate overall score
+        if total_weight > 0:
+            self.overall_score = round(total_score / total_weight, 2)
+        else:
+            self.overall_score = 0
+        
+        # Calculate category averages
+        self.category_scores = {}
+        for category, total in category_scores.items():
+            weight = category_weights.get(category, 0)
+            if weight > 0:
+                self.category_scores[category] = round(total / weight, 2)
+            else:
+                self.category_scores[category] = 0
+        
+        self.save(update_fields=['overall_score', 'category_scores'])
+
+
+class KPIDashboard(models.Model):
+    """
+    KPI Dashboard model for aggregated survey data
+    """
+    survey = models.OneToOneField(Survey, on_delete=models.CASCADE, related_name='kpi_dashboard')
+    
+    # Aggregated data
+    total_responses = models.IntegerField(_('total réponses'), default=0)
+    response_rate = models.DecimalField(_('taux de réponse'), max_digits=5, decimal_places=2, default=0)
+    average_score = models.DecimalField(_('score moyen'), max_digits=5, decimal_places=2, default=0)
+    category_averages = models.JSONField(_('moyennes par catégorie'), default=dict, blank=True)
+    
+    # Alert counts
+    critical_alerts = models.IntegerField(_('alertes critiques'), default=0)
+    warning_alerts = models.IntegerField(_('alertes d\'avertissement'), default=0)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('tableau de bord KPI')
+        verbose_name_plural = _('tableaux de bord KPI')
+        db_table = 'kpi_dashboard'
+    
+    def __str__(self):
+        return f"KPI Dashboard - {self.survey.title}"
+    
+    def calculate_kpi_data(self):
+        """Calculate and update KPI dashboard data"""
+        completed_responses = self.survey.responses.filter(is_completed=True)
+        
+        # Basic counts
+        self.total_responses = completed_responses.count()
+        total_targets = self.survey.get_target_stagiaires().count()
+        self.response_rate = round((self.total_responses / total_targets * 100), 2) if total_targets > 0 else 0
+        
+        # Average scores
+        if self.total_responses > 0:
+            total_score = sum(response.overall_score or 0 for response in completed_responses)
+            self.average_score = round(total_score / self.total_responses, 2)
+            
+            # Category averages
+            category_totals = {}
+            category_counts = {}
+            
+            for response in completed_responses:
+                for category, score in response.category_scores.items():
+                    if category not in category_totals:
+                        category_totals[category] = 0
+                        category_counts[category] = 0
+                    category_totals[category] += score
+                    category_counts[category] += 1
+            
+            self.category_averages = {}
+            for category in category_totals:
+                if category_counts[category] > 0:
+                    self.category_averages[category] = round(
+                        category_totals[category] / category_counts[category], 2
+                    )
+        
+        # Alert counts
+        self.critical_alerts = completed_responses.filter(
+            overall_score__lte=self.survey.kpi_threshold_critical
+        ).count()
+        
+        self.warning_alerts = completed_responses.filter(
+            overall_score__lte=self.survey.kpi_threshold_warning,
+            overall_score__gt=self.survey.kpi_threshold_critical
+        ).count()
+        
+        self.save()
+    
+    def generate_report_data(self):
+        """Generate data for reports"""
+        return {
+            'survey_title': self.survey.title,
+            'total_responses': self.total_responses,
+            'response_rate': self.response_rate,
+            'average_score': self.average_score,
+            'category_averages': self.category_averages,
+            'critical_alerts': self.critical_alerts,
+            'warning_alerts': self.warning_alerts,
+            'last_updated': self.updated_at.isoformat()
+        }
+
+
 class KPIQuestion(models.Model):
     """
     KPI Question model for evaluation surveys

@@ -11,7 +11,7 @@ from rest_framework import status, generics
 from django.shortcuts import get_object_or_404
 from django.db.models import Q
 
-from shared.models import Stage, Step, Document, Evaluation, Testimonial, Notification
+from shared.models import Stage, Step, Document, Evaluation, Testimonial, Notification, Survey, SurveyQuestion, SurveyResponse
 from shared.serializers import (
     StageSerializer, StepSerializer, DocumentSerializer, 
     DocumentUploadSerializer, EvaluationSerializer, EvaluationCreateSerializer,
@@ -394,4 +394,239 @@ class TestimonialDetailView(generics.RetrieveAPIView):
     queryset = Testimonial.objects.all()
 
     def get_queryset(self):
-        return Testimonial.objects.filter(author=self.request.user) 
+        return Testimonial.objects.filter(author=self.request.user)
+
+
+class StagiaireSurveysView(APIView):
+    """
+    Vue pour que les stagiaires voient les sondages disponibles
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Récupérer les sondages disponibles pour le stagiaire"""
+        try:
+            if request.user.role != 'stagiaire':
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Get surveys where this stagiaire is a target
+            surveys = Survey.objects.filter(
+                status=Survey.Status.ACTIVE,
+                responses__stagiaire=request.user
+            ).distinct().order_by('-created_at')
+            
+            surveys_data = []
+            for survey in surveys:
+                # Get the stagiaire's response for this survey
+                response = survey.responses.filter(stagiaire=request.user).first()
+                
+                survey_data = {
+                    "id": survey.id,
+                    "title": survey.title,
+                    "description": survey.description,
+                    "created_at": survey.created_at.isoformat(),
+                    "questions_count": survey.questions.count(),
+                    "is_completed": response.is_completed if response else False,
+                    "completed_at": response.completed_at.isoformat() if response and response.completed_at else None,
+                    "overall_score": response.overall_score if response else None
+                }
+                surveys_data.append(survey_data)
+            
+            return Response({
+                "results": surveys_data
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error fetching surveys: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class StagiaireSurveyDetailView(APIView):
+    """
+    Vue pour que les stagiaires voient les détails d'un sondage
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, pk):
+        """Récupérer les détails d'un sondage spécifique"""
+        try:
+            if request.user.role != 'stagiaire':
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            survey = get_object_or_404(Survey, id=pk, status=Survey.Status.ACTIVE)
+            
+            # Check if stagiaire is a target
+            target_stagiaires = survey.get_target_stagiaires()
+            if request.user not in target_stagiaires:
+                return Response(
+                    {'error': 'Vous n\'êtes pas ciblé par ce sondage'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Get questions
+            questions = survey.questions.all().order_by('order')
+            questions_data = []
+            for question in questions:
+                question_data = {
+                    "id": question.id,
+                    "question_text": question.question_text,
+                    "question_type": question.question_type,
+                    "category": question.category,
+                    "order": question.order,
+                    "is_required": question.is_required,
+                    "choices": question.choices
+                }
+                questions_data.append(question_data)
+            
+            # Get existing response if any
+            response = survey.responses.filter(stagiaire=request.user).first()
+            response_data = None
+            if response:
+                response_data = {
+                    "id": response.id,
+                    "is_completed": response.is_completed,
+                    "completed_at": response.completed_at.isoformat() if response.completed_at else None,
+                    "overall_score": response.overall_score,
+                    "category_scores": response.category_scores,
+                    "additional_comments": response.additional_comments
+                }
+            
+            survey_data = {
+                "id": survey.id,
+                "title": survey.title,
+                "description": survey.description,
+                "created_at": survey.created_at.isoformat(),
+                "questions": questions_data,
+                "response": response_data
+            }
+            
+            return Response(survey_data)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error fetching survey details: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class StagiaireSurveyResponseView(APIView):
+    """
+    Vue pour que les stagiaires soumettent leurs réponses aux sondages
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, pk):
+        """Soumettre ou mettre à jour une réponse au sondage"""
+        try:
+            if request.user.role != 'stagiaire':
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            survey = get_object_or_404(Survey, id=pk, status=Survey.Status.ACTIVE)
+            
+            # Check if stagiaire is a target
+            target_stagiaires = survey.get_target_stagiaires()
+            if request.user not in target_stagiaires:
+                return Response(
+                    {'error': 'Vous n\'êtes pas ciblé par ce sondage'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            data = request.data
+            
+            # Get or create response
+            response, created = SurveyResponse.objects.get_or_create(
+                survey=survey,
+                stagiaire=request.user,
+                defaults={'is_completed': False}
+            )
+            
+            # Update response data
+            response.answers = data.get('answers', {})
+            response.additional_comments = data.get('additional_comments', '')
+            response.is_completed = data.get('is_completed', False)
+            
+            if response.is_completed:
+                from django.utils import timezone
+                response.completed_at = timezone.now()
+                
+                # Calculate scores
+                response.calculate_scores()
+                
+                # Check KPI thresholds and generate alerts
+                survey.check_kpi_thresholds()
+                
+                # Update KPI dashboard
+                if hasattr(survey, 'kpi_dashboard'):
+                    survey.kpi_dashboard.calculate_kpi_data()
+            
+            response.save()
+            
+            return Response({
+                'message': 'Réponse soumise avec succès',
+                'response_id': response.id,
+                'is_completed': response.is_completed
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error submitting response: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class StagiaireSurveyHistoryView(APIView):
+    """
+    Vue pour que les stagiaires voient leur historique de réponses
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        """Récupérer l'historique des réponses du stagiaire"""
+        try:
+            if request.user.role != 'stagiaire':
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Get all responses for this stagiaire
+            responses = SurveyResponse.objects.filter(stagiaire=request.user).order_by('-created_at')
+            
+            responses_data = []
+            for response in responses:
+                response_data = {
+                    "id": response.id,
+                    "survey": {
+                        "id": response.survey.id,
+                        "title": response.survey.title,
+                        "description": response.survey.description,
+                        "created_at": response.survey.created_at.isoformat()
+                    },
+                    "is_completed": response.is_completed,
+                    "completed_at": response.completed_at.isoformat() if response.completed_at else None,
+                    "overall_score": response.overall_score,
+                    "category_scores": response.category_scores,
+                    "additional_comments": response.additional_comments
+                }
+                responses_data.append(response_data)
+            
+            return Response({
+                "results": responses_data
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error fetching response history: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            ) 

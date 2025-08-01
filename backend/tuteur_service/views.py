@@ -13,7 +13,8 @@ from django.db.models import Count, Avg, Q
 from django.utils import timezone
 from datetime import timedelta
 
-from shared.models import Stage, User, Testimonial, Evaluation, Notification
+from shared.models import Stage, Testimonial, Evaluation, Notification
+from auth_service.models import User
 from auth_service.serializers import UserSerializer
 
 class TuteurStagiairesView(APIView):
@@ -69,6 +70,8 @@ class TuteurStagiairesView(APIView):
                     "note": round(note_moyenne, 1),
                     "stagiaire": {
                         "id": stage.stagiaire.id,
+                        "prenom": stage.stagiaire.prenom,
+                        "nom": stage.stagiaire.nom,
                         "first_name": stage.stagiaire.prenom,
                         "last_name": stage.stagiaire.nom,
                         "email": stage.stagiaire.email,
@@ -138,6 +141,8 @@ class TuteurStagiaireDetailView(APIView):
                 "description": stage.description,
                 "stagiaire": {
                     "id": stage.stagiaire.id,
+                    "prenom": stage.stagiaire.prenom,
+                    "nom": stage.stagiaire.nom,
                     "first_name": stage.stagiaire.prenom,
                     "last_name": stage.stagiaire.nom,
                     "email": stage.stagiaire.email,
@@ -226,8 +231,129 @@ class TuteurNotificationReadView(APIView):
 
 
 
-class TuteurStatisticsView(APIView):
+
+# --- END MISSING VIEWS STUBS ---
+
+class TuteurEvaluationsView(APIView):
+    """
+    Vue pour récupérer les évaluations à effectuer par un tuteur
+    """
     permission_classes = [IsAuthenticated]
+
     def get(self, request):
-        return Response({'detail': 'TuteurStatisticsView not implemented'}, status=501)
-# --- END MISSING VIEWS STUBS --- 
+        try:
+            # Vérifier que l'utilisateur est tuteur
+            if request.user.role != 'tuteur':
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Récupérer les stages où ce tuteur est assigné
+            stages = Stage.objects.filter(tuteur=request.user)
+            
+            # Récupérer les évaluations liées à ces stages
+            evaluations = Evaluation.objects.filter(
+                stage__in=stages,
+                evaluator=request.user
+            ).order_by('-created_at')
+            
+            evaluations_data = []
+            for evaluation in evaluations:
+                evaluation_data = {
+                    "id": evaluation.id,
+                    "evaluation_type": evaluation.evaluation_type,
+                    "overall_score": float(evaluation.overall_score) if evaluation.overall_score else None,
+                    "comments": evaluation.comments,
+                    "is_completed": evaluation.is_completed,
+                    "completed_at": evaluation.completed_at.isoformat() if evaluation.completed_at else None,
+                    "scores": evaluation.scores,
+                    "evaluated": {
+                        "id": evaluation.evaluated.id,
+                        "prenom": evaluation.evaluated.prenom,
+                        "nom": evaluation.evaluated.nom,
+                        "first_name": evaluation.evaluated.prenom,
+                        "last_name": evaluation.evaluated.nom,
+                        "email": evaluation.evaluated.email,
+                        "avatar": evaluation.evaluated.avatar.url if evaluation.evaluated.avatar else None
+                    },
+                    "stage": {
+                        "id": evaluation.stage.id,
+                        "title": evaluation.stage.title,
+                        "company": evaluation.stage.company
+                    },
+                    "created_at": evaluation.created_at.isoformat(),
+                    "updated_at": evaluation.updated_at.isoformat()
+                }
+                evaluations_data.append(evaluation_data)
+            
+            return Response({
+                "results": evaluations_data,
+                "count": len(evaluations_data)
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la récupération des évaluations: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class TuteurStatisticsView(APIView):
+    """
+    Vue pour récupérer les statistiques d'un tuteur
+    """
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # Vérifier que l'utilisateur est tuteur
+            if request.user.role != 'tuteur':
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Récupérer les stages où ce tuteur est assigné
+            stages = Stage.objects.filter(tuteur=request.user)
+            
+            # Calculer les statistiques
+            total_stages = stages.count()
+            active_stages = stages.filter(status='active').count()
+            completed_stages = stages.filter(status='completed').count()
+            
+            # Calculer la progression moyenne
+            total_progress = sum(stage.progress for stage in stages)
+            avg_progress = round(total_progress / total_stages, 1) if total_stages > 0 else 0
+            
+            # Compter les évaluations en attente
+            pending_evaluations = Evaluation.objects.filter(
+                stage__in=stages,
+                evaluator=request.user,
+                is_completed=False
+            ).count()
+            
+            # Calculer la note moyenne des évaluations
+            completed_evaluations = Evaluation.objects.filter(
+                stage__in=stages,
+                evaluator=request.user,
+                is_completed=True
+            )
+            avg_score = completed_evaluations.aggregate(avg=Avg('overall_score'))['avg'] or 0
+            
+            stats_data = {
+                "total_stages": total_stages,
+                "active_stages": active_stages,
+                "completed_stages": completed_stages,
+                "avg_progress": avg_progress,
+                "pending_evaluations": pending_evaluations,
+                "avg_score": round(float(avg_score), 1),
+                "success_rate": round((completed_stages / total_stages * 100), 1) if total_stages > 0 else 0
+            }
+            
+            return Response(stats_data)
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la récupération des statistiques: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

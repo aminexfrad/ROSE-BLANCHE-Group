@@ -49,4 +49,10 @@ urlpatterns = [
     # Notifications
     path('notifications/', views.RHNotificationsView.as_view(), name='rh-notifications'),
     path('notifications/<int:pk>/read/', views.RHNotificationReadView.as_view(), name='rh-notification-read'),
+    
+    # Survey management
+    path('surveys/', views.RHSurveyManagementView.as_view(), name='rh-surveys'),
+    path('surveys/<int:pk>/', views.RHSurveyDetailView.as_view(), name='rh-survey-detail'),
+    path('surveys/<int:pk>/action/', views.RHSurveyActionView.as_view(), name='rh-survey-action'),
+    path('surveys/analysis/', views.RHSurveyAnalysisView.as_view(), name='rh-survey-analysis'),
 ] 

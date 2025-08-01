@@ -1107,11 +1107,15 @@ class ApiClient {
 
   // Tuteur methods
   async getTuteurStages(): Promise<{ results: Stage[]; count: number }> {
-    return this.request<{ results: Stage[]; count: number }>('/tuteur/stages/')
+    return this.request<{ results: Stage[]; count: number }>('/tuteur/stagiaires/')
   }
 
   async getTuteurEvaluations(): Promise<{ results: Evaluation[]; count: number }> {
     return this.request<{ results: Evaluation[]; count: number }>('/tuteur/evaluations/')
+  }
+
+  async getTuteurStatistics(): Promise<any> {
+    return this.request<any>('/tuteur/statistiques/')
   }
 
   // RH methods
@@ -1323,6 +1327,52 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(stageData),
     })
+  }
+
+  // RH Survey Management
+  async getRHSurveys() {
+    return this.executeRequest('/api/rh/surveys/', 'GET');
+  }
+
+  async createRHSurvey(surveyData: any) {
+    return this.executeRequest('/api/rh/surveys/', 'POST', surveyData);
+  }
+
+  async getRHSurveyDetail(surveyId: number) {
+    return this.executeRequest(`/api/rh/surveys/${surveyId}/`, 'GET');
+  }
+
+  async updateRHSurvey(surveyId: number, surveyData: any) {
+    return this.executeRequest(`/api/rh/surveys/${surveyId}/`, 'PUT', surveyData);
+  }
+
+  async deleteRHSurvey(surveyId: number) {
+    return this.executeRequest(`/api/rh/surveys/${surveyId}/`, 'DELETE');
+  }
+
+  async performRHSurveyAction(surveyId: number, action: string) {
+    return this.executeRequest(`/api/rh/surveys/${surveyId}/action/`, 'POST', { action });
+  }
+
+  async getRHSurveyAnalysis() {
+    return this.executeRequest('/api/rh/surveys/analysis/', 'GET');
+  }
+
+  // Stagiaire Survey Management
+  async getStagiaireSurveys() {
+    return this.executeRequest('/api/stagiaire/surveys/', 'GET');
+  }
+
+  async getStagiaireSurveyDetail(surveyId: number) {
+    return this.executeRequest(`/api/stagiaire/surveys/${surveyId}/`, 'GET');
+  }
+
+  async submitStagiaireSurveyResponse(surveyId: number, responseData: any) {
+    return this.executeRequest(`/api/stagiaire/surveys/${surveyId}/respond/`, 'POST', responseData);
+  }
+
+  async getStagiaireSurveyHistory() {
+    return this.executeRequest('/api/stagiaire/surveys/history/', 'GET');
   }
 }
 
