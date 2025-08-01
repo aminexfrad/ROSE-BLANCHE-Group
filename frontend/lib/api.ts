@@ -971,8 +971,8 @@ class ApiClient {
     return this.request<Testimonial>(`/testimonials/${id}/moderate/`, {
       method: 'PUT',
       body: JSON.stringify({ 
-        status: action === 'approve' ? 'approved' : 'rejected',
-        moderation_comment: comment 
+        action: action,
+        comment: comment 
       }),
     })
   }
@@ -1123,14 +1123,18 @@ class ApiClient {
     return this.request<Testimonial>(`/rh/testimonials/${id}/moderate/`, {
       method: 'PUT',
       body: JSON.stringify({ 
-        status: action === 'approve' ? 'approved' : 'rejected',
-        moderation_comment: comment 
+        action: action,
+        comment: comment 
       }),
     })
   }
 
   async getRHKPIGlobaux(): Promise<any> {
     return this.request<any>('/rh/kpi-globaux/')
+  }
+
+  async triggerKPISurvey(): Promise<any> {
+    return this.request<any>('/rh/kpi-globaux/', { method: 'POST' })
   }
 
   async creerStagiaire(formData: FormData): Promise<User> {

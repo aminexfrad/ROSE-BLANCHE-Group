@@ -34,6 +34,10 @@ urlpatterns = [
     path('evaluations/', views.EvaluationsListView.as_view(), name='evaluations-list'),
     path('evaluations/create/', views.EvaluationCreateView.as_view(), name='evaluation-create'),
     path('kpi-questions/', views.KPIQuestionsListView.as_view(), name='kpi-questions-list'),
+    path('kpi-system/', views.KPISystemView.as_view(), name='kpi-system'),
+    path('kpi-survey/', views.KPISurveySystemView.as_view(), name='kpi-survey-system'),
+    path('kpi-survey/response/', views.KPISurveyResponseView.as_view(), name='kpi-survey-response'),
+    path('kpi-reports/', views.KPIReportGenerationView.as_view(), name='kpi-report-generation'),
     
     # Testimonials
     path('testimonials/', views.TestimonialsListView.as_view(), name='testimonials-list'),

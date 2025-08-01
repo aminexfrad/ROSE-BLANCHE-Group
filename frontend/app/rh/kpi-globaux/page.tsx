@@ -15,6 +15,7 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { apiClient } from "@/lib/api"
+import { useToast } from "@/hooks/use-toast"
 import {
   TrendingUp,
   Users,
@@ -73,22 +74,24 @@ export default function RHKPIG() {
   const [kpiData, setKpiData] = useState<KPIData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [surveyLoading, setSurveyLoading] = useState(false)
+  const { toast } = useToast()
+
+  const fetchKPIData = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const data = await apiClient.getRHKPIGlobaux()
+      setKpiData(data)
+    } catch (err) {
+      console.error('Erreur lors du chargement des KPI:', err)
+      setError('Impossible de charger les données KPI')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   useEffect(() => {
-    const fetchKPIData = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const data = await apiClient.getRHKPIGlobaux()
-        setKpiData(data)
-      } catch (err) {
-        console.error('Erreur lors du chargement des KPI:', err)
-        setError('Impossible de charger les données KPI')
-      } finally {
-        setLoading(false)
-      }
-    }
-
     fetchKPIData()
   }, [])
 
@@ -119,6 +122,29 @@ export default function RHKPIG() {
       Award, Star, Clock, AlertTriangle, TrendingUp, Users, CheckCircle
     }
     return icons[iconName] || Award
+  }
+
+  const handleTriggerSurvey = async () => {
+    try {
+      setSurveyLoading(true)
+      const response = await apiClient.triggerKPISurvey()
+      
+      toast({
+        title: "Succès",
+        description: `Sondage KPI déclenché pour ${response.active_stagiaires} stagiaires`,
+      })
+      
+      // Refresh KPI data
+      fetchKPIData()
+    } catch (err: any) {
+      toast({
+        title: "Erreur",
+        description: err.message || "Erreur lors du déclenchement du sondage",
+        variant: "destructive",
+      })
+    } finally {
+      setSurveyLoading(false)
+    }
   }
 
   if (loading) {
@@ -221,6 +247,19 @@ export default function RHKPIG() {
             <p className="text-gray-600 mt-1">Analysez les performances globales des stages</p>
           </div>
           <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+            <Button 
+              variant="outline" 
+              className="w-full sm:w-auto"
+              onClick={handleTriggerSurvey}
+              disabled={surveyLoading}
+            >
+              {surveyLoading ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Target className="mr-2 h-4 w-4" />
+              )}
+              Déclencher Sondage
+            </Button>
             <Button variant="outline" className="w-full sm:w-auto">
               <Filter className="mr-2 h-4 w-4" />
               Filtrer

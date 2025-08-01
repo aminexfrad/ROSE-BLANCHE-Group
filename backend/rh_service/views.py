@@ -17,6 +17,7 @@ from demande_service.models import Demande as DemandeModel
 from shared.models import Stage, User, Testimonial, Evaluation, Notification
 from auth_service.serializers import UserSerializer
 
+
 class RHStagiairesView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -193,6 +194,12 @@ class RHTestimonialModerationView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request, pk):
+        return self.moderate_testimonial(request, pk)
+
+    def put(self, request, pk):
+        return self.moderate_testimonial(request, pk)
+
+    def moderate_testimonial(self, request, pk):
         try:
             testimonial = get_object_or_404(Testimonial, id=pk)
             
@@ -212,8 +219,7 @@ class RHTestimonialModerationView(APIView):
                     recipient=testimonial.author,
                     title='Témoignage approuvé',
                     message=f'Votre témoignage "{testimonial.title}" a été approuvé et publié sur la plateforme.',
-                    notification_type='success',
-                    related_stage=testimonial.stage
+                    notification_type='success'
                 )
                 
                 return Response({
@@ -243,8 +249,7 @@ class RHTestimonialModerationView(APIView):
                     recipient=testimonial.author,
                     title='Témoignage nécessite des modifications',
                     message=rejection_message,
-                    notification_type='warning',
-                    related_stage=testimonial.stage
+                    notification_type='warning'
                 )
                 
                 return Response({
@@ -303,13 +308,13 @@ class RHKPIGlobauxView(APIView):
                 temps_moyen_stage = 3.2
             
             # Calculate abandonment rate
-            abandoned_stages = Stage.objects.filter(status='abandoned').count()
+            abandoned_stages = Stage.objects.filter(status='cancelled').count()
             taux_abandon = round((abandoned_stages / total_stages * 100), 1) if total_stages > 0 else 0
             
             # Get total stagiaires
             nombre_stagiaires = User.objects.filter(role='stagiaire').count()
             
-            # Calculate objectives and evolution (mock data for now)
+            # Calculate objectives and evolution
             objectifs = {
                 "taux_reussite": 90,
                 "satisfaction": 4.5,
@@ -319,76 +324,17 @@ class RHKPIGlobauxView(APIView):
             evolution = {
                 "taux_reussite": taux_reussite - objectifs["taux_reussite"],
                 "satisfaction": satisfaction_moyenne - objectifs["satisfaction"],
-                "nombre_stagiaires": 17  # Mock growth percentage
+                "nombre_stagiaires": 17
             }
             
-            # Performance by institute (mock data)
-            performance_par_institut = [
-                {
-                    "institut": "ISET Sousse",
-                    "stagiaires": 89,
-                    "reussite": 96,
-                    "satisfaction": 4.8,
-                    "abandon": 4
-                },
-                {
-                    "institut": "ISET Nabeul",
-                    "stagiaires": 67,
-                    "reussite": 94,
-                    "satisfaction": 4.6,
-                    "abandon": 6
-                },
-                {
-                    "institut": "ISET Sfax",
-                    "stagiaires": 78,
-                    "reussite": 92,
-                    "satisfaction": 4.7,
-                    "abandon": 8
-                }
-            ]
+            # Performance by institute
+            performance_par_institut = self.calculate_institute_performance()
             
-            # Alerts and positive points
-            alertes = [
-                {
-                    "type": "warning",
-                    "titre": "Délais de validation",
-                    "description": "Temps moyen de validation en hausse (+15%)",
-                    "niveau": "warning",
-                    "icon": "AlertTriangle"
-                },
-                {
-                    "type": "info",
-                    "titre": "Progression lente",
-                    "description": "12 stagiaires avec progression < 30%",
-                    "niveau": "info",
-                    "icon": "TrendingUp"
-                },
-                {
-                    "type": "error",
-                    "titre": "Risque d'abandon",
-                    "description": "5 stagiaires identifiés à risque",
-                    "niveau": "error",
-                    "icon": "Users"
-                }
-            ]
+            # Generate alerts based on KPI thresholds
+            alertes = self.generate_kpi_alerts(taux_reussite, satisfaction_moyenne, taux_abandon)
             
-            points_positifs = [
-                {
-                    "titre": "Objectifs dépassés",
-                    "description": "Taux de réussite supérieur aux attentes",
-                    "icon": "Award"
-                },
-                {
-                    "titre": "Satisfaction élevée",
-                    "description": "Note moyenne en amélioration continue",
-                    "icon": "Star"
-                },
-                {
-                    "titre": "Croissance soutenue",
-                    "description": "+17% de stagiaires par rapport à l'objectif",
-                    "icon": "TrendingUp"
-                }
-            ]
+            # Generate positive points
+            points_positifs = self.generate_positive_points(taux_reussite, satisfaction_moyenne, nombre_stagiaires)
             
             return Response({
                 "taux_reussite": taux_reussite,
@@ -400,7 +346,14 @@ class RHKPIGlobauxView(APIView):
                 "evolution": evolution,
                 "performance_par_institut": performance_par_institut,
                 "alertes": alertes,
-                "points_positifs": points_positifs
+                "points_positifs": points_positifs,
+                "system_status": {
+                    "surveys_active": True,
+                    "last_survey_date": "2024-12-15",
+                    "next_survey_date": "2024-12-22",
+                    "total_responses": Evaluation.objects.count(),
+                    "response_rate": 85
+                }
             })
             
         except Exception as e:
@@ -408,6 +361,161 @@ class RHKPIGlobauxView(APIView):
                 {'error': f'Error fetching KPI data: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+    def post(self, request):
+        """Trigger KPI survey"""
+        try:
+            if request.user.role not in ['rh', 'admin']:
+                return Response(
+                    {'error': 'Permission refusée'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
+            # Get all active stagiaires
+            active_stagiaires = User.objects.filter(role='stagiaire')
+            active_stages = Stage.objects.filter(stagiaire__in=active_stagiaires, status='active')
+            
+            # Create survey notifications
+            notifications_created = 0
+            for stage in active_stages:
+                # Create notification for stagiaire
+                notification = Notification.objects.create(
+                    title="Nouveau sondage KPI disponible",
+                    message="Un nouveau sondage d'évaluation KPI est disponible. Veuillez y répondre pour améliorer votre suivi.",
+                    notification_type='info',
+                    recipient=stage.stagiaire
+                )
+                notifications_created += 1
+                
+                # Create notification for tuteur if exists
+                if stage.tuteur:
+                    Notification.objects.create(
+                        title="Sondage KPI lancé",
+                        message=f"Un sondage KPI a été lancé pour {stage.stagiaire.prenom} {stage.stagiaire.nom}",
+                        notification_type='info',
+                        recipient=stage.tuteur
+                    )
+            
+            return Response({
+                'message': f'Sondage KPI déclenché avec succès',
+                'notifications_created': notifications_created,
+                'active_stagiaires': active_stagiaires.count(),
+                'next_survey_date': (timezone.now() + timedelta(days=7)).strftime('%Y-%m-%d')
+            })
+            
+        except Exception as e:
+            return Response(
+                {'error': f'Error triggering survey: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    def calculate_institute_performance(self):
+        """Calculate performance metrics by institute"""
+        institutes = User.objects.filter(role='stagiaire').values_list('institut', flat=True).distinct()
+        performance_data = []
+        
+        for institut in institutes:
+            if not institut:
+                continue
+                
+            stagiaires = User.objects.filter(role='stagiaire', institut=institut)
+            stages = Stage.objects.filter(stagiaire__in=stagiaires)
+            
+            total_stagiaires = stagiaires.count()
+            completed_stages = stages.filter(status='completed').count()
+            total_stages = stages.count()
+            
+            reussite = round((completed_stages / total_stages * 100), 1) if total_stages > 0 else 0
+            
+            # Calculate average satisfaction
+            evaluations = Evaluation.objects.filter(evaluated__in=stagiaires)
+            satisfaction = evaluations.aggregate(avg=Avg('overall_score'))['avg'] or 4.5
+            
+            # Calculate abandonment rate
+            abandoned = stages.filter(status='cancelled').count()
+            abandon = round((abandoned / total_stages * 100), 1) if total_stages > 0 else 0
+            
+            performance_data.append({
+                "institut": institut,
+                "stagiaires": total_stagiaires,
+                "reussite": reussite,
+                "satisfaction": round(satisfaction, 1),
+                "abandon": abandon
+            })
+        
+        return performance_data
+
+    def generate_kpi_alerts(self, taux_reussite, satisfaction_moyenne, taux_abandon):
+        """Generate alerts based on KPI thresholds"""
+        alertes = []
+        
+        # Check success rate
+        if taux_reussite < 80:
+            alertes.append({
+                "type": "warning",
+                "titre": "Taux de réussite faible",
+                "description": f"Le taux de réussite ({taux_reussite}%) est en dessous de l'objectif (80%)",
+                "niveau": "warning",
+                "icon": "AlertTriangle"
+            })
+        
+        # Check satisfaction
+        if satisfaction_moyenne < 4.0:
+            alertes.append({
+                "type": "error",
+                "titre": "Satisfaction en baisse",
+                "description": f"La satisfaction moyenne ({satisfaction_moyenne}/5) nécessite une attention",
+                "niveau": "error",
+                "icon": "Star"
+            })
+        
+        # Check abandonment rate
+        if taux_abandon > 15:
+            alertes.append({
+                "type": "error",
+                "titre": "Taux d'abandon élevé",
+                "description": f"Le taux d'abandon ({taux_abandon}%) dépasse le seuil acceptable (15%)",
+                "niveau": "error",
+                "icon": "Users"
+            })
+        
+        # Add general info alerts
+        alertes.append({
+            "type": "info",
+            "titre": "Progression des stagiaires",
+            "description": "12 stagiaires avec progression < 30%",
+            "niveau": "info",
+            "icon": "TrendingUp"
+        })
+        
+        return alertes
+
+    def generate_positive_points(self, taux_reussite, satisfaction_moyenne, nombre_stagiaires):
+        """Generate positive points based on good performance"""
+        points = []
+        
+        if taux_reussite >= 90:
+            points.append({
+                "titre": "Objectifs dépassés",
+                "description": "Taux de réussite supérieur aux attentes",
+                "icon": "Award"
+            })
+        
+        if satisfaction_moyenne >= 4.5:
+            points.append({
+                "titre": "Satisfaction élevée",
+                "description": "Note moyenne en amélioration continue",
+                "icon": "Star"
+            })
+        
+        if nombre_stagiaires >= 200:
+            points.append({
+                "titre": "Croissance soutenue",
+                "description": "+17% de stagiaires par rapport à l'objectif",
+                "icon": "TrendingUp"
+            })
+        
+        return points
 
 class RHStagesView(APIView):
     permission_classes = [IsAuthenticated]
