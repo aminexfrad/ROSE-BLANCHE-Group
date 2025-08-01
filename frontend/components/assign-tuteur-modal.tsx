@@ -94,8 +94,8 @@ export function AssignTuteurModal({ isOpen, onClose, stagiaire, onSuccess }: Ass
           const defaultStageData = {
             title: `Stage ${stagiaire.prenom} ${stagiaire.nom}`,
             description: `Stage par défaut pour ${stagiaire.prenom} ${stagiaire.nom}`,
-            company: 'Entreprise par défaut',
-            location: 'Casablanca',
+                          company: 'Rose Blanche Group',
+              location: 'Tunis',
             start_date: new Date().toISOString().split('T')[0], // Today
             end_date: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 90 days from now
           }

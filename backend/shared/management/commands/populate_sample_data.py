@@ -142,8 +142,8 @@ class Command(BaseCommand):
         stagiaires = User.objects.filter(role='stagiaire')
         tuteurs = User.objects.filter(role='tuteur')
         
-        companies = ['Microsoft', 'Google', 'Apple', 'Amazon', 'Meta', 'Netflix', 'Tesla', 'SpaceX']
-        locations = ['Casablanca', 'Rabat', 'Marrakech', 'Fès', 'Tanger', 'Agadir']
+        companies = ['Rose Blanche Group']
+        locations = ['Tunis', 'Sfax', 'Sousse', 'Monastir', 'Hammamet', 'Nabeul']
         
         for i, stagiaire in enumerate(stagiaires):
             # Create demande first
@@ -451,14 +451,11 @@ class Command(BaseCommand):
 
     def create_internship_offers(self):
         companies = [
-            'Rose Blanche Group', 'Microsoft Maroc', 'Google Casablanca', 'Apple Store Maroc',
-            'Amazon Web Services', 'Meta Africa', 'Netflix MENA', 'Tesla Morocco',
-            'SpaceX Africa', 'Oracle Maroc', 'IBM Morocco', 'Intel Casablanca',
-            'SAP Maroc', 'Adobe Morocco', 'Salesforce MENA', 'Shopify Africa'
+            'Rose Blanche Group'
         ]
         
         specialities = ['Informatique', 'Génie Civil', 'Management', 'Architecture', 'Électrique', 'Mécanique', 'Chimie', 'Biologie']
-        locations = ['Casablanca', 'Rabat', 'Marrakech', 'Fès', 'Tanger', 'Agadir', 'Meknès', 'Oujda']
+        locations = ['Tunis', 'Sfax', 'Sousse', 'Monastir', 'Hammamet', 'Nabeul', 'Gabès', 'Gafsa']
         durations = ['3 mois', '6 mois', '4 mois', '5 mois', 'Stage d\'été']
         
         for i in range(25):

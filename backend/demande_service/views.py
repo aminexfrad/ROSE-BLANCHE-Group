@@ -167,8 +167,8 @@ def approve_demande(request, pk):
                 stagiaire=user,
                 title=f"Stage {demande.type_stage} - {demande.prenom} {demande.nom}",
                 description=f"Stage de {demande.specialite} chez {demande.institut}",
-                company=demande.institut or "Entreprise par défaut",
-                location="Casablanca",  # Default location
+                company=demande.institut or "Rose Blanche Group",
+                location="Tunis",  # Default location
                 start_date=demande.date_debut,
                 end_date=demande.date_fin,
                 status='active',

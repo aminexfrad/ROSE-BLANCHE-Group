@@ -1024,6 +1024,235 @@ class ApiClient {
     }
   }
 
+  // PFE Report methods
+  async getPfeReports(params: { status?: string; year?: number; speciality?: string } = {}): Promise<{ results: PFEReport[]; count: number }> {
+    const queryParams = new URLSearchParams()
+    if (params.status) queryParams.append('status', params.status)
+    if (params.year) queryParams.append('year', params.year.toString())
+    if (params.speciality) queryParams.append('speciality', params.speciality)
+    
+    return this.request<{ results: PFEReport[]; count: number }>(`/pfe-reports/?${queryParams}`)
+  }
+
+  async getPfeReport(id: number): Promise<PFEReport> {
+    return this.request<PFEReport>(`/pfe-reports/${id}/`)
+  }
+
+  async createPfeReport(formData: FormData): Promise<PFEReport> {
+    const response = await fetch(`${API_BASE_URL}/pfe-reports/create/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+      },
+      body: formData,
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
+    }
+    
+    return response.json()
+  }
+
+  async updatePfeReport(id: number, formData: FormData): Promise<PFEReport> {
+    const response = await fetch(`${API_BASE_URL}/pfe-reports/${id}/update/`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+      },
+      body: formData,
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
+    }
+    
+    return response.json()
+  }
+
+  async submitPfeReport(id: number): Promise<PFEReport> {
+    return this.request<PFEReport>(`/pfe-reports/${id}/submit/`, { method: 'POST' })
+  }
+
+  async validatePfeReport(id: number, action: 'approve' | 'reject', feedback?: string): Promise<PFEReport> {
+    return this.request<PFEReport>(`/pfe-reports/${id}/validate/`, {
+      method: 'PUT',
+      body: JSON.stringify({ 
+        action,
+        feedback 
+      }),
+    })
+  }
+
+  async archivePfeReport(id: number): Promise<PFEReport> {
+    return this.request<PFEReport>(`/pfe-reports/${id}/archive/`, { method: 'POST' })
+  }
+
+  async downloadPFEReport(id: number): Promise<{ download_url: string; filename: string }> {
+    const response = await fetch(`${API_BASE_URL}/pfe-reports/${id}/download/`, {
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+      },
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
+    }
+    
+    return response.json()
+  }
+
+  // Tuteur methods
+  async getTuteurStages(): Promise<{ results: Stage[]; count: number }> {
+    return this.request<{ results: Stage[]; count: number }>('/tuteur/stages/')
+  }
+
+  async getTuteurEvaluations(): Promise<{ results: Evaluation[]; count: number }> {
+    return this.request<{ results: Evaluation[]; count: number }>('/tuteur/evaluations/')
+  }
+
+  // RH methods
+  async getRHTestimonials(): Promise<{ results: Testimonial[]; count: number }> {
+    return this.request<{ results: Testimonial[]; count: number }>('/rh/testimonials/')
+  }
+
+  async moderateRHTestimonial(id: number, action: 'approve' | 'reject', comment?: string): Promise<Testimonial> {
+    return this.request<Testimonial>(`/rh/testimonials/${id}/moderate/`, {
+      method: 'PUT',
+      body: JSON.stringify({ 
+        status: action === 'approve' ? 'approved' : 'rejected',
+        moderation_comment: comment 
+      }),
+    })
+  }
+
+  async getRHKPIGlobaux(): Promise<any> {
+    return this.request<any>('/rh/kpi-globaux/')
+  }
+
+  async creerStagiaire(formData: FormData): Promise<User> {
+    const response = await fetch(`${API_BASE_URL}/rh/creer-stagiaire/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+      },
+      body: formData,
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
+    }
+    
+    return response.json()
+  }
+
+  // Admin methods
+  async getUsers(params: { limit?: number; role?: string } = {}): Promise<{ results: User[]; count: number }> {
+    const queryParams = new URLSearchParams()
+    if (params.limit) queryParams.append('limit', params.limit.toString())
+    if (params.role) queryParams.append('role', params.role)
+    
+    return this.request<{ results: User[]; count: number }>(`/admin/users/?${queryParams}`)
+  }
+
+  async createUser(formData: FormData): Promise<User> {
+    const response = await fetch(`${API_BASE_URL}/admin/users/create/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+      },
+      body: formData,
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
+    }
+    
+    return response.json()
+  }
+
+  async updateUser(id: number, formData: FormData): Promise<User> {
+    const response = await fetch(`${API_BASE_URL}/admin/users/${id}/update/`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+      },
+      body: formData,
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
+    }
+    
+    return response.json()
+  }
+
+  async deleteUser(id: number): Promise<void> {
+    return this.request<void>(`/admin/users/${id}/delete/`, { method: 'DELETE' })
+  }
+
+  async getAdminDatabaseStats(): Promise<any> {
+    return this.request<any>('/admin/database/stats/')
+  }
+
+  async postAdminDatabaseBackup(): Promise<any> {
+    return this.request<any>('/admin/database/backup/', { method: 'POST' })
+  }
+
+  // Offre Stage management methods
+  async createOffreStage(formData: FormData): Promise<OffreStage> {
+    const response = await fetch(`${API_BASE_URL}/admin/offres-stage/create/`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+      },
+      body: formData,
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
+    }
+    
+    return response.json()
+  }
+
+  async updateOffreStage(id: number, formData: FormData): Promise<OffreStage> {
+    const response = await fetch(`${API_BASE_URL}/admin/offres-stage/${id}/update/`, {
+      method: 'PUT',
+      headers: {
+        'Authorization': `Bearer ${this.token}`,
+      },
+      body: formData,
+    })
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
+    }
+    
+    return response.json()
+  }
+
+  async deleteOffreStage(id: number): Promise<void> {
+    return this.request<void>(`/admin/offres-stage/${id}/delete/`, { method: 'DELETE' })
+  }
+
+  // Alias methods for consistency
+  async getDemandes(params: { limit?: number; status?: string } = {}): Promise<{ results: Application[]; count: number }> {
+    return this.getApplications(params)
+  }
+
+  async getStagiaires(): Promise<{ results: User[]; count: number }> {
+    return this.getRHStagiaires()
+  }
+
   async getPFEDocument(id: number): Promise<PFEDocument> {
     return this.request<PFEDocument>(`/pfe-documents/${id}/`)
   }

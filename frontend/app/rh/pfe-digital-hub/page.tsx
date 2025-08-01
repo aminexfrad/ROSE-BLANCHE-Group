@@ -63,7 +63,7 @@ export default function RHPFEDigitalHubPage() {
   const fetchReports = async () => {
     try {
       setLoading(true)
-      const response = await apiClient.getPFEReports()
+      const response = await apiClient.getPfeReports()
       setReports(response.results || [])
     } catch (err: any) {
       setError(err.message || 'Erreur lors du chargement des rapports')
@@ -106,7 +106,7 @@ export default function RHPFEDigitalHubPage() {
 
   const handleArchiveReport = async (reportId: number) => {
     try {
-      await apiClient.archivePFEReport(reportId)
+      await apiClient.archivePfeReport(reportId)
       
       toast({
         title: "Succès",
