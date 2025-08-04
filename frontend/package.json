@@ -22,7 +22,7 @@
     "postinstall": "npm run security:audit",
     "optimize": "node scripts/optimize-performance.js",
     "performance:analyze": "npm run analyze",
-    "performance:monitor": "npm run dev",
+    "performance:monitor": "node scripts/performance-monitor.js",
     "performance:build": "npm run build && npm run analyze",
     "cache:clear": "echo 'Cache cleared'",
     "bundle:analyze": "npm run analyze",
@@ -31,7 +31,6 @@
     "hard-refresh": "npm run dev:clean && npm run dev",
     "optimize:images": "node scripts/optimize-images.js",
     "convert:webp": "node scripts/convert-images.js",
-    "performance:monitor": "node scripts/performance-monitor.js",
     "performance:optimize": "npm run convert:webp && npm run dev:clean && npm run dev",
     "performance:full": "npm run convert:webp && npm run performance:monitor"
   },
@@ -64,6 +63,7 @@
     "@radix-ui/react-toggle": "1.1.1",
     "@radix-ui/react-toggle-group": "1.1.1",
     "@radix-ui/react-tooltip": "1.1.6",
+    "@tanstack/react-query": "^5.84.1",
     "autoprefixer": "^10.4.20",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -89,6 +89,8 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.0.0",
+    "@testing-library/react": "^14.0.0",
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",
@@ -100,10 +102,8 @@
     "eslint-plugin-react": "^7.33.0",
     "eslint-plugin-react-hooks": "^4.6.0",
     "jest": "^29.0.0",
-    "@testing-library/react": "^14.0.0",
-    "@testing-library/jest-dom": "^6.0.0",
-    "prettier": "^3.0.0",
     "postcss": "^8.5",
+    "prettier": "^3.0.0",
     "tailwindcss": "^3.4.17",
     "typescript": "^5"
   },

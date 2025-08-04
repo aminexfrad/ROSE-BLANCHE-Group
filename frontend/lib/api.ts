@@ -679,6 +679,13 @@ class ApiClient {
     return response
   }
 
+  async changePassword(data: { old_password: string; new_password: string }): Promise<{ message: string }> {
+    return this.request<{ message: string }>('/auth/change-password/', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }, { skipCache: true })
+  }
+
   // Application methods
   async createApplication(formData: FormData): Promise<Application> {
     console.log('API Client - FormData entries:')

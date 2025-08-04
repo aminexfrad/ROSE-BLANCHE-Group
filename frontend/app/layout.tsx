@@ -12,6 +12,7 @@ import { AuthProvider } from "@/contexts/auth-context"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 import { ErrorBoundary } from "@/components/error-boundary"
+import { Providers } from "@/components/providers"
 
 // Optimize font loading
 const inter = Inter({ 
@@ -100,18 +101,20 @@ export default function RootLayout({
       </head>
       <body className={`${inter.className} min-h-screen antialiased`} suppressHydrationWarning>
         <ErrorBoundary>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem
-            disableTransitionOnChange
-          >
-            <AuthProvider>
-              {children}
-              <Toaster />
-              {/* Performance tracker temporarily disabled */}
-            </AuthProvider>
-          </ThemeProvider>
+          <Providers>
+            <ThemeProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem
+              disableTransitionOnChange
+            >
+              <AuthProvider>
+                {children}
+                <Toaster />
+                {/* Performance tracker temporarily disabled */}
+              </AuthProvider>
+            </ThemeProvider>
+          </Providers>
         </ErrorBoundary>
       </body>
     </html>
