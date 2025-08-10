@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'drf_yasg',
     'django_filters',
+    'channels',  # WebSocket support
     
     # Local apps
     'auth_service',
@@ -64,6 +65,7 @@ INSTALLED_APPS = [
     'rh_service',
     'shared',
     'admin_service',
+    'notification_service',  # New notification service
 ]
 
 MIDDLEWARE = [
@@ -357,3 +359,26 @@ SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 
 # CSRF settings
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='http://localhost:3000,http://localhost:5173', cast=Csv())
+
+# Channels Configuration
+ASGI_APPLICATION = 'stagebloom.asgi.application'
+
+# Channel Layers for WebSocket
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
+
+# Redis Configuration
+REDIS_HOST = config('REDIS_HOST', default='127.0.0.1')
+REDIS_PORT = config('REDIS_PORT', default=6379, cast=int)
+REDIS_DB = config('REDIS_DB', default=0, cast=int)
+
+# Celery Configuration
+CELERY_BROKER_URL = f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
+CELERY_RESULT_BACKEND = f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}'
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = 'UTC'

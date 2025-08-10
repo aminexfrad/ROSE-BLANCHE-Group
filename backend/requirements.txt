@@ -27,6 +27,11 @@ django-celery-beat==2.5.0
 django-celery-results==2.5.1
 django-redis==5.4.0
 
+# Real-time notifications and WebSocket
+channels==4.0.0
+channels-redis==4.1.0
+daphne==4.0.0
+
 # PDF generation
 reportlab==4.0.4
 

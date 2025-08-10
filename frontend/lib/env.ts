@@ -12,6 +12,10 @@ const envSchema = z.object({
   NEXT_PUBLIC_API_URL: z.string().url('NEXT_PUBLIC_API_URL must be a valid URL').default('http://localhost:8000/api'),
   NEXT_PUBLIC_APP_NAME: z.string().min(1, 'NEXT_PUBLIC_APP_NAME is required').default('StageBloom'),
   
+  // WebSocket configuration
+  NEXT_PUBLIC_WS_URL: z.string().url().default('ws://localhost:8000'),
+  NEXT_PUBLIC_WS_PATH: z.string().default('/ws/'),
+  
   // Optional environment variables
   NEXT_PUBLIC_APP_URL: z.string().url().optional().default('http://localhost:3000'),
   NEXT_PUBLIC_APP_VERSION: z.string().optional().default('1.0.0'),
@@ -45,6 +49,8 @@ function validateEnv() {
       return {
         NEXT_PUBLIC_API_URL: 'http://localhost:8000/api',
         NEXT_PUBLIC_APP_NAME: 'StageBloom',
+        NEXT_PUBLIC_WS_URL: 'ws://localhost:8000',
+        NEXT_PUBLIC_WS_PATH: '/ws/',
         NEXT_PUBLIC_APP_URL: 'http://localhost:3000',
         NEXT_PUBLIC_APP_VERSION: '1.0.0',
         NODE_ENV: 'development' as const,
@@ -94,6 +100,14 @@ export const api = {
   timeout: 30000, // 30 seconds
   retryAttempts: 3,
   retryDelay: 1000, // 1 second
+} as const
+
+// WebSocket configuration
+export const websocket = {
+  url: env.NEXT_PUBLIC_WS_URL,
+  path: env.NEXT_PUBLIC_WS_PATH,
+  reconnectAttempts: 5,
+  reconnectDelay: 1000,
 } as const
 
 // File upload configuration
