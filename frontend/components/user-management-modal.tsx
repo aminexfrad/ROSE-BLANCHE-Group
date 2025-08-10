@@ -196,7 +196,7 @@ export function UserManagementModal({
                 <SelectContent>
                   <SelectItem value="stagiaire">Stagiaire</SelectItem>
                   <SelectItem value="tuteur">Tuteur</SelectItem>
-                  <SelectItem value="rh">RH</SelectItem>
+                  <SelectItem value="rh">Responsable RH</SelectItem>
                   <SelectItem value="admin">Administrateur</SelectItem>
                 </SelectContent>
               </Select>

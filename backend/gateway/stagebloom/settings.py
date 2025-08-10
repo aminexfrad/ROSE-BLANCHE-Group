@@ -113,8 +113,8 @@ DATABASES = {
         'USER': config('DB_USER', default='root'),
         'PASSWORD': config('DB_PASSWORD', default=''),
         'OPTIONS': {
-            'charset': 'utf8',
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+            'charset': 'utf8mb4',
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'; SET innodb_strict_mode=0;",
         },
     }
 }

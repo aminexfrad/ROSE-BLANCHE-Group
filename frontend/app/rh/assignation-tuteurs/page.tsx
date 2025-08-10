@@ -44,7 +44,7 @@ export default function RHAssignationTuteursPage() {
   const [selectedStagiaire, setSelectedStagiaire] = useState<StagiaireWithStage | null>(null)
 
   const breadcrumbs = [
-    { label: "RH", href: "/rh" }, 
+            { label: "Responsable RH", href: "/rh" }, 
     { label: "Assignation Tuteurs" }
   ]
 

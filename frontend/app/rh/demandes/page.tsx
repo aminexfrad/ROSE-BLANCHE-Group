@@ -227,7 +227,7 @@ export default function RHDemandesPage() {
   // Track loading state for each offer action
   const [loadingOffers, setLoadingOffers] = useState<{ [key: string]: boolean }>({});
 
-  const breadcrumbs = [{ label: "RH", href: "/rh" }, { label: "Demandes de stage" }]
+  const breadcrumbs = [{ label: "Responsable RH", href: "/rh" }, { label: "Demandes de stage" }]
 
   useEffect(() => {
     const fetchData = async () => {

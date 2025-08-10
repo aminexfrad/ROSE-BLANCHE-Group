@@ -59,7 +59,7 @@ export default function RHTemoignagesPage() {
   const [videoPreviewModal, setVideoPreviewModal] = useState(false)
   const [previewTestimonial, setPreviewTestimonial] = useState<Testimonial | null>(null)
   
-  const breadcrumbs = [{ label: "RH", href: "/rh" }, { label: "Témoignages" }]
+  const breadcrumbs = [{ label: "Responsable RH", href: "/rh" }, { label: "Témoignages" }]
 
   useEffect(() => {
     fetchTestimonials()

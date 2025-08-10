@@ -57,7 +57,7 @@ export default function RHStagiairesPage() {
   const [assignModalOpen, setAssignModalOpen] = useState(false)
   const [selectedStagiaire, setSelectedStagiaire] = useState<StagiaireWithStage | null>(null)
 
-  const breadcrumbs = [{ label: "RH", href: "/rh" }, { label: "Tous les Stagiaires" }]
+  const breadcrumbs = [{ label: "Responsable RH", href: "/rh" }, { label: "Tous les Stagiaires" }]
 
   const fetchData = async () => {
     try {

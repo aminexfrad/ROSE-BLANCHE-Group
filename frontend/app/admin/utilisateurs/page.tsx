@@ -109,7 +109,7 @@ export default function AdminUtilisateursPage() {
       case "admin":
         return <Badge className="bg-red-100 text-red-800">Administrateur</Badge>
       case "rh":
-        return <Badge className="bg-red-100 text-red-800">RH</Badge>
+        return <Badge className="bg-red-100 text-red-800">Responsable RH</Badge>
       case "tuteur":
         return <Badge className="bg-green-100 text-green-800">Tuteur</Badge>
       case "stagiaire":
@@ -224,8 +224,8 @@ export default function AdminUtilisateursPage() {
               color: "from-red-500 to-red-600",
             },
             {
-              title: "RH",
-              value: rhUsers.toString(),
+                      title: "Responsable RH",
+        value: rhUsers.toString(),
               icon: Users,
               color: "from-purple-500 to-purple-600",
             },
@@ -281,7 +281,7 @@ export default function AdminUtilisateursPage() {
                 <SelectContent>
                   <SelectItem value="all">Tous les rôles</SelectItem>
                   <SelectItem value="admin">Administrateur</SelectItem>
-                  <SelectItem value="rh">RH</SelectItem>
+                  <SelectItem value="rh">Responsable RH</SelectItem>
                   <SelectItem value="tuteur">Tuteur</SelectItem>
                   <SelectItem value="stagiaire">Stagiaire</SelectItem>
                 </SelectContent>
@@ -411,7 +411,7 @@ export default function AdminUtilisateursPage() {
               <div className="text-center p-4 bg-white rounded-lg shadow">
                 <Users className="h-8 w-8 text-blue-600 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-blue-600">{rhUsers}</div>
-                <div className="text-sm text-gray-600">RH</div>
+                <div className="text-sm text-gray-600">Responsable RH</div>
               </div>
               <div className="text-center p-4 bg-white rounded-lg shadow">
                 <UserCheck className="h-8 w-8 text-green-600 mx-auto mb-2" />

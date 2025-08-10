@@ -191,7 +191,7 @@ export default function SettingsPage() {
                 <Label className="text-sm font-medium text-gray-500">Rôle</Label>
                 <p className="text-base">
                   {userData.role === "admin" ? "Administrateur" : 
-                   userData.role === "rh" ? "RH" : 
+                   userData.role === "rh" ? "Responsable RH" : 
                    userData.role === "tuteur" ? "Tuteur" : "Stagiaire"}
                 </p>
               </div>

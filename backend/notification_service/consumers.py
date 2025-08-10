@@ -58,10 +58,11 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                 'type': 'connection_established',
                 'connection_id': self.connection_id,
                 'user_id': self.user.id,
+                'user_role': self.user.role,
                 'timestamp': timezone.now().isoformat()
             }))
             
-            logger.info(f"WebSocket connected: {self.user.username} ({self.connection_id})")
+            logger.info(f"WebSocket connected: {self.user.username} ({self.connection_id}) - Role: {self.user.role}")
             
         except Exception as e:
             logger.error(f"WebSocket connection error: {e}")
@@ -103,15 +104,24 @@ class NotificationConsumer(AsyncWebsocketConsumer):
                     'timestamp': timezone.now().isoformat()
                 }))
             
+            elif message_type == 'get_notifications':
+                # Send current notifications
+                await self.send_notifications()
+            
             elif message_type == 'mark_read':
                 # Mark notification as read
                 notification_id = data.get('notification_id')
                 if notification_id:
                     await self.mark_notification_read(notification_id)
             
-            elif message_type == 'get_notifications':
-                # Send current notifications
-                await self.send_notifications()
+            elif message_type == 'get_unread_count':
+                # Get unread notification count
+                count = await self.get_unread_count()
+                await self.send(text_data=json.dumps({
+                    'type': 'unread_count',
+                    'count': count,
+                    'timestamp': timezone.now().isoformat()
+                }))
             
             else:
                 logger.warning(f"Unknown message type: {message_type}")
@@ -119,50 +129,53 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         except json.JSONDecodeError:
             logger.error("Invalid JSON received")
         except Exception as e:
-            logger.error(f"Error processing message: {e}")
+            logger.error(f"Error handling message: {e}")
     
     async def notification_message(self, event):
-        """Send notification to WebSocket"""
+        """Handle notification message from channel layer"""
         try:
-            await self.send(text_data=json.dumps({
-                'type': 'notification',
-                'notification': event['notification'],
-                'timestamp': timezone.now().isoformat()
-            }))
+            await self.send(text_data=json.dumps(event))
         except Exception as e:
-            logger.error(f"Error sending notification: {e}")
+            logger.error(f"Error sending notification message: {e}")
+    
+    async def role_notification(self, event):
+        """Handle role-based notification from channel layer"""
+        try:
+            # Only send if user is in the target roles
+            target_roles = event.get('target_roles', [])
+            if self.user.role in target_roles:
+                await self.send(text_data=json.dumps(event))
+        except Exception as e:
+            logger.error(f"Error sending role notification: {e}")
     
     async def system_message(self, event):
-        """Send system message to WebSocket"""
+        """Handle system message from channel layer"""
         try:
-            await self.send(text_data=json.dumps({
-                'type': 'system_message',
-                'message': event['message'],
-                'level': event.get('level', 'info'),
-                'timestamp': timezone.now().isoformat()
-            }))
+            await self.send(text_data=json.dumps(event))
         except Exception as e:
             logger.error(f"Error sending system message: {e}")
     
     @database_sync_to_async
     def store_connection(self):
         """Store WebSocket connection in database"""
-        WebSocketConnection.objects.create(
-            user=self.user,
-            connection_id=self.connection_id,
-            is_active=True
-        )
+        try:
+            WebSocketConnection.objects.create(
+                user=self.user,
+                connection_id=self.connection_id,
+                is_active=True
+            )
+        except Exception as e:
+            logger.error(f"Error storing connection: {e}")
     
     @database_sync_to_async
     def deactivate_connection(self):
         """Mark connection as inactive"""
         try:
-            connection = WebSocketConnection.objects.get(
+            WebSocketConnection.objects.filter(
                 connection_id=self.connection_id
-            )
-            connection.deactivate()
-        except WebSocketConnection.DoesNotExist:
-            pass
+            ).update(is_active=False)
+        except Exception as e:
+            logger.error(f"Error deactivating connection: {e}")
     
     @database_sync_to_async
     def mark_notification_read(self, notification_id):
@@ -177,14 +190,11 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             notification.save()
             
             # Send confirmation
-            self.send(text_data=json.dumps({
-                'type': 'notification_read',
-                'notification_id': notification_id,
-                'timestamp': timezone.now().isoformat()
-            }))
+            return True
             
         except SharedNotification.DoesNotExist:
             logger.warning(f"Notification {notification_id} not found for user {self.user.id}")
+            return False
     
     @database_sync_to_async
     def get_user_notifications(self):
@@ -192,6 +202,14 @@ class NotificationConsumer(AsyncWebsocketConsumer):
         return list(SharedNotification.objects.filter(
             recipient=self.user
         ).order_by('-created_at')[:50])  # Limit to 50 most recent
+    
+    @database_sync_to_async
+    def get_unread_count(self):
+        """Get unread notification count for user"""
+        return SharedNotification.objects.filter(
+            recipient=self.user,
+            is_read=False
+        ).count()
     
     async def send_notifications(self):
         """Send current notifications to client"""
@@ -249,6 +267,7 @@ class BroadcastConsumer(AsyncWebsocketConsumer):
             await self.send(text_data=json.dumps({
                 'type': 'broadcast_connected',
                 'user_id': self.user.id,
+                'user_role': self.user.role,
                 'timestamp': timezone.now().isoformat()
             }))
             
@@ -278,3 +297,13 @@ class BroadcastConsumer(AsyncWebsocketConsumer):
             }))
         except Exception as e:
             logger.error(f"Error sending broadcast: {e}")
+    
+    async def role_notification(self, event):
+        """Handle role-based notification from channel layer"""
+        try:
+            # Only send if user is in the target roles
+            target_roles = event.get('target_roles', [])
+            if self.user.role in target_roles:
+                await self.send(text_data=json.dumps(event))
+        except Exception as e:
+            logger.error(f"Error sending role notification: {e}")

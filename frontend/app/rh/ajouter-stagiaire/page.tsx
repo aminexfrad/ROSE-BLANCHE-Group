@@ -57,7 +57,7 @@ export default function RHAjouterStagiairePage() {
   })
 
   const breadcrumbs = [
-    { label: "RH", href: "/rh" },
+            { label: "Responsable RH", href: "/rh" },
     { label: "Ajouter Stagiaire" }
   ]
 

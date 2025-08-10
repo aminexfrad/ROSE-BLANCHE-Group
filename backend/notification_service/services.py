@@ -28,9 +28,10 @@ class NotificationService:
     
     def create_event(self, event_type: str, event_data: Dict[str, Any], 
                     source_user: Optional[User] = None, 
-                    target_users: Optional[List[User]] = None) -> NotificationEvent:
+                    target_users: Optional[List[User]] = None,
+                    target_roles: Optional[List[str]] = None) -> NotificationEvent:
         """
-        Create a notification event
+        Create a notification event with optional role-based targeting
         """
         try:
             event = NotificationEvent.objects.create(
@@ -41,6 +42,11 @@ class NotificationService:
             
             if target_users:
                 event.target_users.set(target_users)
+            
+            # Store target roles in event data for processing
+            if target_roles:
+                event.event_data['target_roles'] = target_roles
+                event.save()
             
             logger.info(f"Created notification event: {event_type}")
             return event
@@ -60,7 +66,7 @@ class NotificationService:
             target_users = list(event.target_users.all())
             
             if not target_users:
-                # If no specific targets, determine based on event type
+                # If no specific targets, determine based on event type and roles
                 target_users = self._get_target_users_for_event(event)
             
             # Create notifications for each target user
@@ -99,7 +105,6 @@ class NotificationService:
             # Send real-time notification
             self._send_real_time_notification(notification)
             
-            logger.info(f"Sent notification to {recipient.username}: {title}")
             return notification
             
         except Exception as e:
@@ -111,18 +116,43 @@ class NotificationService:
         """
         Send notifications to multiple users
         """
-        notifications = []
-        
-        for recipient in recipients:
-            try:
+        try:
+            notifications = []
+            for recipient in recipients:
                 notification = self.send_notification(
                     recipient, title, message, notification_type, **kwargs
                 )
                 notifications.append(notification)
-            except Exception as e:
-                logger.error(f"Error sending notification to {recipient.username}: {e}")
-        
-        return notifications
+            
+            return notifications
+            
+        except Exception as e:
+            logger.error(f"Error sending bulk notifications: {e}")
+            raise
+    
+    def send_role_notifications(self, target_roles: List[str], title: str, message: str,
+                               notification_type: str = 'info', **kwargs) -> List[SharedNotification]:
+        """
+        Send notifications to all users with specific roles
+        """
+        try:
+            # Get users with target roles
+            target_users = User.objects.filter(role__in=target_roles, is_active=True)
+            
+            # Send notifications
+            notifications = self.send_bulk_notifications(
+                target_users, title, message, notification_type, **kwargs
+            )
+            
+            # Send real-time notifications to role groups
+            self._send_role_broadcast(target_roles, title, message, notification_type)
+            
+            logger.info(f"Sent role notifications to {len(notifications)} users in roles: {target_roles}")
+            return notifications
+            
+        except Exception as e:
+            logger.error(f"Error sending role notifications: {e}")
+            raise
     
     def send_broadcast(self, message: str, level: str = 'info', 
                       target_roles: Optional[List[str]] = None) -> None:
@@ -159,10 +189,16 @@ class NotificationService:
     
     def _get_target_users_for_event(self, event: NotificationEvent) -> List[User]:
         """
-        Determine target users based on event type
+        Determine target users based on event type and target roles
         """
         event_data = event.event_data
+        target_roles = event_data.get('target_roles', [])
         
+        # If specific roles are specified, filter by those roles
+        if target_roles:
+            return list(User.objects.filter(role__in=target_roles, is_active=True))
+        
+        # Otherwise, determine based on event type
         if event.event_type == NotificationEvent.EventType.SYSTEM:
             # System events go to all active users
             return list(User.objects.filter(is_active=True))
@@ -174,21 +210,125 @@ class NotificationService:
                 from shared.models import Stage
                 try:
                     stage = Stage.objects.get(id=stage_id)
-                    return [stage.stagiaire, stage.tuteur]
+                    users = []
+                    if stage.stagiaire:
+                        users.append(stage.stagiaire)
+                    if stage.tuteur:
+                        users.append(stage.tuteur)
+                    return users
                 except Stage.DoesNotExist:
                     pass
         
+        elif event.event_type == NotificationEvent.EventType.DOCUMENT_UPLOAD:
+            # Document uploads go to stage participants and RH
+            stage_id = event_data.get('stage_id')
+            users = []
+            
+            if stage_id:
+                from shared.models import Stage
+                try:
+                    stage = Stage.objects.get(id=stage_id)
+                    if stage.stagiaire:
+                        users.append(stage.stagiaire)
+                    if stage.tuteur:
+                        users.append(stage.tuteur)
+                except Stage.DoesNotExist:
+                    pass
+            
+            # Add RH users for document oversight
+            rh_users = User.objects.filter(role='rh', is_active=True)
+            users.extend(rh_users)
+            return users
+        
+        elif event.event_type == NotificationEvent.EventType.EVALUATION:
+            # Evaluation events go to evaluator and evaluated
+            evaluator_id = event_data.get('evaluator_id')
+            evaluated_id = event_data.get('evaluated_id')
+            
+            users = []
+            if evaluator_id:
+                try:
+                    evaluator = User.objects.get(id=evaluator_id)
+                    users.append(evaluator)
+                except User.DoesNotExist:
+                    pass
+            
+            if evaluated_id:
+                try:
+                    evaluated = User.objects.get(id=evaluated_id)
+                    users.append(evaluated)
+                except User.DoesNotExist:
+                    pass
+            
+            return users
+        
         elif event.event_type == NotificationEvent.EventType.SURVEY:
-            # Survey events go to RH team
-            return list(User.objects.filter(role='rh', is_active=True))
+            # Survey events go to target stagiaires and RH team
+            survey_id = event_data.get('survey_id')
+            users = []
+            
+            if survey_id:
+                from shared.models import Survey
+                try:
+                    survey = Survey.objects.get(id=survey_id)
+                    target_stagiaires = survey.get_target_stagiaires()
+                    users.extend(target_stagiaires)
+                except Survey.DoesNotExist:
+                    pass
+            
+            # Add RH users for survey management
+            rh_users = User.objects.filter(role='rh', is_active=True)
+            users.extend(rh_users)
+            return users
         
         elif event.event_type == NotificationEvent.EventType.KPI_ALERT:
-            # KPI alerts go to RH team
-            return list(User.objects.filter(role='rh', is_active=True))
+            # KPI alerts go to RH team and relevant tuteurs
+            stage_id = event_data.get('stage_id')
+            users = list(User.objects.filter(role='rh', is_active=True))
+            
+            if stage_id:
+                from shared.models import Stage
+                try:
+                    stage = Stage.objects.get(id=stage_id)
+                    if stage.tuteur:
+                        users.append(stage.tuteur)
+                except Stage.DoesNotExist:
+                    pass
+            
+            return users
         
         elif event.event_type == NotificationEvent.EventType.TESTIMONIAL:
-            # Testimonial events go to RH team
-            return list(User.objects.filter(role='rh', is_active=True))
+            # Testimonial events go to RH team and stage participants
+            stage_id = event_data.get('stage_id')
+            users = list(User.objects.filter(role='rh', is_active=True))
+            
+            if stage_id:
+                from shared.models import Stage
+                try:
+                    stage = Stage.objects.get(id=stage_id)
+                    if stage.stagiaire:
+                        users.append(stage.stagiaire)
+                    if stage.tuteur:
+                        users.append(stage.tuteur)
+                except Stage.DoesNotExist:
+                    pass
+            
+            return users
+        
+        elif event.event_type == NotificationEvent.EventType.DEMANDE:
+            # Demande events go to RH team and relevant users
+            users = list(User.objects.filter(role='rh', is_active=True))
+            
+            # Add specific users if mentioned in event data
+            user_id = event_data.get('user_id')
+            if user_id:
+                try:
+                    user = User.objects.get(id=user_id)
+                    users.append(user)
+                except User.DoesNotExist:
+                    pass
+            
+            return users
         
         return []
     
@@ -233,49 +373,76 @@ class NotificationService:
         """
         Determine notification type based on event type
         """
-        if event.event_type == NotificationEvent.EventType.KPI_ALERT:
-            return 'error'
-        elif event.event_type in [NotificationEvent.EventType.EVALUATION, 
-                                 NotificationEvent.EventType.SURVEY]:
-            return 'warning'
-        elif event.event_type == NotificationEvent.EventType.SYSTEM:
-            return 'info'
-        else:
-            return 'info'
+        event_type_to_notification_type = {
+            NotificationEvent.EventType.SYSTEM: 'info',
+            NotificationEvent.EventType.USER_ACTION: 'info',
+            NotificationEvent.EventType.STAGE_UPDATE: 'info',
+            NotificationEvent.EventType.DOCUMENT_UPLOAD: 'info',
+            NotificationEvent.EventType.EVALUATION: 'info',
+            NotificationEvent.EventType.SURVEY: 'info',
+            NotificationEvent.EventType.TESTIMONIAL: 'success',
+            NotificationEvent.EventType.DEMANDE: 'info',
+            NotificationEvent.EventType.KPI_ALERT: 'warning',
+        }
+        
+        return event_type_to_notification_type.get(event.event_type, 'info')
     
     def _send_real_time_notifications(self, notifications: List[SharedNotification]) -> None:
         """
-        Send real-time notifications via WebSocket
+        Send real-time notifications for multiple notifications
         """
         for notification in notifications:
             self._send_real_time_notification(notification)
     
     def _send_real_time_notification(self, notification: SharedNotification) -> None:
         """
-        Send real-time notification to specific user
+        Send real-time notification to user's WebSocket
         """
         try:
             notification_data = {
-                'id': notification.id,
-                'title': notification.title,
-                'message': notification.message,
-                'notification_type': notification.notification_type,
-                'is_read': notification.is_read,
-                'read_at': notification.read_at.isoformat() if notification.read_at else None,
-                'created_at': notification.created_at.isoformat()
+                'type': 'notification_message',
+                'notification': {
+                    'id': notification.id,
+                    'title': notification.title,
+                    'message': notification.message,
+                    'notification_type': notification.notification_type,
+                    'is_read': notification.is_read,
+                    'created_at': notification.created_at.isoformat()
+                }
             }
             
             # Send to user's personal group
             async_to_sync(self.channel_layer.group_send)(
                 f"user_{notification.recipient.id}",
-                {
-                    'type': 'notification_message',
-                    'notification': notification_data
-                }
+                notification_data
             )
             
         except Exception as e:
             logger.error(f"Error sending real-time notification: {e}")
+    
+    def _send_role_broadcast(self, target_roles: List[str], title: str, message: str, 
+                            notification_type: str) -> None:
+        """
+        Send real-time broadcast to role-based groups
+        """
+        try:
+            broadcast_data = {
+                'type': 'role_notification',
+                'title': title,
+                'message': message,
+                'notification_type': notification_type,
+                'target_roles': target_roles,
+                'timestamp': timezone.now().isoformat()
+            }
+            
+            for role in target_roles:
+                async_to_sync(self.channel_layer.group_send)(
+                    f"role_{role}",
+                    broadcast_data
+                )
+                
+        except Exception as e:
+            logger.error(f"Error sending role broadcast: {e}")
 
 
 # Global notification service instance

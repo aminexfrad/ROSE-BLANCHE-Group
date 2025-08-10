@@ -48,7 +48,7 @@ export default function RHPFEDigitalHubPage() {
   const [specialityFilter, setSpecialityFilter] = useState("all")
 
   const breadcrumbs = [
-    { label: "RH", href: "/rh" },
+            { label: "Responsable RH", href: "/rh" },
     { label: "PFE Digital Hub" }
   ]
 

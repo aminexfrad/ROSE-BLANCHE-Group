@@ -10,20 +10,20 @@ from . import views
 app_name = 'notification_service'
 
 urlpatterns = [
-    # Notification events
-    path('events/', views.NotificationEventListView.as_view(), name='events'),
+    # User notification endpoints
+    path('notifications/', views.get_user_notifications, name='get_user_notifications'),
+    path('notifications/unread-count/', views.get_unread_count, name='get_unread_count'),
+    path('notifications/<int:notification_id>/read/', views.mark_notification_read, name='mark_notification_read'),
+    path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+    path('notifications/<int:notification_id>/delete/', views.delete_notification, name='delete_notification'),
+    path('notifications/clear-all/', views.clear_all_notifications, name='clear_all_notifications'),
+    path('notifications/statistics/', views.get_notification_statistics, name='get_notification_statistics'),
+    path('notifications/search/', views.search_notifications, name='search_notifications'),
     
-    # Notification templates
-    path('templates/', views.NotificationTemplateListView.as_view(), name='templates'),
-    path('templates/<int:pk>/', views.NotificationTemplateDetailView.as_view(), name='template-detail'),
+    # Role-based notification endpoints (admin/RH only)
+    path('send-role-notification/', views.send_role_notification, name='send_role_notification'),
+    path('send-broadcast/', views.send_broadcast_notification, name='send_broadcast_notification'),
     
-    # WebSocket connections
-    path('connections/', views.WebSocketConnectionListView.as_view(), name='connections'),
-    
-    # Test and broadcast endpoints
-    path('test/', views.send_test_notification, name='test-notification'),
-    path('broadcast/', views.send_broadcast_message, name='broadcast'),
-    
-    # Statistics
-    path('stats/', views.notification_stats, name='stats'),
+    # System-wide notification management (admin only)
+    path('system-stats/', views.get_system_notification_stats, name='get_system_notification_stats'),
 ]

@@ -70,7 +70,7 @@ interface KPIData {
 }
 
 export default function RHKPIG() {
-  const breadcrumbs = [{ label: "RH", href: "/rh" }, { label: "KPI Globaux" }]
+  const breadcrumbs = [{ label: "Responsable RH", href: "/rh" }, { label: "KPI Globaux" }]
   const [kpiData, setKpiData] = useState<KPIData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)

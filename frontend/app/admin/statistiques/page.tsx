@@ -64,7 +64,7 @@ export default function AdminStatistiquesPage() {
   // Real user distribution data
   const userDistribution = [
     { name: "Administrateurs", value: adminUsers, color: "#EF4444" },
-    { name: "RH", value: rhUsers, color: "#3B82F6" },
+            { name: "Responsable RH", value: rhUsers, color: "#3B82F6" },
     { name: "Tuteurs", value: tuteurUsers, color: "#10B981" },
     { name: "Stagiaires", value: stagiaireUsers, color: "#8B5CF6" },
   ]
@@ -366,8 +366,8 @@ export default function AdminStatistiquesPage() {
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg shadow">
                               <Users className="h-8 w-8 text-red-600 mx-auto mb-2" />
-            <div className="text-2xl font-bold text-red-600">{rhUsers}</div>
-                  <div className="text-sm text-gray-600">RH</div>
+                            <div className="text-2xl font-bold text-red-600">{rhUsers}</div>
+                <div className="text-sm text-gray-600">Responsable RH</div>
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg shadow">
                   <UserCheck className="h-8 w-8 text-green-600 mx-auto mb-2" />
