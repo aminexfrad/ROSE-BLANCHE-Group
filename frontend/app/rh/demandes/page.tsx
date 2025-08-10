@@ -23,7 +23,7 @@ import {
   MoreHorizontal,
   Eye,
   CheckCircle,
-  X,
+  X as XCloseIcon,
   Clock,
   Download,
   Building,
@@ -32,62 +32,180 @@ import {
   AlertCircle,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { FaFilePdf, FaFileAlt } from "react-icons/fa";
+import { FaFilePdf, FaFileAlt, FaFileImage } from "react-icons/fa";
 import { useToast } from '@/components/ui/use-toast'
 
 // FilePreviewCard component for document display
 function FilePreviewCard({ label, url }: { label: string; url?: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const isPDF = url && url.toLowerCase().endsWith(".pdf");
+  const isImage = url && /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
+
+  // Handle preview generation
+  const generatePreview = async () => {
+    if (!url) return;
+    
+    try {
+      setLoading(true);
+      setError(false);
+      
+      // For PDFs and images, we'll use the direct URL
+      if (isPDF || isImage) {
+        setPreviewUrl(url);
+        return;
+      }
+      
+      // For other file types, we'll show a placeholder
+      setPreviewUrl(null);
+    } catch (err) {
+      setError(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Generate preview when component mounts or URL changes
+  useEffect(() => {
+    generatePreview();
+  }, [url]);
+
+  // Handle iframe load events
+  const handleIframeLoad = () => {
+    setLoading(false);
+  };
+
+  const handleIframeError = () => {
+    setLoading(false);
+    setError(true);
+  };
+
+  // Check if URL is valid
+  const isValidUrl = url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/'));
 
   return (
-    <div className="bg-white rounded-lg shadow p-4 mb-4 border">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2 font-semibold text-lg">
-          {isPDF ? <FaFilePdf className="text-red-500" /> : <FaFileAlt className="text-gray-500" />}
-          {label}
+    <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl shadow-sm border border-red-200 p-4 mb-4 hover:shadow-md transition-all duration-300">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <div className={`p-2 rounded-lg ${isPDF ? 'bg-red-100' : isImage ? 'bg-green-100' : 'bg-blue-100'}`}>
+            {isPDF ? <FaFilePdf className="text-red-600 h-5 w-5" /> : 
+             isImage ? <FaFileImage className="text-green-600 h-5 w-5" /> : 
+             <FaFileAlt className="text-blue-600 h-5 w-5" />}
+          </div>
+          <div>
+            <h4 className="font-semibold text-red-900">{label}</h4>
+            <p className="text-sm text-red-600">
+              {isPDF ? 'Document PDF' : isImage ? 'Image' : 'Document'}
+            </p>
+          </div>
         </div>
         {url && (
-          <a
-            href={url}
-            download
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 underline"
+          <Button
+            variant="outline"
+            size="sm"
+            className="hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors border-red-200 text-red-700"
+            onClick={() => window.open(url, '_blank')}
           >
+            <Download className="h-4 w-4 mr-2" />
             Télécharger
-          </a>
+          </Button>
         )}
       </div>
-      {url ? (
-        isPDF ? (
-          <div className="relative">
-            {loading && !error && (
-              <div className="absolute inset-0 flex items-center justify-center bg-gray-100 bg-opacity-80 z-10">
-                <span className="animate-spin text-2xl">⏳</span>
+      
+      {/* File Preview Section */}
+      {url && isValidUrl ? (
+        <div className="relative bg-white rounded-lg overflow-hidden min-h-[200px] border border-red-100">
+          {loading && (
+            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 z-10">
+              <div className="flex flex-col items-center gap-2">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
+                <span className="text-sm text-red-600">Chargement...</span>
               </div>
-            )}
-            <iframe
-              src={url}
-              width="100%"
-              height="350px"
-              title={`${label} Preview`}
-              className="rounded border"
-              onLoad={() => setLoading(false)}
-              onError={() => { setLoading(false); setError(true); }}
-            />
-            {error && (
-              <div className="text-red-500 text-center mt-2">
-                Impossible d'afficher le document.
+            </div>
+          )}
+          
+          {!loading && !error && previewUrl && (
+            <>
+              {isPDF ? (
+                <div className="relative">
+                  <iframe
+                    src={previewUrl}
+                    width="100%"
+                    height="300px"
+                    title={`${label} Preview`}
+                    className="rounded-lg"
+                    onLoad={handleIframeLoad}
+                    onError={handleIframeError}
+                    sandbox="allow-same-origin allow-scripts"
+                  />
+                </div>
+              ) : isImage ? (
+                <div className="p-4">
+                  <img
+                    src={previewUrl}
+                    alt={label}
+                    className="max-w-full h-auto rounded-lg shadow-sm"
+                    onLoad={handleIframeLoad}
+                    onError={handleIframeError}
+                  />
+                </div>
+              ) : (
+                <div className="p-6 text-center">
+                  <FileText className="h-16 w-16 text-red-400 mx-auto mb-3" />
+                  <p className="text-red-600 text-sm mb-2">Aperçu non disponible</p>
+                  <p className="text-red-500 text-xs">Cliquez sur Télécharger pour voir le fichier</p>
+                </div>
+              )}
+            </>
+          )}
+          
+          {error && (
+            <div className="p-6 text-center">
+              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
+              <p className="text-red-600 text-sm font-medium">Erreur de prévisualisation</p>
+              <p className="text-red-500 text-xs mt-1">Le fichier ne peut pas être affiché</p>
+              <div className="mt-3 space-y-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-red-200 text-red-600 hover:bg-red-50 mr-2"
+                  onClick={generatePreview}
+                >
+                  Réessayer
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="border-red-200 text-red-600 hover:bg-red-50"
+                  onClick={() => window.open(url, '_blank')}
+                >
+                  Ouvrir dans un nouvel onglet
+                </Button>
+
               </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-gray-500">Aperçu non disponible pour ce type de fichier.</div>
-        )
+            </div>
+          )}
+        </div>
+      ) : url ? (
+        <div className="p-6 text-center bg-red-50 rounded-lg border border-red-100">
+          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
+          <p className="text-red-600 text-sm font-medium">URL de fichier invalide</p>
+          <p className="text-red-500 text-xs mt-1">Le lien vers le fichier n'est pas valide</p>
+          <Button
+            variant="outline"
+            size="sm"
+            className="mt-3 border-red-200 text-red-600 hover:bg-red-50"
+            onClick={() => window.open(url, '_blank')}
+          >
+            Essayer d'ouvrir le lien
+          </Button>
+        </div>
       ) : (
-        <div className="text-gray-400 italic">Aucun document fourni.</div>
+        <div className="p-6 text-center bg-red-50 rounded-lg border border-red-100">
+          <FileText className="h-12 w-12 text-red-300 mx-auto mb-2" />
+          <p className="text-red-500 text-sm italic">Aucun document fourni</p>
+        </div>
       )}
     </div>
   );
@@ -157,7 +275,7 @@ export default function RHDemandesPage() {
       case "approved":
         return <CheckCircle className="h-4 w-4 text-green-600" />
       case "rejected":
-        return <X className="h-4 w-4 text-red-600" />
+        return <AlertCircle className="h-4 w-4 text-red-600" />
       default:
         return <FileText className="h-4 w-4 text-gray-600" />
     }
@@ -265,64 +383,190 @@ export default function RHDemandesPage() {
     <DashboardLayout allowedRoles={["rh"]} breadcrumbs={breadcrumbs}>
       {/* Details Modal */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Détails de la demande</DialogTitle>
-          </DialogHeader>
+        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0 bg-white shadow-2xl border-0">
+          {/* Enhanced Header */}
+          <div className="bg-gradient-to-br from-red-600 via-red-700 to-red-800 text-white p-8 rounded-t-xl relative overflow-hidden">
+            {/* Background Pattern */}
+            <div className="absolute inset-0 opacity-10">
+              <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -mr-16 -mt-16"></div>
+              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full -ml-12 -mb-12"></div>
+            </div>
+            
+            <div className="relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm border border-white/30">
+                  <FileText className="h-8 w-8 text-white" />
+                </div>
+                <div className="flex-1">
+                  <DialogTitle className="text-3xl font-bold tracking-tight mb-2">
+                    Détails de la demande
+                  </DialogTitle>
+                  <p className="text-red-100 text-lg font-medium">
+                    Informations complètes du candidat
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
           {selectedApplication && (
-            <div className="space-y-4 mt-2">
-              <div className="space-y-1">
-                <div><b>Nom:</b> {selectedApplication.prenom} {selectedApplication.nom}</div>
-                <div><b>Email:</b> {selectedApplication.email}</div>
-                <div><b>Téléphone:</b> {selectedApplication.telephone}</div>
-                <div><b>Institut:</b> {selectedApplication.institut}</div>
-                <div><b>Spécialité:</b> {selectedApplication.specialite}</div>
-                <div><b>Type de stage:</b> {selectedApplication.type_stage}</div>
-                <div><b>Niveau:</b> {selectedApplication.niveau}</div>
-                <div><b>Période:</b> {new Date(selectedApplication.date_debut).toLocaleDateString()} au {new Date(selectedApplication.date_fin).toLocaleDateString()}</div>
-                <div><b>Statut:</b> {selectedApplication.status}</div>
+            <div className="p-8 space-y-8">
+              {/* Enhanced Status and Actions Section */}
+              <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-2xl border border-gray-200">
+                <div className="flex items-center gap-4">
+                  <div className={`px-6 py-3 rounded-full text-sm font-bold shadow-lg ${
+                    selectedApplication.status === 'approved' 
+                      ? 'bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-green-400' 
+                      : selectedApplication.status === 'rejected'
+                      ? 'bg-gradient-to-r from-red-500 to-red-600 text-white border-2 border-red-400'
+                      : 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white border-2 border-yellow-400'
+                  }`}>
+                    {selectedApplication.status === 'approved' && <CheckCircle className="h-5 w-5 mr-2 inline" />}
+                    {selectedApplication.status === 'rejected' && <AlertCircle className="h-5 w-5 mr-2 inline" />}
+                    {selectedApplication.status === 'pending' && <Clock className="h-5 w-5 mr-2 inline" />}
+                    {selectedApplication.status === 'approved' ? 'Approuvée' : 
+                     selectedApplication.status === 'rejected' ? 'Rejetée' : 'En attente'}
+                  </div>
+                  <div className="text-sm text-gray-600">
+                    <span className="font-medium">ID:</span> #{selectedApplication.id}
+                  </div>
+                </div>
+                
+                {/* Enhanced Download Button */}
+                <Button
+                  onClick={() => {
+                    const urls = [
+                      selectedApplication.cv,
+                      selectedApplication.lettre_motivation,
+                      selectedApplication.demande_stage,
+                      selectedApplication.cv_binome,
+                      selectedApplication.lettre_motivation_binome,
+                      selectedApplication.demande_stage_binome,
+                    ].filter(Boolean);
+                    urls.forEach(url => {
+                      if (url) window.open(url, '_blank');
+                    });
+                  }}
+                  className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 hover:from-red-700 hover:via-red-800 hover:to-red-900 text-white px-8 py-4 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 font-semibold text-lg"
+                >
+                  <Download className="h-6 w-6 mr-3" />
+                  Télécharger tous les documents
+                </Button>
               </div>
 
-              {/* Download all documents button */}
-              <button
-                onClick={() => {
-                  const urls = [
-                    selectedApplication.cv,
-                    selectedApplication.lettre_motivation,
-                    selectedApplication.demande_stage,
-                    selectedApplication.cv_binome,
-                    selectedApplication.lettre_motivation_binome,
-                    selectedApplication.demande_stage_binome,
-                  ].filter(Boolean);
-                  urls.forEach(url => {
-                    if (url) window.open(url, '_blank');
-                  });
-                }}
-                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mb-2"
-              >
-                Télécharger tous les documents
-              </button>
+              {/* Enhanced Candidate Information Cards */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* Personal Information */}
+                <Card className="border-0 shadow-xl bg-gradient-to-br from-red-50 via-white to-red-50 rounded-2xl overflow-hidden">
+                  <CardHeader className="pb-4 bg-gradient-to-r from-red-600 to-red-700 text-white">
+                    <CardTitle className="flex items-center gap-3 text-white text-xl">
+                      <div className="p-2 bg-white/20 rounded-lg">
+                        <User className="h-6 w-6" />
+                      </div>
+                      Informations personnelles
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
+                      <span className="font-semibold text-gray-700">Nom complet</span>
+                      <span className="text-gray-900 font-bold text-lg">{selectedApplication.prenom} {selectedApplication.nom}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
+                      <span className="font-semibold text-gray-700">Email</span>
+                      <span className="text-blue-600 font-semibold hover:text-blue-700 transition-colors cursor-pointer">{selectedApplication.email}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
+                      <span className="font-semibold text-gray-700">Téléphone</span>
+                      <span className="text-gray-900 font-medium">{selectedApplication.telephone || 'Non renseigné'}</span>
+                    </div>
+                  </CardContent>
+                </Card>
 
-              <hr className="my-4" />
+                {/* Academic Information */}
+                <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-50 via-white to-blue-50 rounded-2xl overflow-hidden">
+                  <CardHeader className="pb-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                    <CardTitle className="flex items-center gap-3 text-white text-xl">
+                      <div className="p-2 bg-white/20 rounded-lg">
+                        <Building className="h-6 w-6" />
+                      </div>
+                      Informations académiques
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6 space-y-4">
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
+                      <span className="font-semibold text-gray-700">Institut</span>
+                      <span className="text-gray-900 font-bold text-lg">{selectedApplication.institut}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
+                      <span className="font-semibold text-gray-700">Spécialité</span>
+                      <span className="text-gray-900 font-semibold">{selectedApplication.specialite}</span>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
+                      <span className="font-semibold text-gray-700">Niveau</span>
+                      <span className="text-gray-900 font-semibold">{selectedApplication.niveau}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
 
-              {/* Documents du candidat principal */}
-              <div>
-                <h3 className="font-bold text-lg mb-2">Documents du candidat principal</h3>
+              {/* Enhanced Stage Information */}
+              <Card className="border-0 shadow-xl bg-gradient-to-br from-green-50 via-white to-green-50 rounded-2xl overflow-hidden">
+                <CardHeader className="pb-4 bg-gradient-to-r from-green-600 to-green-700 text-white">
+                  <CardTitle className="flex items-center gap-3 text-white text-xl">
+                    <div className="p-2 bg-white/20 rounded-lg">
+                      <Calendar className="h-6 w-6" />
+                    </div>
+                    Informations du stage
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
+                      <span className="font-semibold text-gray-700">Type de stage</span>
+                      <Badge variant="secondary" className="bg-green-100 text-green-800 px-4 py-2 text-sm font-semibold border border-green-200">
+                        {selectedApplication.type_stage}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
+                      <span className="font-semibold text-gray-700">Période</span>
+                      <div className="text-right">
+                        <div className="text-gray-900 font-bold text-lg">
+                          {new Date(selectedApplication.date_debut).toLocaleDateString('fr-FR')}
+                        </div>
+                        <div className="text-gray-500 text-sm font-medium">au {new Date(selectedApplication.date_fin).toLocaleDateString('fr-FR')}</div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Enhanced Documents Section */}
+              <div className="space-y-6">
+                <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-2xl border border-red-200">
+                  <div className="w-2 h-8 bg-gradient-to-b from-red-600 to-red-700 rounded-full"></div>
+                  <div>
+                    <h3 className="text-2xl font-bold text-red-900">Documents du candidat principal</h3>
+                    <p className="text-red-600 text-sm">Tous les documents soumis par le candidat</p>
+                  </div>
+                </div>
                 <FilePreviewCard label="CV" url={selectedApplication.cv} />
                 <FilePreviewCard label="Lettre de motivation" url={selectedApplication.lettre_motivation} />
                 <FilePreviewCard label="Demande de stage" url={selectedApplication.demande_stage} />
               </div>
 
               {selectedApplication.stage_binome && (
-                <>
-                  <hr className="my-4" />
-                  <div>
-                    <h3 className="font-bold text-lg mb-2">Documents du binôme</h3>
-                    <FilePreviewCard label="CV binôme" url={selectedApplication.cv_binome} />
-                    <FilePreviewCard label="Lettre de motivation binôme" url={selectedApplication.lettre_motivation_binome} />
-                    <FilePreviewCard label="Demande de stage binôme" url={selectedApplication.demande_stage_binome} />
+                <div className="space-y-6">
+                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl border border-blue-200">
+                    <div className="w-2 h-8 bg-gradient-to-b from-blue-600 to-blue-700 rounded-full"></div>
+                    <div>
+                      <h3 className="text-2xl font-bold text-blue-900">Documents du binôme</h3>
+                      <p className="text-blue-600 text-sm">Documents soumis par le partenaire de stage</p>
+                    </div>
                   </div>
-                </>
+                  <FilePreviewCard label="CV binôme" url={selectedApplication.cv_binome} />
+                  <FilePreviewCard label="Lettre de motivation binôme" url={selectedApplication.lettre_motivation_binome} />
+                  <FilePreviewCard label="Demande de stage binôme" url={selectedApplication.demande_stage_binome} />
+                </div>
               )}
             </div>
           )}
@@ -535,7 +779,7 @@ export default function RHDemandesPage() {
                                 Accepter
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleReject(application.id)}>
-                                <X className="mr-2 h-4 w-4" />
+                                <AlertCircle className="mr-2 h-4 w-4" />
                                 Rejeter
                               </DropdownMenuItem>
                             </>
