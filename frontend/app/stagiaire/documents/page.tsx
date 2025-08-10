@@ -47,7 +47,7 @@ export default function StagiaireDocumentsPage() {
   const getTypeBadge = (type: string) => {
     switch (type) {
       case "rapport":
-        return <Badge className="bg-blue-100 text-blue-800">Rapport</Badge>
+        return <Badge className="bg-red-100 text-red-800">Rapport</Badge>
       case "fiche_suivi":
         return <Badge className="bg-green-100 text-green-800">Fiche de suivi</Badge>
       case "pfe":
@@ -286,9 +286,9 @@ export default function StagiaireDocumentsPage() {
                         </div>
 
                         {doc.feedback && (
-                          <div className="bg-blue-50 p-3 rounded-lg">
-                            <h5 className="font-medium text-blue-900 mb-1">Feedback:</h5>
-                            <p className="text-blue-800 text-sm">{doc.feedback}</p>
+                          <div className="bg-red-50 p-3 rounded-lg">
+                                                          <h5 className="font-medium text-red-900 mb-1">Feedback:</h5>
+                              <p className="text-red-800 text-sm">{doc.feedback}</p>
                           </div>
                         )}
 

@@ -98,7 +98,7 @@ export default function StagiaireDashboard() {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800'
       case 'completed':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-red-100 text-red-800'
       case 'validated':
         return 'bg-green-100 text-green-800'
       case 'rejected':
@@ -113,7 +113,7 @@ export default function StagiaireDashboard() {
       case 'validated':
         return <CheckCircle className="h-4 w-4 text-green-600" />
       case 'completed':
-        return <CheckCircle className="h-4 w-4 text-blue-600" />
+        return <CheckCircle className="h-4 w-4 text-red-600" />
       case 'in_progress':
         return <Clock className="h-4 w-4 text-yellow-600" />
       case 'rejected':
@@ -267,7 +267,7 @@ export default function StagiaireDashboard() {
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{steps.length}</div>
+                <div className="text-2xl font-bold text-red-600">{steps.length}</div>
                 <div className="text-sm text-gray-600">Étapes</div>
               </div>
               <div className="text-center">
@@ -288,7 +288,7 @@ export default function StagiaireDashboard() {
             <Card key={action.title} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <action.icon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                  <action.icon className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
                   {action.badge && (
                     <Badge variant="secondary" className="text-xs">
                       {action.badge}
@@ -366,7 +366,7 @@ export default function StagiaireDashboard() {
               {documents.slice(0, 3).map((doc) => (
                 <div key={doc.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-3 border rounded-lg gap-3">
                   <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                    <FileText className="h-5 w-5 text-red-600 flex-shrink-0" />
                     <div className="min-w-0 flex-1">
                       <div className="font-medium truncate">{doc.title}</div>
                       <div className="text-sm text-gray-600 truncate">

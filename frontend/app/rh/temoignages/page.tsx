@@ -108,7 +108,7 @@ export default function RHTemoignagesPage() {
     return type === "video" ? (
       <Video className="h-5 w-5 text-purple-600" />
     ) : (
-      <FileText className="h-5 w-5 text-blue-600" />
+                      <FileText className="h-5 w-5 text-red-600" />
     )
   }
 
@@ -175,7 +175,7 @@ export default function RHTemoignagesPage() {
       <DashboardLayout allowedRoles={["rh"]} breadcrumbs={breadcrumbs}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <Loader2 className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
+            <Loader2 className="h-12 w-12 text-red-600 mx-auto mb-4 animate-spin" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement des témoignages</h2>
             <p className="text-gray-600">Veuillez patienter...</p>
           </div>
@@ -200,7 +200,7 @@ export default function RHTemoignagesPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total témoignages</CardTitle>
-              <MessageSquare className="h-4 w-4 text-blue-600" />
+                              <MessageSquare className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalTestimonials}</div>
@@ -407,7 +407,7 @@ export default function RHTemoignagesPage() {
                                 href={testimonial.video_file} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="text-blue-600 hover:text-blue-800 text-xs"
+                                className="text-red-600 hover:text-red-800 text-xs"
                               >
                                 Ouvrir dans un nouvel onglet
                               </a>
@@ -432,7 +432,7 @@ export default function RHTemoignagesPage() {
                                 href={testimonial.video_url} 
                                 target="_blank" 
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium"
+                                className="inline-flex items-center gap-2 text-red-600 hover:text-red-800 text-sm font-medium"
                               >
                                 <Video className="h-4 w-4" />
                                 Voir la vidéo externe

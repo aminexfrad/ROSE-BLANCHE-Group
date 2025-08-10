@@ -139,7 +139,7 @@ export default function RHAssignationTuteursPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total stagiaires</CardTitle>
-              <Users className="h-4 w-4 text-blue-600" />
+              <Users className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stagiaires.length}</div>
@@ -222,7 +222,7 @@ export default function RHAssignationTuteursPage() {
                         <div className="flex items-center gap-2">
                           <div className="w-16 bg-gray-200 rounded-full h-2">
                             <div
-                              className="bg-blue-600 h-2 rounded-full"
+                              className="bg-red-600 h-2 rounded-full"
                               style={{ width: `${stagiaire.progression}%` }}
                             ></div>
                           </div>
@@ -241,7 +241,7 @@ export default function RHAssignationTuteursPage() {
                         <Button 
                           onClick={() => handleAssignTuteur(stagiaire)}
                           size="sm"
-                          className="bg-blue-600 hover:bg-blue-700"
+                          className="bg-red-600 hover:bg-red-700"
                         >
                           <UserPlus className="mr-2 h-4 w-4" />
                           Assigner tuteur
@@ -298,7 +298,7 @@ export default function RHAssignationTuteursPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <UserIcon className="h-4 w-4 text-blue-600" />
+                          <UserIcon className="h-4 w-4 text-red-600" />
                           <div>
                             <div className="font-medium">
                               {stagiaire.active_stage?.tuteur?.prenom || ''} {stagiaire.active_stage?.tuteur?.nom || ''}

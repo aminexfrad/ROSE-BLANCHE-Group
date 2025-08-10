@@ -217,7 +217,7 @@ export default function FileUpload({
           <div
             className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
               dragActive 
-                ? "border-blue-500 bg-blue-50" 
+                                            ? "border-red-500 bg-red-50" 
                 : "border-gray-300 hover:border-gray-400"
             }`}
             onDragEnter={handleDrag}

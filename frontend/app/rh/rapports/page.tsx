@@ -62,7 +62,7 @@ export default function RHRapportsPage() {
   const getStageStatusBadge = (status: string) => {
     switch (status) {
       case "active":
-        return <Badge className="bg-blue-100 text-blue-800">En cours</Badge>
+        return <Badge className="bg-red-100 text-red-800">En cours</Badge>
       case "completed":
         return <Badge className="bg-green-100 text-green-800">Terminé</Badge>
       case "cancelled":
@@ -88,7 +88,7 @@ export default function RHRapportsPage() {
       <DashboardLayout allowedRoles={["rh"]} breadcrumbs={breadcrumbs}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <Loader2 className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
+            <Loader2 className="h-12 w-12 text-red-600 mx-auto mb-4 animate-spin" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement des rapports</h2>
             <p className="text-gray-600">Veuillez patienter...</p>
           </div>

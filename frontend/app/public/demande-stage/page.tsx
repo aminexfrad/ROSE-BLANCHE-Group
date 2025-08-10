@@ -720,8 +720,8 @@ export default function DemandeStage() {
               {currentStep === 4 && (
                 <div className="space-y-6">
                   <div className="bg-gradient-to-r from-blue-50 to-blue-100 p-6 rounded-lg border border-blue-200">
-                    <h3 className="font-semibold text-blue-900 mb-2 text-lg">Documents du Candidat Principal</h3>
-                    <p className="text-sm text-blue-700">Tous les documents doivent être au format PDF uniquement (max 10MB chacun)</p>
+                                    <h3 className="font-semibold text-red-900 mb-2 text-lg">Documents du Candidat Principal</h3>
+                <p className="text-sm text-red-700">Tous les documents doivent être au format PDF uniquement (max 10MB chacun)</p>
                   </div>
                   
                   <div>

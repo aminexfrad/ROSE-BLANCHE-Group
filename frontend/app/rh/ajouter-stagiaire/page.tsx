@@ -381,7 +381,7 @@ export default function RHAjouterStagiairePage() {
                 <Button
                   type="submit"
                   disabled={loading}
-                  className="bg-blue-600 hover:bg-blue-700"
+                                            className="bg-red-600 hover:bg-red-700"
                 >
                   {loading ? (
                     <>

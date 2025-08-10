@@ -75,7 +75,7 @@ const quickActions = [
     description: "Manage users and permissions",
     icon: Users,
     href: "/admin/utilisateurs",
-    color: "bg-blue-500",
+            color: "bg-red-500",
   },
   {
     title: "PFE Reports Archive",
@@ -176,7 +176,7 @@ export default function AdminDashboard() {
       case 'active':
         return 'bg-green-100 text-green-800'
       case 'completed':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-red-100 text-red-800'
       case 'archived':
         return 'bg-gray-100 text-gray-800'
       case 'approved':
@@ -197,7 +197,7 @@ export default function AdminDashboard() {
       case 'rh':
         return 'bg-purple-100 text-purple-800'
       case 'tuteur':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-red-100 text-red-800'
       case 'stagiaire':
         return 'bg-green-100 text-green-800'
       default:
@@ -233,7 +233,7 @@ export default function AdminDashboard() {
     return (
       <DashboardLayout allowedRoles={["admin"]} breadcrumbs={breadcrumbs}>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
         </div>
       </DashboardLayout>
     )
@@ -363,9 +363,9 @@ export default function AdminDashboard() {
               {/* Statistics */}
               {stats?.pfe_reports_stats && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <div className="text-center p-3 bg-blue-50 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{stats.pfe_reports_stats.total}</div>
-                    <div className="text-sm text-blue-600">Total</div>
+                  <div className="text-center p-3 bg-red-50 rounded-lg">
+                                          <div className="text-2xl font-bold text-red-600">{stats.pfe_reports_stats.total}</div>
+                      <div className="text-sm text-red-600">Total</div>
                   </div>
                   <div className="text-center p-3 bg-green-50 rounded-lg">
                     <div className="text-2xl font-bold text-green-600">{stats.pfe_reports_stats.approved}</div>

@@ -45,7 +45,7 @@ export default function StagiaireParcoursPage() {
       case "completed":
         return <Badge className="bg-green-100 text-green-800">Terminé</Badge>
       case "validated":
-        return <Badge className="bg-blue-100 text-blue-800">Validé</Badge>
+        return <Badge className="bg-red-100 text-red-800">Validé</Badge>
       case "in_progress":
         return <Badge className="bg-yellow-100 text-yellow-800">En cours</Badge>
       case "pending":
@@ -258,9 +258,9 @@ export default function StagiaireParcoursPage() {
                       </div>
 
                       {step.tuteur_feedback && (
-                        <div className="bg-blue-50 p-3 rounded-lg mb-3">
-                          <h5 className="font-medium text-blue-900 mb-1">Feedback du tuteur:</h5>
-                          <p className="text-blue-800 text-sm">{step.tuteur_feedback}</p>
+                        <div className="bg-red-50 p-3 rounded-lg mb-3">
+                                                      <h5 className="font-medium text-red-900 mb-1">Feedback du tuteur:</h5>
+                            <p className="text-red-800 text-sm">{step.tuteur_feedback}</p>
                         </div>
                       )}
 

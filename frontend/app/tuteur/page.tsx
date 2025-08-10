@@ -88,7 +88,7 @@ export default function TuteurDashboard() {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800'
       case 'completed':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-red-100 text-red-800'
       case 'validated':
         return 'bg-green-100 text-green-800'
       case 'rejected':
@@ -236,7 +236,7 @@ export default function TuteurDashboard() {
             <Card key={action.title} className="hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                  <action.icon className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
+                  <action.icon className="h-6 w-6 sm:h-8 sm:w-8 text-red-600" />
                   {action.badge && (
                     <Badge variant="secondary" className="text-xs">
                       {action.badge}
@@ -350,8 +350,8 @@ export default function TuteurDashboard() {
             <div className="space-y-4">
               {internships.slice(0, 3).map((internship) => (
                 <div key={internship.id} className="flex items-center gap-3 p-3 border rounded-lg">
-                  <div className="p-2 bg-blue-100 rounded-full">
-                    <FileText className="h-4 w-4 text-blue-600" />
+                  <div className="p-2 bg-red-100 rounded-full">
+                                          <FileText className="h-4 w-4 text-red-600" />
                   </div>
                   <div className="flex-1">
                     <div className="font-medium">
@@ -395,10 +395,10 @@ export default function TuteurDashboard() {
               </div>
               
               <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl">
-                <Target className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                <h4 className="font-semibold text-blue-900 mb-1">Progression moyenne</h4>
-                <p className="text-2xl font-bold text-blue-700">{stats?.avg_progress || 0}%</p>
-                <p className="text-xs text-blue-600">Tous stagiaires confondus</p>
+                <Target className="h-8 w-8 text-red-600 mx-auto mb-2" />
+                <h4 className="font-semibold text-red-900 mb-1">Progression moyenne</h4>
+                <p className="text-2xl font-bold text-red-700">{stats?.avg_progress || 0}%</p>
+                <p className="text-xs text-red-600">Tous stagiaires confondus</p>
               </div>
               
               <div className="text-center p-4 bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl">

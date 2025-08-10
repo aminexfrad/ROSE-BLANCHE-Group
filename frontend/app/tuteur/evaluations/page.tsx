@@ -115,7 +115,7 @@ export default function TuteurEvaluationsPage() {
       case "En attente":
         return "bg-yellow-100 text-yellow-800 border-yellow-200"
       case "En cours":
-        return "bg-blue-100 text-blue-800 border-blue-200"
+        return "bg-red-100 text-red-800 border-red-200"
       case "Évalué":
         return "bg-green-100 text-green-800 border-green-200"
       case "En retard":
@@ -306,7 +306,7 @@ export default function TuteurEvaluationsPage() {
                           <p className="text-sm text-gray-600 mt-1">{evaluation.type}</p>
                         </div>
                         <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" className="hover:bg-blue-50">
+                          <Button variant="outline" size="sm" className="hover:bg-red-50">
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button variant="outline" size="sm" className="hover:bg-green-50">
@@ -380,7 +380,7 @@ export default function TuteurEvaluationsPage() {
                           <p className="text-sm text-gray-600 mt-1">{evaluation.type}</p>
                         </div>
                         <div className="flex space-x-2">
-                          <Button variant="outline" size="sm" className="hover:bg-blue-50">
+                          <Button variant="outline" size="sm" className="hover:bg-red-50">
                             <Eye className="h-4 w-4" />
                           </Button>
                           <Button variant="outline" size="sm" className="hover:bg-purple-50">

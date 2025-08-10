@@ -84,7 +84,7 @@ export default function AdminStatistiquesPage() {
     value: s.progress || 0,
     target: 80,
     trend: "up" as const,
-    color: "bg-blue-500",
+            color: "bg-red-500",
   }))
 
   // Real monthly trends (based on creation dates)
@@ -104,7 +104,7 @@ export default function AdminStatistiquesPage() {
       <DashboardLayout allowedRoles={["admin"]} breadcrumbs={breadcrumbs}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <Loader2 className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
+            <Loader2 className="h-12 w-12 text-red-600 mx-auto mb-4 animate-spin" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement des statistiques</h2>
             <p className="text-gray-600">Veuillez patienter...</p>
           </div>
@@ -207,7 +207,7 @@ export default function AdminStatistiquesPage() {
           <Card className="shadow-xl border-0 animate-in slide-in-from-left duration-700 delay-600">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
               <CardTitle className="text-xl flex items-center gap-3">
-                <Users className="h-6 w-6 text-blue-600" />
+                <Users className="h-6 w-6 text-red-600" />
                 Répartition des utilisateurs
               </CardTitle>
               <CardDescription>
@@ -338,7 +338,7 @@ export default function AdminStatistiquesPage() {
           <CardContent className="p-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="text-center p-4 bg-white rounded-lg shadow">
-                <div className="text-2xl font-bold text-blue-600">{activeUsers}</div>
+                <div className="text-2xl font-bold text-red-600">{activeUsers}</div>
                 <div className="text-sm text-gray-600">Utilisateurs actifs</div>
               </div>
               <div className="text-center p-4 bg-white rounded-lg shadow">
@@ -365,8 +365,8 @@ export default function AdminStatistiquesPage() {
                   <div className="text-sm text-gray-600">Administrateurs</div>
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg shadow">
-                  <Users className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-blue-600">{rhUsers}</div>
+                              <Users className="h-8 w-8 text-red-600 mx-auto mb-2" />
+            <div className="text-2xl font-bold text-red-600">{rhUsers}</div>
                   <div className="text-sm text-gray-600">RH</div>
                 </div>
                 <div className="text-center p-4 bg-white rounded-lg shadow">

@@ -116,7 +116,7 @@ export default function RHStagiairesPage() {
 
   const getStatutBadge = (statut: string) => {
     const colors = {
-      en_cours: "bg-blue-100 text-blue-800",
+              en_cours: "bg-red-100 text-red-800",
       termine: "bg-green-100 text-green-800",
       alerte: "bg-red-100 text-red-800",
       suspendu: "bg-yellow-100 text-yellow-800",
@@ -127,7 +127,7 @@ export default function RHStagiairesPage() {
   const getStatutIcon = (statut: string) => {
     switch (statut) {
       case "en_cours":
-        return <Clock className="h-4 w-4 text-blue-600" />
+        return <Clock className="h-4 w-4 text-red-600" />
       case "termine":
         return <CheckCircle className="h-4 w-4 text-green-600" />
       case "alerte":
@@ -139,7 +139,7 @@ export default function RHStagiairesPage() {
 
   const getProgressionColor = (progression: number) => {
     if (progression >= 80) return "text-green-600"
-    if (progression >= 50) return "text-blue-600"
+            if (progression >= 50) return "text-red-600"
     if (progression >= 30) return "text-yellow-600"
     return "text-red-600"
   }
@@ -183,7 +183,7 @@ export default function RHStagiairesPage() {
               Exporter
             </Button>
             <Link href="/rh/ajouter-stagiaire">
-              <Button className="bg-blue-600 hover:bg-blue-700">
+                              <Button className="bg-red-600 hover:bg-red-700">
                 <UserPlus className="mr-2 h-4 w-4" />
                 Ajouter stagiaire
               </Button>
@@ -196,7 +196,7 @@ export default function RHStagiairesPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total stagiaires</CardTitle>
-              <Users className="h-4 w-4 text-blue-600" />
+                              <Users className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.total}</div>
@@ -207,7 +207,7 @@ export default function RHStagiairesPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">En cours</CardTitle>
-              <Clock className="h-4 w-4 text-blue-600" />
+                              <Clock className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.en_cours}</div>

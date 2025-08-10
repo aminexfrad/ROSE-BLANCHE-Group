@@ -101,7 +101,7 @@ export default function PublicTemoignagesPage() {
     return type === "video" ? (
       <Video className="h-5 w-5 text-purple-600" />
     ) : (
-      <FileText className="h-5 w-5 text-blue-600" />
+                      <FileText className="h-5 w-5 text-red-600" />
     )
   }
 

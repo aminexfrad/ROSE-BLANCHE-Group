@@ -85,7 +85,7 @@ export default function NotificationsPage() {
       case "error":
         return <AlertCircle className="h-5 w-5 text-red-600" />
       default:
-        return <Info className="h-5 w-5 text-blue-600" />
+        return <Info className="h-5 w-5 text-red-600" />
     }
   }
 
@@ -98,7 +98,7 @@ export default function NotificationsPage() {
       case "error":
         return "bg-red-50 border-red-200"
       default:
-        return "bg-blue-50 border-blue-200"
+        return "bg-red-50 border-red-200"
     }
   }
 
@@ -108,7 +108,7 @@ export default function NotificationsPage() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
+          <Loader2 className="h-12 w-12 text-red-600 mx-auto mb-4 animate-spin" />
           <h2 className="text-xl font-semibold text-gray-900 mb-2">Loading Notifications</h2>
           <p className="text-gray-600">Please wait while we load your notifications...</p>
         </div>

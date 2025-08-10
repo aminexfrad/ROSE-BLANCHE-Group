@@ -109,7 +109,7 @@ export default function AdminUtilisateursPage() {
       case "admin":
         return <Badge className="bg-red-100 text-red-800">Administrateur</Badge>
       case "rh":
-        return <Badge className="bg-blue-100 text-blue-800">RH</Badge>
+        return <Badge className="bg-red-100 text-red-800">RH</Badge>
       case "tuteur":
         return <Badge className="bg-green-100 text-green-800">Tuteur</Badge>
       case "stagiaire":
@@ -132,7 +132,7 @@ export default function AdminUtilisateursPage() {
       case "admin":
         return <Shield className="h-4 w-4 text-red-600" />
       case "rh":
-        return <Users className="h-4 w-4 text-blue-600" />
+        return <Users className="h-4 w-4 text-red-600" />
       case "tuteur":
         return <UserCheck className="h-4 w-4 text-green-600" />
       case "stagiaire":
@@ -168,7 +168,7 @@ export default function AdminUtilisateursPage() {
       <DashboardLayout allowedRoles={["admin"]} breadcrumbs={breadcrumbs}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <Loader2 className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
+            <Loader2 className="h-12 w-12 text-red-600 mx-auto mb-4 animate-spin" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement des utilisateurs</h2>
             <p className="text-gray-600">Veuillez patienter...</p>
           </div>

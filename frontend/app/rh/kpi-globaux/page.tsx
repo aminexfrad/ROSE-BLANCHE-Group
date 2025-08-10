@@ -100,7 +100,7 @@ export default function RHKPIG() {
       case "excellent":
         return "text-green-600 bg-green-100"
       case "bon":
-        return "text-blue-600 bg-blue-100"
+        return "text-red-600 bg-red-100"
       case "attention":
         return "text-yellow-600 bg-yellow-100"
       case "critique":
@@ -414,9 +414,9 @@ export default function RHKPIG() {
                       <div className="text-2xl font-bold text-green-600">{institut.reussite}%</div>
                       <p className="text-sm text-green-800">Taux de réussite</p>
                     </div>
-                    <div className="text-center p-3 bg-blue-50 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{institut.satisfaction}/5</div>
-                      <p className="text-sm text-blue-800">Satisfaction</p>
+                                          <div className="text-center p-3 bg-red-50 rounded-lg">
+                                    <div className="text-2xl font-bold text-red-600">{institut.satisfaction}/5</div>
+              <p className="text-sm text-red-800">Satisfaction</p>
                     </div>
                     <div className="text-center p-3 bg-red-50 rounded-lg">
                       <div className="text-2xl font-bold text-red-600">{institut.abandon}%</div>
@@ -446,11 +446,11 @@ export default function RHKPIG() {
                   const bgColor = alerte.niveau === 'error' ? 'bg-red-50' : 
                                  alerte.niveau === 'warning' ? 'bg-yellow-50' : 'bg-blue-50'
                   const textColor = alerte.niveau === 'error' ? 'text-red-600' : 
-                                   alerte.niveau === 'warning' ? 'text-yellow-600' : 'text-blue-600'
+                                   alerte.niveau === 'warning' ? 'text-yellow-600' : 'text-red-600'
                   const textColorDark = alerte.niveau === 'error' ? 'text-red-900' : 
-                                       alerte.niveau === 'warning' ? 'text-yellow-900' : 'text-blue-900'
+                                       alerte.niveau === 'warning' ? 'text-yellow-900' : 'text-red-900'
                   const textColorLight = alerte.niveau === 'error' ? 'text-red-700' : 
-                                        alerte.niveau === 'warning' ? 'text-yellow-700' : 'text-blue-700'
+                                        alerte.niveau === 'warning' ? 'text-yellow-700' : 'text-red-700'
                   
                   return (
                     <div key={index} className={`flex items-center space-x-4 p-3 ${bgColor} rounded-lg`}>

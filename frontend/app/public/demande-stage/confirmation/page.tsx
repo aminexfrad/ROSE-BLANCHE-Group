@@ -74,8 +74,8 @@ export default function ConfirmationPage() {
                   <div className="w-16 h-16 bg-gradient-to-r from-blue-400 to-cyan-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
                     <Search className="h-8 w-8 text-white" aria-hidden="true" />
                   </div>
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <span className="text-blue-600 font-bold text-sm" aria-label="Étape 2">2</span>
+                  <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                          <span className="text-red-600 font-bold text-sm" aria-label="Étape 2">2</span>
                   </div>
                   <h3 className="text-lg font-bold text-gray-900 mb-2">Examen de la candidature</h3>
                   <p className="text-sm text-gray-600 leading-relaxed">

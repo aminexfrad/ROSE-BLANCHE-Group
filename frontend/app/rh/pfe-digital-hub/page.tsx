@@ -172,7 +172,7 @@ export default function RHPFEDigitalHubPage() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       draft: { label: "Brouillon", className: "bg-gray-100 text-gray-800" },
-      submitted: { label: "Soumis", className: "bg-blue-100 text-blue-800" },
+              submitted: { label: "Soumis", className: "bg-red-100 text-red-800" },
       under_review: { label: "En révision", className: "bg-yellow-100 text-yellow-800" },
       approved: { label: "Approuvé", className: "bg-green-100 text-green-800" },
       rejected: { label: "Rejeté", className: "bg-red-100 text-red-800" },
@@ -248,10 +248,10 @@ export default function RHPFEDigitalHubPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Rapports</CardTitle>
-              <Database className="h-4 w-4 text-blue-600" />
+              <Database className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{totalReports}</div>
+                              <div className="text-2xl font-bold text-red-600">{totalReports}</div>
               <p className="text-xs text-muted-foreground">
                 Tous les rapports
               </p>

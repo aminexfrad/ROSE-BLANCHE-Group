@@ -139,8 +139,8 @@ export default function SettingsPage() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Bell className="h-5 w-5 text-blue-600" />
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <Bell className="h-5 w-5 text-red-600" />
                 </div>
                 Notifications
               </CardTitle>

@@ -82,7 +82,7 @@ export default function TuteurStagiairesPage() {
   const getStatutColor = (status: string) => {
     switch (status) {
       case "active":
-        return "bg-blue-100 text-blue-800 border-blue-200"
+        return "bg-red-100 text-red-800 border-red-200"
       case "completed":
         return "bg-green-100 text-green-800 border-green-200"
       case "suspended":
@@ -324,7 +324,7 @@ export default function TuteurStagiairesPage() {
                         <Button variant="outline" size="sm" className="hover:bg-red-50">
                           <Eye className="h-4 w-4" />
                         </Button>
-                        <Button variant="outline" size="sm" className="hover:bg-blue-50">
+                        <Button variant="outline" size="sm" className="hover:bg-red-50">
                           <MessageSquare className="h-4 w-4" />
                         </Button>
                         <Button variant="outline" size="sm" className="hover:bg-green-50">

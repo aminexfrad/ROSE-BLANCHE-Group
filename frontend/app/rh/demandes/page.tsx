@@ -91,7 +91,7 @@ function FilePreviewCard({ label, url }: { label: string; url?: string }) {
           <div className={`p-2 rounded-lg ${isPDF ? 'bg-red-100' : isImage ? 'bg-green-100' : 'bg-blue-100'}`}>
             {isPDF ? <FaFilePdf className="text-red-600 h-5 w-5" /> : 
              isImage ? <FaFileImage className="text-green-600 h-5 w-5" /> : 
-             <FaFileAlt className="text-blue-600 h-5 w-5" />}
+             <FaFileAlt className="text-red-600 h-5 w-5" />}
           </div>
           <div>
             <h4 className="font-semibold text-red-900">{label}</h4>
@@ -102,9 +102,8 @@ function FilePreviewCard({ label, url }: { label: string; url?: string }) {
         </div>
         {url && (
           <Button
-            variant="outline"
             size="sm"
-            className="hover:bg-red-50 hover:text-red-700 hover:border-red-300 transition-colors border-red-200 text-red-700"
+            className="bg-red-600 hover:bg-red-700 text-white border-0 transition-all duration-200 hover:scale-105"
             onClick={() => window.open(url, '_blank')}
           >
             <Download className="h-4 w-4 mr-2" />
@@ -261,7 +260,7 @@ export default function RHDemandesPage() {
 
   const getStatusBadge = (status: string) => {
     const colors = {
-      pending: "bg-blue-100 text-blue-800",
+      pending: "bg-red-100 text-red-800",
       approved: "bg-green-100 text-green-800",
       rejected: "bg-red-100 text-red-800",
     }
@@ -271,7 +270,7 @@ export default function RHDemandesPage() {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case "pending":
-        return <Clock className="h-4 w-4 text-blue-600" />
+        return <Clock className="h-4 w-4 text-red-600" />
       case "approved":
         return <CheckCircle className="h-4 w-4 text-green-600" />
       case "rejected":
@@ -447,7 +446,7 @@ export default function RHDemandesPage() {
                       if (url) window.open(url, '_blank');
                     });
                   }}
-                  className="bg-gradient-to-r from-red-600 via-red-700 to-red-800 hover:from-red-700 hover:via-red-800 hover:to-red-900 text-white px-8 py-4 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 font-semibold text-lg"
+                  className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 font-semibold text-lg"
                 >
                   <Download className="h-6 w-6 mr-3" />
                   Télécharger tous les documents
@@ -473,7 +472,7 @@ export default function RHDemandesPage() {
                     </div>
                     <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
                       <span className="font-semibold text-gray-700">Email</span>
-                      <span className="text-blue-600 font-semibold hover:text-blue-700 transition-colors cursor-pointer">{selectedApplication.email}</span>
+                      <span className="text-red-600 font-semibold hover:text-red-700 transition-colors cursor-pointer">{selectedApplication.email}</span>
                     </div>
                     <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
                       <span className="font-semibold text-gray-700">Téléphone</span>
@@ -483,8 +482,8 @@ export default function RHDemandesPage() {
                 </Card>
 
                 {/* Academic Information */}
-                <Card className="border-0 shadow-xl bg-gradient-to-br from-blue-50 via-white to-blue-50 rounded-2xl overflow-hidden">
-                  <CardHeader className="pb-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white">
+                <Card className="border-0 shadow-xl bg-gradient-to-br from-red-50 via-white to-red-50 rounded-2xl overflow-hidden">
+                  <CardHeader className="pb-4 bg-gradient-to-r from-red-600 to-red-700 text-white">
                     <CardTitle className="flex items-center gap-3 text-white text-xl">
                       <div className="p-2 bg-white/20 rounded-lg">
                         <Building className="h-6 w-6" />
@@ -556,11 +555,11 @@ export default function RHDemandesPage() {
 
               {selectedApplication.stage_binome && (
                 <div className="space-y-6">
-                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-2xl border border-blue-200">
-                    <div className="w-2 h-8 bg-gradient-to-b from-blue-600 to-blue-700 rounded-full"></div>
+                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-2xl border border-red-200">
+                    <div className="w-2 h-8 bg-gradient-to-b from-red-600 to-red-700 rounded-full"></div>
                     <div>
-                      <h3 className="text-2xl font-bold text-blue-900">Documents du binôme</h3>
-                      <p className="text-blue-600 text-sm">Documents soumis par le partenaire de stage</p>
+                      <h3 className="text-2xl font-bold text-red-900">Documents du binôme</h3>
+                      <p className="text-red-600 text-sm">Documents soumis par le partenaire de stage</p>
                     </div>
                   </div>
                   <FilePreviewCard label="CV binôme" url={selectedApplication.cv_binome} />
@@ -729,10 +728,10 @@ export default function RHDemandesPage() {
                               </span>
                               {/* Per-offer actions */}
                               {offre.status === 'pending' && <>
-                                <Button size="sm" variant="outline" onClick={() => handleApproveOffer(application.id, offre.id)} disabled={loadingOffers[`${application.id}-${offre.id}`]}>
+                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white border-0" onClick={() => handleApproveOffer(application.id, offre.id)} disabled={loadingOffers[`${application.id}-${offre.id}`]}>
                                   {loadingOffers[`${application.id}-${offre.id}`] ? '...' : 'Accepter'}
                                 </Button>
-                                <Button size="sm" variant="destructive" onClick={() => handleRejectOffer(application.id, offre.id)} disabled={loadingOffers[`${application.id}-${offre.id}`]}>
+                                <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-0" onClick={() => handleRejectOffer(application.id, offre.id)} disabled={loadingOffers[`${application.id}-${offre.id}`]}>
                                   {loadingOffers[`${application.id}-${offre.id}`] ? '...' : 'Rejeter'}
                                 </Button>
                               </>}
@@ -774,17 +773,17 @@ export default function RHDemandesPage() {
                           </DropdownMenuItem>
                           {application.status === 'pending' && (
                             <>
-                              <DropdownMenuItem onClick={() => handleApprove(application.id)}>
+                              <DropdownMenuItem onClick={() => handleApprove(application.id)} className="text-green-700 hover:text-green-800 hover:bg-green-50">
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Accepter
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleReject(application.id)}>
+                              <DropdownMenuItem onClick={() => handleReject(application.id)} className="text-red-700 hover:text-red-800 hover:bg-red-50">
                                 <AlertCircle className="mr-2 h-4 w-4" />
                                 Rejeter
                               </DropdownMenuItem>
                             </>
                           )}
-                          <DropdownMenuItem onClick={() => handleDownloadDocuments(application)}>
+                          <DropdownMenuItem onClick={() => handleDownloadDocuments(application)} className="text-red-700 hover:text-red-800 hover:bg-red-50">
                             <Download className="mr-2 h-4 w-4" />
                             Télécharger documents
                           </DropdownMenuItem>

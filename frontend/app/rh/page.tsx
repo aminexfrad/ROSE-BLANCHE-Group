@@ -148,7 +148,7 @@ export default function RHDashboard() {
       case 'rejected':
         return 'bg-red-100 text-red-800'
       case 'under_review':
-        return 'bg-blue-100 text-blue-800'
+        return 'bg-red-100 text-red-800'
       default:
         return 'bg-gray-100 text-gray-800'
     }
@@ -203,7 +203,7 @@ export default function RHDashboard() {
               <Download className="mr-2 h-4 w-4" />
               Exporter
             </Button>
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
+                            <Button size="sm" className="bg-red-600 hover:bg-red-700 w-full sm:w-auto">
               <BarChart3 className="mr-2 h-4 w-4" />
               Rapports
             </Button>

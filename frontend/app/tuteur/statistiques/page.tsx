@@ -69,7 +69,7 @@ export default function TuteurStatistiquesPage() {
     value: s.progress || 0,
     target: 80,
     trend: "up" as const,
-    color: "bg-blue-500",
+            color: "bg-red-500",
   }))
 
   // Real evaluations distribution
@@ -94,7 +94,7 @@ export default function TuteurStatistiquesPage() {
       <DashboardLayout allowedRoles={["tuteur"]} breadcrumbs={breadcrumbs}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <Loader2 className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
+            <Loader2 className="h-12 w-12 text-red-600 mx-auto mb-4 animate-spin" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement des statistiques</h2>
             <p className="text-gray-600">Veuillez patienter...</p>
           </div>
@@ -197,7 +197,7 @@ export default function TuteurStatistiquesPage() {
           <Card className="shadow-xl border-0 animate-in slide-in-from-left duration-700 delay-600">
             <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
               <CardTitle className="text-xl flex items-center gap-3">
-                <BarChart3 className="h-6 w-6 text-blue-600" />
+                <BarChart3 className="h-6 w-6 text-red-600" />
                 Progression des stagiaires
               </CardTitle>
               <CardDescription>

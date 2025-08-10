@@ -101,7 +101,7 @@ export default function StagiaireTemoignagesPage() {
     return type === "video" ? (
       <Video className="h-5 w-5 text-purple-600" />
     ) : (
-      <FileText className="h-5 w-5 text-blue-600" />
+                      <FileText className="h-5 w-5 text-red-600" />
     )
   }
 
@@ -185,7 +185,7 @@ export default function StagiaireTemoignagesPage() {
       <DashboardLayout allowedRoles={["stagiaire"]} breadcrumbs={breadcrumbs}>
         <div className="flex items-center justify-center min-h-screen">
           <div className="text-center">
-            <Loader2 className="h-12 w-12 text-blue-600 mx-auto mb-4 animate-spin" />
+            <Loader2 className="h-12 w-12 text-red-600 mx-auto mb-4 animate-spin" />
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Chargement des témoignages</h2>
             <p className="text-gray-600">Veuillez patienter...</p>
           </div>
@@ -217,7 +217,7 @@ export default function StagiaireTemoignagesPage() {
             <h1 className="text-3xl font-bold text-gray-900">Mes témoignages</h1>
             <p className="text-gray-600 mt-1">Gérez vos témoignages de stage</p>
           </div>
-          <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700">
+                          <Button onClick={() => setShowForm(true)} className="bg-red-600 hover:bg-red-700">
             <Plus className="mr-2 h-4 w-4" />
             Nouveau témoignage
           </Button>
@@ -228,7 +228,7 @@ export default function StagiaireTemoignagesPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total témoignages</CardTitle>
-              <MessageSquare className="h-4 w-4 text-blue-600" />
+                              <MessageSquare className="h-4 w-4 text-red-600" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{totalTestimonials}</div>
@@ -279,7 +279,7 @@ export default function StagiaireTemoignagesPage() {
                   <MessageSquare className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                   <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun témoignage</h3>
                   <p className="text-gray-600 mb-4">Vous n'avez pas encore soumis de témoignage.</p>
-                  <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700">
+                  <Button onClick={() => setShowForm(true)} className="bg-red-600 hover:bg-red-700">
                     <Plus className="mr-2 h-4 w-4" />
                     Créer mon premier témoignage
                   </Button>
@@ -360,7 +360,7 @@ export default function StagiaireTemoignagesPage() {
                             href={testimonial.video_url} 
                             target="_blank" 
                             rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 text-sm"
+                            className="text-red-600 hover:text-red-800 text-sm"
                           >
                             Voir la vidéo
                           </a>

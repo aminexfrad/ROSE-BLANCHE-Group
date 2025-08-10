@@ -167,7 +167,7 @@ export default function TuteurPFEReportsPage() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       draft: { label: "Brouillon", className: "bg-gray-100 text-gray-800" },
-      submitted: { label: "Soumis", className: "bg-blue-100 text-blue-800" },
+              submitted: { label: "Soumis", className: "bg-red-100 text-red-800" },
       under_review: { label: "En révision", className: "bg-yellow-100 text-yellow-800" },
       approved: { label: "Approuvé", className: "bg-green-100 text-green-800" },
       rejected: { label: "Rejeté", className: "bg-red-100 text-red-800" },
@@ -384,8 +384,8 @@ export default function TuteurPFEReportsPage() {
                           <span>Stagiaire: {report.stagiaire.first_name} {report.stagiaire.last_name}</span>
                         </div>
                         {report.tuteur_feedback && (
-                          <div className="mt-2 p-2 bg-blue-50 rounded">
-                            <p className="text-sm text-blue-800">
+                          <div className="mt-2 p-2 bg-red-50 rounded">
+                                                          <p className="text-sm text-red-800">
                               <strong>Votre feedback:</strong> {report.tuteur_feedback}
                             </p>
                           </div>
