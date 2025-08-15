@@ -98,6 +98,72 @@ def testimonial_notification_handler(sender, instance, created, **kwargs):
         print(f"Error in testimonial notification handler: {e}")
 
 
+@receiver(post_save, sender='demande_service.Demande')
+def demande_notification_handler(sender, instance, created, **kwargs):
+    """
+    Handle notifications for demande-related events
+    """
+    try:
+        if created:
+            # New demande created - notify RH users
+            notification_service = NotificationService()
+            
+            # Get RH users from the same company as the demande
+            rh_users = User.objects.filter(role='rh')
+            
+            if instance.entreprise:
+                # Filter RH users by company
+                rh_users = rh_users.filter(entreprise=instance.entreprise)
+            elif instance.offres.exists():
+                # Get company from first offer
+                first_offer = instance.offres.first()
+                if first_offer.entreprise:
+                    rh_users = rh_users.filter(entreprise=first_offer.entreprise)
+            
+            # Create notification event for each RH user
+            for rh_user in rh_users:
+                notification_service.create_event(
+                    event_type='demande',
+                    event_data={
+                        'demande_id': instance.id,
+                        'candidate_name': f"{instance.prenom} {instance.nom}",
+                        'candidate_email': instance.email,
+                        'specialite': instance.specialite,
+                        'type_stage': instance.type_stage,
+                        'institut': instance.institut,
+                        'status': instance.status
+                    },
+                    source_user=None,  # System generated
+                    target_users=[rh_user]
+                )
+                
+                print(f"✅ Notification de demande créée pour RH: {rh_user.email}")
+                
+        elif not created and hasattr(instance, 'status'):
+            # Demande status updated
+            notification_service = NotificationService()
+            
+            # Notify the candidate about status change
+            if instance.user_created:
+                notification_service.create_event(
+                    event_type='demande_update',
+                    event_data={
+                        'demande_id': instance.id,
+                        'status': instance.status,
+                        'message': f"Votre demande de stage a été {instance.status}"
+                    },
+                    source_user=None,
+                    target_users=[instance.user_created]
+                )
+                
+                print(f"✅ Notification de mise à jour créée pour candidat: {instance.user_created.email}")
+                
+    except Exception as e:
+        print(f"Error in demande notification handler: {e}")
+        import traceback
+        traceback.print_exc()
+
+
 @receiver(post_save, sender='shared.Evaluation')
 def evaluation_notification_handler(sender, instance, created, **kwargs):
     """

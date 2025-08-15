@@ -125,6 +125,56 @@ export default function DemandeStage() {
     setIsPrefilledFromOffer(false);
   }, [searchParams, toast]);
 
+  // Function to handle offer selection and auto-fill fields
+  const handleOfferSelection = async (offerIds: number[]) => {
+    setSelectedOfferIds(offerIds);
+    
+    if (offerIds.length > 0) {
+      try {
+        // Fetch offer details to auto-fill fields
+        const res = await apiClient.getOffresStage();
+        const all = res.results || [];
+        const selected = all.filter((o: any) => offerIds.includes(o.id));
+        
+        if (selected.length > 0) {
+          const firstOffer = selected[0];
+          
+          // Auto-fill PFE reference if only one offer
+          if (selected.length === 1) {
+            setFormData(prev => ({
+              ...prev,
+              pfeReference: firstOffer.reference || '',
+            }));
+          }
+          
+          // Auto-fill entreprise information
+          if (firstOffer.entreprise) {
+            console.log('Entreprise auto-remplie:', firstOffer.entreprise);
+            // You can add entreprise field to formData if needed
+          }
+          
+          // Update selected offer references
+          setSelectedOfferReferences(selected.map((o: any) => o.reference));
+          
+          console.log('Offres sélectionnées:', selected.map(o => ({ 
+            id: o.id, 
+            title: o.title, 
+            reference: o.reference,
+            entreprise: o.entreprise?.nom 
+          })));
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération des détails des offres:', error);
+      }
+    } else {
+      // Clear fields when no offers selected
+      setFormData(prev => ({
+        ...prev,
+        pfeReference: '',
+      }));
+      setSelectedOfferReferences([]);
+    }
+  };
 
 
   const [errors, setErrors] = useState({

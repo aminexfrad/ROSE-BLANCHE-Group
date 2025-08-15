@@ -93,6 +93,7 @@ class Demande(models.Model):
     # Timestamps
     created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
     updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
+    date_soumission = models.DateField(_('date de soumission'), auto_now_add=True, help_text=_('Date automatique de soumission de la demande'))
     
     class Meta:
         verbose_name = _('demande de stage')

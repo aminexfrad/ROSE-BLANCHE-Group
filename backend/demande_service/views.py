@@ -182,7 +182,8 @@ def approve_demande(request, pk):
                 stagiaire=user,
                 title=f"Stage {demande.type_stage} - {demande.prenom} {demande.nom}",
                 description=f"Stage de {demande.specialite} chez {demande.institut}",
-                company=demande.institut or "Rose Blanche Group",
+                company_entreprise=demande.entreprise,  # Use the entreprise from demande
+                company_name=demande.entreprise.nom if demande.entreprise else (demande.institut or "Rose Blanche Group"),
                 location="Tunis",  # Default location
                 start_date=demande.date_debut,
                 end_date=demande.date_fin,
@@ -193,6 +194,8 @@ def approve_demande(request, pk):
             # Update existing stage to active
             existing_stage.status = 'active'
             existing_stage.stagiaire = user
+            existing_stage.company_entreprise = demande.entreprise
+            existing_stage.company_name = demande.entreprise.nom if demande.entreprise else (demande.institut or "Rose Blanche Group")
             existing_stage.save()
             stage = existing_stage
         

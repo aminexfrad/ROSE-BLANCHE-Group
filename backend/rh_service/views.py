@@ -14,9 +14,64 @@ from django.utils import timezone
 from datetime import timedelta
 
 from demande_service.models import Demande as DemandeModel
-from shared.models import Stage, Testimonial, Evaluation, Notification, Survey, SurveyQuestion, SurveyResponse, KPIDashboard
+from shared.models import Stage, Testimonial, Evaluation, Notification, Survey, SurveyQuestion, SurveyResponse, KPIDashboard, Entreprise
 from auth_service.models import User
 from auth_service.serializers import UserSerializer
+
+
+def get_company_filtered_queryset(request, base_queryset, company_field='company_entreprise'):
+    """
+    Utility function to filter queryset based on RH user's company access.
+    RH users can only see data from their assigned company.
+    Admin users can see all data.
+    """
+    if request.user.role == 'rh':
+        if not request.user.entreprise:
+            # RH users without company assignment see no data
+            return base_queryset.none()
+        
+        # Filter by company
+        if company_field == 'company_entreprise':
+            return base_queryset.filter(company_entreprise=request.user.entreprise)
+        elif company_field == 'entreprise':
+            return base_queryset.filter(entreprise=request.user.entreprise)
+        elif company_field == 'stagiaire__entreprise':
+            return base_queryset.filter(stagiaire__entreprise=request.user.entreprise)
+        elif company_field == 'evaluated__entreprise':
+            return base_queryset.filter(evaluated__entreprise=request.user.entreprise)
+        elif company_field == 'author__entreprise':
+            return base_queryset.filter(author__entreprise=request.user.entreprise)
+        else:
+            # Default company filtering
+            return base_queryset.filter(**{company_field: request.user.entreprise})
+    
+    elif request.user.role == 'admin':
+        # Admin can see all data
+        return base_queryset
+    
+    else:
+        # Other roles see no data
+        return base_queryset.none()
+
+
+def validate_rh_company_access(request, target_entreprise):
+    """
+    Validate that RH user has access to the target company.
+    Returns (has_access, error_message)
+    """
+    if request.user.role == 'admin':
+        return True, None
+    
+    if request.user.role != 'rh':
+        return False, "Permission refusée - rôle non autorisé"
+    
+    if not request.user.entreprise:
+        return False, "Permission refusée - utilisateur RH non associé à une entreprise"
+    
+    if request.user.entreprise != target_entreprise:
+        return False, "Permission refusée - accès à cette entreprise non autorisé"
+    
+    return True, None
 
 
 class RHStagiairesView(APIView):
@@ -24,8 +79,12 @@ class RHStagiairesView(APIView):
 
     def get(self, request):
         try:
-            # Get all stagiaires (users with stagiaire role)
-            stagiaires = User.objects.filter(role='stagiaire').order_by('-date_joined')
+            # Use company-based filtering
+            stagiaires = get_company_filtered_queryset(
+                request, 
+                User.objects.filter(role='stagiaire'),
+                'entreprise'
+            ).order_by('-date_joined')
             
             stagiaires_data = []
             for stagiaire in stagiaires:
@@ -44,6 +103,7 @@ class RHStagiairesView(APIView):
                     "specialite": stagiaire.specialite,
                     "avatar": stagiaire.avatar.url if stagiaire.avatar else None,
                     "date_joined": stagiaire.date_joined.isoformat(),
+                    "entreprise": stagiaire.entreprise.nom if stagiaire.entreprise else None,
                     "active_stage": {
                         "id": active_stage.id,
                         "title": active_stage.title,
@@ -80,6 +140,18 @@ class RHStagiaireDetailView(APIView):
         try:
             # Get the stagiaire
             stagiaire = get_object_or_404(User, id=pk, role='stagiaire')
+            
+            # Validate company access for RH users
+            if request.user.role == 'rh':
+                has_access, error_msg = validate_rh_company_access(
+                    request, 
+                    stagiaire.entreprise
+                )
+                if not has_access:
+                    return Response(
+                        {'error': error_msg}, 
+                        status=status.HTTP_403_FORBIDDEN
+                    )
             
             # Get their stages
             stages = Stage.objects.filter(stagiaire=stagiaire).order_by('-created_at')
@@ -154,8 +226,12 @@ class RHTestimonialsView(APIView):
 
     def get(self, request):
         try:
-            # Get all testimonials
-            testimonials = Testimonial.objects.all().order_by('-created_at')
+            # Use company-based filtering for testimonials
+            testimonials = get_company_filtered_queryset(
+                request, 
+                Testimonial.objects.all(),
+                'stage__company_entreprise'
+            ).order_by('-created_at')
             
             testimonials_data = []
             for testimonial in testimonials:
@@ -215,6 +291,18 @@ class RHTestimonialModerationView(APIView):
     def moderate_testimonial(self, request, pk):
         try:
             testimonial = get_object_or_404(Testimonial, id=pk)
+            
+            # Validate company access for RH users
+            if request.user.role == 'rh':
+                has_access, error_msg = validate_rh_company_access(
+                    request, 
+                    testimonial.stage.company_entreprise
+                )
+                if not has_access:
+                    return Response(
+                        {'error': error_msg}, 
+                        status=status.HTTP_403_FORBIDDEN
+                    )
             
             action = request.data.get('action')
             comment = request.data.get('comment', '')
@@ -297,20 +385,32 @@ class RHKPIGlobauxView(APIView):
 
     def get(self, request):
         try:
+            # Use company-based filtering for KPI data
+            company_stages = get_company_filtered_queryset(
+                request, 
+                Stage.objects.all(),
+                'company_entreprise'
+            )
+            
             # Calculate KPI data
-            total_stages = Stage.objects.count()
-            completed_stages = Stage.objects.filter(status='completed').count()
-            active_stages = Stage.objects.filter(status='active').count()
+            total_stages = company_stages.count()
+            completed_stages = company_stages.filter(status='completed').count()
+            active_stages = company_stages.filter(status='active').count()
             
             # Calculate success rate
             taux_reussite = round((completed_stages / total_stages * 100), 1) if total_stages > 0 else 0
             
-            # Calculate average satisfaction from evaluations
-            avg_satisfaction = Evaluation.objects.aggregate(avg=Avg('overall_score'))['avg'] or 4.5
+            # Calculate average satisfaction from evaluations (company-filtered)
+            company_evaluations = get_company_filtered_queryset(
+                request, 
+                Evaluation.objects.all(),
+                'stage__company_entreprise'
+            )
+            avg_satisfaction = company_evaluations.aggregate(avg=Avg('overall_score'))['avg'] or 4.5
             satisfaction_moyenne = round(float(avg_satisfaction), 1)
             
             # Calculate average stage duration (in months)
-            stages_with_dates = Stage.objects.filter(start_date__isnull=False, end_date__isnull=False)
+            stages_with_dates = company_stages.filter(start_date__isnull=False, end_date__isnull=False)
             if stages_with_dates.exists():
                 total_duration = sum([
                     (stage.end_date - stage.start_date).days / 30 
@@ -321,11 +421,15 @@ class RHKPIGlobauxView(APIView):
                 temps_moyen_stage = 3.2
             
             # Calculate abandonment rate
-            abandoned_stages = Stage.objects.filter(status='cancelled').count()
+            abandoned_stages = company_stages.filter(status='cancelled').count()
             taux_abandon = round((abandoned_stages / total_stages * 100), 1) if total_stages > 0 else 0
             
-            # Get total stagiaires
-            nombre_stagiaires = User.objects.filter(role='stagiaire').count()
+            # Get total stagiaires (company-filtered)
+            nombre_stagiaires = get_company_filtered_queryset(
+                request, 
+                User.objects.filter(role='stagiaire'),
+                'entreprise'
+            ).count()
             
             # Calculate objectives and evolution
             objectifs = {
@@ -387,9 +491,17 @@ class RHKPIGlobauxView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
             
-            # Get all active stagiaires
-            active_stagiaires = User.objects.filter(role='stagiaire')
-            active_stages = Stage.objects.filter(stagiaire__in=active_stagiaires, status='active')
+            # Get company-filtered active stagiaires
+            active_stagiaires = get_company_filtered_queryset(
+                request, 
+                User.objects.filter(role='stagiaire'),
+                'entreprise'
+            )
+            active_stages = get_company_filtered_queryset(
+                request,
+                Stage.objects.filter(stagiaire__in=active_stagiaires, status='active'),
+                'company_entreprise'
+            )
             
             # Create survey notifications
             notifications_created = 0
@@ -428,15 +540,26 @@ class RHKPIGlobauxView(APIView):
     def calculate_institute_performance(self):
         """Calculate performance metrics by institute"""
         try:
-            institutes = User.objects.filter(role='stagiaire').values_list('institut', flat=True).distinct()
+            # Get company-filtered stagiaires
+            company_stagiaires = get_company_filtered_queryset(
+                self.request, 
+                User.objects.filter(role='stagiaire'),
+                'entreprise'
+            )
+            
+            institutes = company_stagiaires.values_list('institut', flat=True).distinct()
             performance_data = []
             
             for institut in institutes:
                 if not institut:
                     continue
                     
-                stagiaires = User.objects.filter(role='stagiaire', institut=institut)
-                stages = Stage.objects.filter(stagiaire__in=stagiaires)
+                stagiaires = company_stagiaires.filter(institut=institut)
+                stages = get_company_filtered_queryset(
+                    self.request,
+                    Stage.objects.filter(stagiaire__in=stagiaires),
+                    'company_entreprise'
+                )
                 
                 total_stagiaires = stagiaires.count()
                 completed_stages = stages.filter(status='completed').count()
@@ -444,8 +567,12 @@ class RHKPIGlobauxView(APIView):
                 
                 reussite = round((completed_stages / total_stages * 100), 1) if total_stages > 0 else 0
                 
-                # Calculate average satisfaction
-                evaluations = Evaluation.objects.filter(evaluated__in=stagiaires)
+                # Calculate average satisfaction (company-filtered)
+                evaluations = get_company_filtered_queryset(
+                    self.request,
+                    Evaluation.objects.filter(evaluated__in=stagiaires),
+                    'stage__company_entreprise'
+                )
                 satisfaction = evaluations.aggregate(avg=Avg('overall_score'))['avg'] or 4.5
                 
                 # Calculate abandonment rate
@@ -550,8 +677,12 @@ class RHStagesView(APIView):
 
     def get(self, request):
         try:
-            # Get all stages
-            stages = Stage.objects.all().order_by('-created_at')
+            # Use company-based filtering
+            stages = get_company_filtered_queryset(
+                request, 
+                Stage.objects.all(),
+                'company_entreprise'
+            ).order_by('-created_at')
             
             stages_data = []
             for stage in stages:
@@ -612,6 +743,18 @@ class RHStageDetailView(APIView):
     def get(self, request, pk):
         try:
             stage = get_object_or_404(Stage, id=pk)
+            
+            # Validate company access for RH users
+            if request.user.role == 'rh':
+                has_access, error_msg = validate_rh_company_access(
+                    request, 
+                    stage.company_entreprise
+                )
+                if not has_access:
+                    return Response(
+                        {'error': error_msg}, 
+                        status=status.HTTP_403_FORBIDDEN
+                    )
             
             # Get steps
             steps = stage.steps.all().order_by('order')
@@ -739,8 +882,12 @@ class RHEvaluationsView(APIView):
 
     def get(self, request):
         try:
-            # Get all evaluations
-            evaluations = Evaluation.objects.all().order_by('-created_at')
+            # Use company-based filtering for evaluations
+            evaluations = get_company_filtered_queryset(
+                request, 
+                Evaluation.objects.all(),
+                'stage__company_entreprise'
+            ).order_by('-created_at')
             
             evaluations_data = []
             for eval in evaluations:
@@ -786,8 +933,12 @@ class RHNotificationsView(APIView):
 
     def get(self, request):
         try:
-            # Get all notifications (RH can see all)
-            notifications = Notification.objects.all().order_by('-created_at')
+            # Use company-based filtering for notifications
+            notifications = get_company_filtered_queryset(
+                request, 
+                Notification.objects.all(),
+                'recipient__entreprise'
+            ).order_by('-created_at')
             
             notifications_data = []
             for notification in notifications:
@@ -826,12 +977,32 @@ class RHReportsView(APIView):
             report_type = request.query_params.get('type', 'overview')
             
             if report_type == 'overview':
-                # Overview report
-                total_stagiaires = User.objects.filter(role='stagiaire').count()
-                total_stages = Stage.objects.count()
-                active_stages = Stage.objects.filter(status='active').count()
-                completed_stages = Stage.objects.filter(status='completed').count()
-                avg_progress = Stage.objects.aggregate(avg=Avg('progress'))['avg'] or 0
+                # Overview report with company filtering
+                total_stagiaires = get_company_filtered_queryset(
+                    request, 
+                    User.objects.filter(role='stagiaire'),
+                    'entreprise'
+                ).count()
+                total_stages = get_company_filtered_queryset(
+                    request, 
+                    Stage.objects.all(),
+                    'company_entreprise'
+                ).count()
+                active_stages = get_company_filtered_queryset(
+                    request, 
+                    Stage.objects.filter(status='active'),
+                    'company_entreprise'
+                ).count()
+                completed_stages = get_company_filtered_queryset(
+                    request, 
+                    Stage.objects.filter(status='completed'),
+                    'company_entreprise'
+                ).count()
+                avg_progress = get_company_filtered_queryset(
+                    request, 
+                    Stage.objects.all(),
+                    'company_entreprise'
+                ).aggregate(avg=Avg('progress'))['avg'] or 0
                 
                 report_data = {
                     "report_type": "overview",
@@ -846,8 +1017,12 @@ class RHReportsView(APIView):
                 }
                 
             elif report_type == 'progress':
-                # Progress report
-                stages = Stage.objects.all()
+                # Progress report with company filtering
+                stages = get_company_filtered_queryset(
+                    request, 
+                    Stage.objects.all(),
+                    'company_entreprise'
+                )
                 progress_data = []
                 
                 for stage in stages:
@@ -869,8 +1044,12 @@ class RHReportsView(APIView):
                 }
                 
             elif report_type == 'evaluations':
-                # Evaluations report
-                evaluations = Evaluation.objects.all()
+                # Evaluations report with company filtering
+                evaluations = get_company_filtered_queryset(
+                    request, 
+                    Evaluation.objects.all(),
+                    'stage__company_entreprise'
+                )
                 eval_data = []
                 
                 for eval in evaluations:
@@ -971,6 +1150,13 @@ class RHCreerStagiaireView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
             
+            # For RH users, ensure they have company access
+            if request.user.role == 'rh' and not request.user.entreprise:
+                return Response(
+                    {'error': 'Permission refusée - utilisateur RH non associé à une entreprise'}, 
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            
             # Récupérer les données du formulaire
             data = request.data
             
@@ -1019,7 +1205,8 @@ class RHCreerStagiaireView(APIView):
                     telephone=data.get('telephone', ''),
                     institut=data['institut'],
                     specialite=data['specialite'],
-                    role='stagiaire'
+                    role='stagiaire',
+                    entreprise=request.user.entreprise if request.user.role == 'rh' else None
                 )
             
             # Créer une demande de stage approuvée
@@ -1037,7 +1224,8 @@ class RHCreerStagiaireView(APIView):
                 date_fin=data['date_fin'],
                 stage_binome=False,
                 status='approved',
-                user_created=stagiaire
+                user_created=stagiaire,
+                entreprise=request.user.entreprise if request.user.role == 'rh' else None
             )
             
             # Créer un stage pour ce stagiaire
@@ -1046,7 +1234,8 @@ class RHCreerStagiaireView(APIView):
                 stagiaire=stagiaire,
                 title=f"Stage {data['type_stage']} - {data['prenom']} {data['nom']}",
                 description=data.get('description', ''),
-                company="Entreprise à définir",
+                company_entreprise=request.user.entreprise if request.user.role == 'rh' else None,
+                company_name=request.user.entreprise.nom if request.user.role == 'rh' and request.user.entreprise else "Entreprise à définir",
                 location="Localisation à définir",
                 start_date=data['date_debut'],
                 end_date=data['date_fin'],
@@ -1097,8 +1286,12 @@ class RHTuteursDisponiblesView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
             
-            # Récupérer tous les tuteurs
-            tuteurs = User.objects.filter(role='tuteur').order_by('prenom', 'nom')
+            # Use company-based filtering
+            tuteurs = get_company_filtered_queryset(
+                request, 
+                User.objects.filter(role='tuteur'),
+                'entreprise'
+            ).order_by('prenom', 'nom')
             
             tuteurs_data = []
             for tuteur in tuteurs:
@@ -1116,7 +1309,8 @@ class RHTuteursDisponiblesView(APIView):
                     "telephone": tuteur.telephone,
                     "departement": tuteur.departement,
                     "stagiaires_assignes": stagiaires_assignes,
-                    "disponible": stagiaires_assignes < 5  # Limite de 5 stagiaires par tuteur
+                    "disponible": stagiaires_assignes < 5,  # Limite de 5 stagiaires par tuteur
+                    "entreprise": tuteur.entreprise.nom if tuteur.entreprise else None
                 }
                 tuteurs_data.append(tuteur_data)
             
@@ -1149,6 +1343,18 @@ class RHAssignerTuteurView(APIView):
             # Récupérer le stagiaire
             stagiaire = get_object_or_404(User, id=pk, role='stagiaire')
             
+            # Validate company access for RH users
+            if request.user.role == 'rh':
+                has_access, error_msg = validate_rh_company_access(
+                    request, 
+                    stagiaire.entreprise
+                )
+                if not has_access:
+                    return Response(
+                        {'error': error_msg}, 
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            
             # Récupérer l'ID du tuteur depuis la requête
             tuteur_id = request.data.get('tuteur_id')
             if not tuteur_id:
@@ -1169,6 +1375,13 @@ class RHAssignerTuteurView(APIView):
             if stagiaires_assignes >= 5:
                 return Response(
                     {'error': 'Ce tuteur a déjà le maximum de stagiaires assignés (5)'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Vérifier que le tuteur appartient à la même entreprise que le stagiaire
+            if stagiaire.entreprise != tuteur.entreprise:
+                return Response(
+                    {'error': 'Le tuteur sélectionné n\'appartient pas à la même entreprise que le stagiaire.'}, 
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
@@ -1256,6 +1469,18 @@ class RHCreateStageForStagiaireView(APIView):
             # Récupérer le stagiaire
             stagiaire = get_object_or_404(User, id=pk, role='stagiaire')
             
+            # Validate company access for RH users
+            if request.user.role == 'rh':
+                has_access, error_msg = validate_rh_company_access(
+                    request, 
+                    stagiaire.entreprise
+                )
+                if not has_access:
+                    return Response(
+                        {'error': error_msg}, 
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+            
             # Vérifier s'il a déjà un stage actif
             existing_stage = Stage.objects.filter(
                 stagiaire=stagiaire, 
@@ -1282,6 +1507,24 @@ class RHCreateStageForStagiaireView(APIView):
                         status=status.HTTP_400_BAD_REQUEST
                     )
             
+            # Déterminer l'entreprise pour le stage
+            # Si l'utilisateur RH a une entreprise, l'utiliser
+            # Sinon, essayer de trouver l'entreprise par le nom
+            entreprise = None
+            if request.user.role == 'rh' and request.user.entreprise:
+                entreprise = request.user.entreprise
+            else:
+                # Essayer de trouver l'entreprise par le nom
+                try:
+                    entreprise = Entreprise.objects.get(nom=data['company'])
+                except Entreprise.DoesNotExist:
+                    # Créer une entreprise temporaire si elle n'existe pas
+                    entreprise = Entreprise.objects.create(
+                        nom=data['company'],
+                        description=f"Entreprise créée automatiquement pour {stagiaire.prenom} {stagiaire.nom}",
+                        secteur_activite="Non spécifié"
+                    )
+            
             # Créer une demande de stage approuvée
             from demande_service.models import Demande as DemandeModel
             demande = DemandeModel.objects.create(
@@ -1298,7 +1541,8 @@ class RHCreateStageForStagiaireView(APIView):
                 date_fin=data['end_date'],
                 stage_binome=False,
                 status='approved',
-                user_created=stagiaire
+                user_created=stagiaire,
+                entreprise=entreprise
             )
             
             # Créer le stage
@@ -1307,7 +1551,8 @@ class RHCreateStageForStagiaireView(APIView):
                 stagiaire=stagiaire,
                 title=data['title'],
                 description=data.get('description', ''),
-                company=data['company'],
+                company_entreprise=entreprise,
+                company_name=data['company'],  # Garder pour la compatibilité
                 location=data['location'],
                 start_date=data['start_date'],
                 end_date=data['end_date'],
@@ -1355,7 +1600,15 @@ class RHSurveyManagementView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
             
-            surveys = Survey.objects.filter(created_by=request.user).order_by('-created_at')
+            # For RH users, only show surveys for their company
+            if request.user.role == 'rh':
+                surveys = Survey.objects.filter(
+                    created_by=request.user,
+                    target_stagiaires__entreprise=request.user.entreprise
+                ).distinct().order_by('-created_at')
+            else:
+                # Admin can see all surveys
+                surveys = Survey.objects.filter(created_by=request.user).order_by('-created_at')
             
             surveys_data = []
             for survey in surveys:
@@ -1417,6 +1670,14 @@ class RHSurveyManagementView(APIView):
                 kpi_threshold_warning=data.get('kpi_threshold_warning', 3.0),
                 kpi_threshold_critical=data.get('kpi_threshold_critical', 2.0)
             )
+            
+            # For RH users, automatically target stagiaires from their company
+            if request.user.role == 'rh' and request.user.entreprise:
+                company_stagiaires = User.objects.filter(
+                    role='stagiaire',
+                    entreprise=request.user.entreprise
+                )
+                survey.target_stagiaires.set(company_stagiaires)
             
             # Add specific stagiaires if target type is specific
             if data.get('target_type') == Survey.TargetType.SPECIFIC_STAGIAIRES:
@@ -1700,8 +1961,14 @@ class RHSurveyAnalysisView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
             
-            # Get all surveys created by this RH
-            surveys = Survey.objects.filter(created_by=request.user).order_by('-created_at')
+            # Get company-filtered surveys
+            if request.user.role == 'rh':
+                surveys = Survey.objects.filter(
+                    created_by=request.user,
+                    target_stagiaires__entreprise=request.user.entreprise
+                ).distinct().order_by('-created_at')
+            else:
+                surveys = Survey.objects.filter(created_by=request.user).order_by('-created_at')
             
             # Overall statistics
             total_surveys = surveys.count()
