@@ -10,6 +10,56 @@ from auth_service.models import User
 from demande_service.models import Demande
 from django.utils import timezone
 
+class Entreprise(models.Model):
+    """
+    Company model to support multiple companies in the system
+    """
+    nom = models.CharField(_('nom'), max_length=200, unique=True)
+    description = models.TextField(_('description'), blank=True)
+    secteur_activite = models.CharField(_('secteur d\'activité'), max_length=200, blank=True)
+    adresse = models.TextField(_('adresse'), blank=True)
+    ville = models.CharField(_('ville'), max_length=100, blank=True)
+    pays = models.CharField(_('pays'), max_length=100, default='Maroc')
+    telephone = models.CharField(_('téléphone'), max_length=20, blank=True)
+    email = models.EmailField(_('email'), blank=True)
+    site_web = models.URLField(_('site web'), blank=True)
+    logo = models.ImageField(_('logo'), upload_to='entreprises/logos/', blank=True, null=True)
+    
+    # Company status
+    is_active = models.BooleanField(_('active'), default=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('entreprise')
+        verbose_name_plural = _('entreprises')
+        db_table = 'entreprise'
+        ordering = ['nom']
+    
+    def __str__(self):
+        return self.nom
+    
+    @property
+    def nombre_stagiaires(self):
+        """Get the number of active stagiaires in this company"""
+        from auth_service.models import User
+        return User.objects.filter(
+            role='stagiaire',
+            stages_stagiaire__company_entreprise=self,
+            stages_stagiaire__status='active'
+        ).distinct().count()
+    
+    @property
+    def nombre_rh(self):
+        """Get the number of RH users in this company"""
+        from auth_service.models import User
+        return User.objects.filter(
+            role='rh',
+            entreprise=self
+        ).count()
+
 class Stage(models.Model):
     """
     Stage/Internship model that represents an approved internship
@@ -28,7 +78,8 @@ class Stage(models.Model):
     # Stage details
     title = models.CharField(_('titre'), max_length=200)
     description = models.TextField(_('description'), blank=True)
-    company = models.CharField(_('entreprise'), max_length=200)
+    company_entreprise = models.ForeignKey(Entreprise, on_delete=models.SET_NULL, null=True, blank=True, related_name='stages', verbose_name=_('entreprise'))
+    company_name = models.CharField(_('nom entreprise'), max_length=200, blank=True)  # Keep for backward compatibility
     location = models.CharField(_('localisation'), max_length=200)
     
     # Dates
@@ -55,7 +106,7 @@ class Stage(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"Stage: {self.title} - {self.stagiaire.get_full_name()}"
+        return f"Stage: {self.title} - {self.stagiaire.get_full_name()} - {self.company_entreprise.nom}"
     
     @property
     def duration_days(self):
@@ -864,6 +915,7 @@ class OffreStage(models.Model):
     specialite = models.CharField(_('spécialité'), max_length=100, default='Inconnu')
     nombre_postes = models.PositiveIntegerField(_('nombre de postes'), default=1)
     ville = models.CharField(_('ville'), max_length=100, default='Inconnu')
+    entreprise = models.ForeignKey(Entreprise, on_delete=models.SET_NULL, null=True, blank=True, related_name='offres_stage', verbose_name=_('entreprise'))
     STATUS_CHOICES = [
         ('open', 'Ouverte'),
         ('closed', 'Fermée'),
@@ -886,7 +938,7 @@ class OffreStage(models.Model):
         ordering = ['-id']
 
     def __str__(self):
-        return f"{self.reference} - {self.title}"
+        return f"{self.reference} - {self.title} - {self.entreprise.nom}"
 
 class PFEReport(models.Model):
     """

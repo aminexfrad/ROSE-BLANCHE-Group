@@ -31,6 +31,25 @@ const performanceMetrics = {
   totalResponseTime: 0,
 }
 
+export interface Entreprise {
+  id: number
+  nom: string
+  description?: string
+  secteur_activite?: string
+  adresse?: string
+  ville?: string
+  pays: string
+  telephone?: string
+  email?: string
+  site_web?: string
+  logo?: string
+  is_active: boolean
+  nombre_stagiaires: number
+  nombre_rh: number
+  created_at: string
+  updated_at: string
+}
+
 export interface User {
   id: number
   email: string
@@ -43,6 +62,7 @@ export interface User {
   specialite?: string
   bio?: string
   avatar?: string
+  entreprise?: Entreprise
   date_joined: string
 }
 
@@ -71,6 +91,7 @@ export interface Application {
   lettre_motivation_binome?: string
   demande_stage_binome?: string
   status: 'pending' | 'approved' | 'rejected'
+  entreprise?: Entreprise
   created_at: string
   updated_at: string
   offres?: { id: number; reference: string; title: string }[]
@@ -79,7 +100,9 @@ export interface Application {
 export interface Stage {
   id: number;
   title: string;
-  company: string;
+  company_entreprise?: Entreprise;
+  company_name?: string;
+  company?: string; // Keep for backward compatibility
   location: string;
   description?: string;
   start_date: string;
@@ -234,6 +257,7 @@ export interface OffreStage {
   specialite: string
   nombre_postes: number
   ville: string
+  entreprise?: Entreprise
   status: 'open' | 'closed' | 'draft' | 'expired'
   type: 'Classique' | 'PFE'
   validated: boolean
@@ -1287,6 +1311,33 @@ class ApiClient {
     }
     
     return response.json()
+  }
+
+  // Entreprise methods
+  async getEntreprises(): Promise<Entreprise[]> {
+    return this.request<Entreprise[]>('/entreprises/')
+  }
+
+  async getEntreprise(id: number): Promise<Entreprise> {
+    return this.request<Entreprise>(`/entreprises/${id}/`)
+  }
+
+  async getEntrepriseStages(id: number): Promise<Stage[]> {
+    return this.request<Stage[]>(`/entreprises/${id}/stages/`)
+  }
+
+  async getEntrepriseOffres(id: number): Promise<OffreStage[]> {
+    return this.request<OffreStage[]>(`/entreprises/${id}/offres/`)
+  }
+
+  // Company-specific demandes
+  async getEntrepriseDemandes(entrepriseId: number): Promise<Application[]> {
+    return this.request<Application[]>(`/demandes/?entreprise=${entrepriseId}`)
+  }
+
+  // Get demandes for current user's company (RH users)
+  async getMyCompanyDemandes(): Promise<Application[]> {
+    return this.request<Application[]>('/demandes/')
   }
 
   // Offre Stage methods

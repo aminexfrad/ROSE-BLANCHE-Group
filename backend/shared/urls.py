@@ -11,6 +11,12 @@ urlpatterns = [
     # Root API endpoint
     path('', views.APIRootView.as_view(), name='api-root'),
     
+    # Entreprises
+    path('entreprises/', views.EntreprisesListView.as_view(), name='entreprises-list'),
+    path('entreprises/<int:pk>/', views.EntrepriseDetailView.as_view(), name='entreprise-detail'),
+    path('entreprises/<int:pk>/stages/', views.EntrepriseStagesView.as_view(), name='entreprise-stages'),
+    path('entreprises/<int:pk>/offres/', views.EntrepriseOffresView.as_view(), name='entreprise-offres'),
+    
     # Dashboard and stats
     path('stats/', views.DashboardStatsView.as_view(), name='dashboard-stats'),
     path('dashboard/stats/', views.DashboardStatsView.as_view(), name='dashboard-stats-alt'),

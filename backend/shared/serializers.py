@@ -5,14 +5,35 @@ Intellectual Property – Protected by international copyright law.
 """
 
 from rest_framework import serializers
-from .models import Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage, PFEReport
+from .models import Entreprise, Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage, PFEReport
 
 from auth_service.models import User
 from auth_service.serializers import UserSerializer
 
+class EntrepriseSerializer(serializers.ModelSerializer):
+    """Serializer for Entreprise model"""
+    nombre_stagiaires = serializers.ReadOnlyField()
+    nombre_rh = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Entreprise
+        fields = '__all__'
+
+class EntrepriseListSerializer(serializers.ModelSerializer):
+    """List serializer for Entreprise model"""
+    nombre_stagiaires = serializers.ReadOnlyField()
+    nombre_rh = serializers.ReadOnlyField()
+    
+    class Meta:
+        model = Entreprise
+        fields = ['id', 'nom', 'description', 'secteur_activite', 'ville', 'pays', 
+                 'telephone', 'email', 'site_web', 'logo', 'is_active', 
+                 'nombre_stagiaires', 'nombre_rh', 'created_at']
+
 class StageSerializer(serializers.ModelSerializer):
     stagiaire = UserSerializer(read_only=True)
     tuteur = UserSerializer(read_only=True)
+    company_entreprise = EntrepriseSerializer(read_only=True)
     duration_days = serializers.ReadOnlyField()
     days_remaining = serializers.ReadOnlyField()
     steps_count = serializers.SerializerMethodField()
@@ -35,12 +56,13 @@ class StageSerializer(serializers.ModelSerializer):
 class StageListSerializer(serializers.ModelSerializer):
     stagiaire = UserSerializer(read_only=True)
     tuteur = UserSerializer(read_only=True)
+    company_entreprise = EntrepriseListSerializer(read_only=True)
     duration_days = serializers.ReadOnlyField()
     days_remaining = serializers.ReadOnlyField()
     
     class Meta:
         model = Stage
-        fields = ['id', 'title', 'company', 'location', 'status', 'progress', 
+        fields = ['id', 'title', 'company_entreprise', 'company_name', 'location', 'status', 'progress', 
                  'start_date', 'end_date', 'duration_days', 'days_remaining',
                  'stagiaire', 'tuteur', 'created_at']
 
@@ -226,16 +248,18 @@ class OffreStageSerializer(serializers.ModelSerializer):
         fields = ['id', 'reference', 'title', 'description', 'objectifs', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville', 'status', 'type', 'validated']
 
 class OffreStageListSerializer(serializers.ModelSerializer):
+    entreprise = EntrepriseListSerializer(read_only=True)
+    
     class Meta:
         model = OffreStage
-        fields = ['id', 'reference', 'title', 'description', 'objectifs', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville', 'status', 'type', 'validated']
+        fields = ['id', 'reference', 'title', 'description', 'objectifs', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville', 'entreprise', 'status', 'type', 'validated']
 
 class OffreStageCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = OffreStage
         fields = [
             'reference', 'title', 'description', 'objectifs', 'keywords', 'diplome',
-            'specialite', 'nombre_postes', 'ville', 'status', 'type', 'validated'
+            'specialite', 'nombre_postes', 'ville', 'entreprise', 'status', 'type', 'validated'
         ]
     
     def create(self, validated_data):

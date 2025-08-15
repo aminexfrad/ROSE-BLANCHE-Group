@@ -80,6 +80,16 @@ class Demande(models.Model):
         related_name='demandes_approved'
     )
     
+    # Company reference (derived from the first offer, for easier filtering)
+    entreprise = models.ForeignKey(
+        'shared.Entreprise',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='demandes',
+        verbose_name=_('entreprise')
+    )
+    
     # Timestamps
     created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
     updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
@@ -128,6 +138,20 @@ class Demande(models.Model):
         if raison:
             self.raison_refus = raison
         self.save()
+    
+    def update_entreprise_from_offres(self):
+        """Update entreprise reference based on the first offer"""
+        first_offre = self.offres.first()
+        if first_offre and first_offre.entreprise:
+            self.entreprise = first_offre.entreprise
+            self.save(update_fields=['entreprise'])
+    
+    def save(self, *args, **kwargs):
+        """Override save to automatically set entreprise if not set"""
+        super().save(*args, **kwargs)
+        # Auto-set entreprise if not already set
+        if not self.entreprise and self.offres.exists():
+            self.update_entreprise_from_offres()
 
 
 class DemandeOffre(models.Model):
@@ -138,6 +162,14 @@ class DemandeOffre(models.Model):
     ]
     demande = models.ForeignKey('Demande', on_delete=models.CASCADE, related_name='demande_offres')
     offre = models.ForeignKey('shared.OffreStage', on_delete=models.CASCADE, related_name='offre_demandes')
+    entreprise = models.ForeignKey(
+        'shared.Entreprise',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='demande_offres',
+        verbose_name=_('entreprise')
+    )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -146,3 +178,9 @@ class DemandeOffre(models.Model):
 
     def __str__(self):
         return f"{self.demande} - {self.offre} ({self.status})"
+    
+    def save(self, *args, **kwargs):
+        """Override save to automatically set entreprise from the offer"""
+        if not self.entreprise and self.offre:
+            self.entreprise = self.offre.entreprise
+        super().save(*args, **kwargs)

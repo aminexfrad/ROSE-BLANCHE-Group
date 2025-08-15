@@ -16,8 +16,9 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from django.shortcuts import get_object_or_404
 
-from .models import Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage, PFEReport
+from .models import Entreprise, Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage, PFEReport
 from .serializers import (
+    EntrepriseSerializer, EntrepriseListSerializer,
     StageSerializer, StageListSerializer, StepSerializer, StepListSerializer,
     DocumentSerializer, DocumentListSerializer, DocumentUploadSerializer,
     EvaluationSerializer, EvaluationCreateSerializer, KPIQuestionSerializer,
@@ -969,7 +970,13 @@ class OffreStageListView(APIView):
             nombre_postes = request.query_params.get('nombre_postes')
             search = request.query_params.get('search')
 
-            queryset = OffreStage.objects.all()
+            # Start with base queryset
+            if request.user.is_authenticated and request.user.role == 'rh' and request.user.entreprise:
+                # RH users see only offers from their company
+                queryset = OffreStage.objects.filter(entreprise=request.user.entreprise)
+            else:
+                # Public users and admins see all offers
+                queryset = OffreStage.objects.all()
 
             if specialite:
                 queryset = queryset.filter(specialite__icontains=specialite)
@@ -1054,7 +1061,17 @@ class OffreStageCreateView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
             
-            serializer = OffreStageCreateSerializer(data=request.data, context={'request': request})
+            # Prepare data with entreprise for RH users
+            data = request.data.copy()
+            if request.user.role == 'rh' and request.user.entreprise:
+                data['entreprise'] = request.user.entreprise.id
+            elif request.user.role == 'rh' and not request.user.entreprise:
+                return Response(
+                    {'error': 'RH users must be assigned to a company to create offers'}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            serializer = OffreStageCreateSerializer(data=data, context={'request': request})
             if serializer.is_valid():
                 offre = serializer.save()
                 return Response(
@@ -1085,7 +1102,11 @@ class OffreStageUpdateView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
             try:
-                offre = OffreStage.objects.get(id=offre_id)
+                # Get offre with company-specific access control
+                if request.user.role == 'rh' and request.user.entreprise:
+                    offre = OffreStage.objects.get(id=offre_id, entreprise=request.user.entreprise)
+                else:
+                    offre = OffreStage.objects.get(id=offre_id)
                 print(f"[DEBUG] OffreStage found: {offre}")
             except OffreStage.DoesNotExist:
                 print(f"[DEBUG] OffreStage with id {offre_id} does not exist!")
@@ -1116,7 +1137,11 @@ class OffreStageDeleteView(APIView):
                     status=status.HTTP_403_FORBIDDEN
                 )
             
-            offre = get_object_or_404(OffreStage, id=offre_id)
+            # Get offre with company-specific access control
+            if request.user.role == 'rh' and request.user.entreprise:
+                offre = get_object_or_404(OffreStage, id=offre_id, entreprise=request.user.entreprise)
+            else:
+                offre = get_object_or_404(OffreStage, id=offre_id)
             offre.delete()
             return Response({'message': 'Internship offer deleted successfully'})
             
@@ -1734,3 +1759,70 @@ class KPIReportGenerationView(APIView):
             'completed_stages': completed_stages,
             'active_stages': active_stages
         }
+
+
+# Entreprise Views
+class EntreprisesListView(APIView):
+    """List all entreprises"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        try:
+            entreprises = Entreprise.objects.filter(is_active=True).order_by('nom')
+            serializer = EntrepriseListSerializer(entreprises, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la récupération des entreprises: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class EntrepriseDetailView(APIView):
+    """Get details of a specific entreprise"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk):
+        try:
+            entreprise = get_object_or_404(Entreprise, pk=pk, is_active=True)
+            serializer = EntrepriseSerializer(entreprise)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la récupération de l\'entreprise: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class EntrepriseStagesView(APIView):
+    """Get all stages for a specific entreprise"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk):
+        try:
+            entreprise = get_object_or_404(Entreprise, pk=pk, is_active=True)
+            stages = Stage.objects.filter(company_entreprise=entreprise).order_by('-created_at')
+            serializer = StageListSerializer(stages, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la récupération des stages: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+
+class EntrepriseOffresView(APIView):
+    """Get all offres for a specific entreprise"""
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, pk):
+        try:
+            entreprise = get_object_or_404(Entreprise, pk=pk, is_active=True)
+            offres = OffreStage.objects.filter(entreprise=entreprise).order_by('-created_at')
+            serializer = OffreStageListSerializer(offres, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'error': f'Erreur lors de la récupération des offres: {str(e)}'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

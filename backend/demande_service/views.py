@@ -86,9 +86,17 @@ class DemandeListView(generics.ListAPIView):
     ordering = ['-created_at']
     
     def get_queryset(self):
-        # Only RH and admin can view all demandes
+        # Only RH and admin can view demandes
         if self.request.user.role in ['rh', 'admin']:
-            return Demande.objects.all()
+            if self.request.user.role == 'rh' and self.request.user.entreprise:
+                # RH users can only see demandes for their company
+                return Demande.objects.filter(entreprise=self.request.user.entreprise)
+            elif self.request.user.role == 'admin':
+                # Admin can see all demandes
+                return Demande.objects.all()
+            else:
+                # RH users without company assignment see no demandes
+                return Demande.objects.none()
         return Demande.objects.none()
 
 
@@ -96,12 +104,19 @@ class DemandeDetailView(generics.RetrieveAPIView):
     """Get detailed demande information"""
     serializer_class = DemandeDetailSerializer
     permission_classes = [IsAuthenticated]
-    queryset = Demande.objects.all()
     
     def get_queryset(self):
-        # Only RH and admin can view demande details
+        # Only RH and admin can view demandes
         if self.request.user.role in ['rh', 'admin']:
-            return Demande.objects.all()
+            if self.request.user.role == 'rh' and self.request.user.entreprise:
+                # RH users can only see demandes for their company
+                return Demande.objects.filter(entreprise=self.request.user.entreprise)
+            elif self.request.user.role == 'admin':
+                # Admin can see all demandes
+                return Demande.objects.all()
+            else:
+                # RH users without company assignment see no demandes
+                return Demande.objects.none()
         return Demande.objects.none()
 
 

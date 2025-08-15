@@ -75,6 +75,9 @@ class User(AbstractUser):
     specialite = models.CharField(_('spécialité'), max_length=200, blank=True)
     bio = models.TextField(_('biographie'), blank=True)
     
+    # Company association (for RH users)
+    entreprise = models.ForeignKey('shared.Entreprise', on_delete=models.SET_NULL, null=True, blank=True, related_name='users', verbose_name=_('entreprise'))
+    
     # Profile image
     avatar = models.ImageField(_('avatar'), upload_to='avatars/', blank=True, null=True)
     
@@ -119,3 +122,14 @@ class User(AbstractUser):
     @property
     def is_admin(self):
         return self.role == self.Role.ADMIN
+    
+    def clean(self):
+        """Validate that RH users have an entreprise assigned"""
+        from django.core.exceptions import ValidationError
+        
+        if self.role == self.Role.RH and not self.entreprise:
+            raise ValidationError(_('Les utilisateurs RH doivent être associés à une entreprise.'))
+    
+    def save(self, *args, **kwargs):
+        self.clean()
+        super().save(*args, **kwargs)

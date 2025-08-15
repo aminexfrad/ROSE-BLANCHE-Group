@@ -11,6 +11,7 @@ from shared.security import SecurityValidator
 from shared.utils import FileUploadValidator
 from .models import Demande, DemandeOffre
 from shared.models import OffreStage
+from shared.serializers import EntrepriseListSerializer
 
 
 class DemandeSerializer(serializers.ModelSerializer):
@@ -29,6 +30,7 @@ class DemandeSerializer(serializers.ModelSerializer):
         help_text="IDs des offres sélectionnées (max 4 pour PFE)"
     )
     offres = serializers.SerializerMethodField(read_only=True)
+    entreprise = EntrepriseListSerializer(read_only=True)
 
     class Meta:
         model = Demande
@@ -40,7 +42,7 @@ class DemandeSerializer(serializers.ModelSerializer):
             'telephone_binome',
             'cv', 'lettre_motivation', 'demande_stage',
             'cv_binome', 'lettre_motivation_binome', 'demande_stage_binome',
-            'status', 'raison_refus', 'created_at', 'updated_at',
+            'status', 'raison_refus', 'entreprise', 'created_at', 'updated_at',
             'offer_ids', 'offres'
         ]
         read_only_fields = ['id', 'status', 'raison_refus', 'created_at', 'updated_at', 'offres']
@@ -246,7 +248,7 @@ class DemandeListSerializer(DemandeSerializer):
             'id', 'nom', 'prenom', 'nom_complet', 'email', 'institut', 'specialite',
             'type_stage', 'niveau', 'pfe_reference', 'date_debut', 'date_fin',
             'duree_stage', 'stage_binome', 'nom_complet_binome',
-            'is_pfe_stage', 'status', 'created_at',
+            'is_pfe_stage', 'status', 'entreprise', 'created_at',
             'cv', 'lettre_motivation', 'demande_stage',
             'cv_binome', 'lettre_motivation_binome', 'demande_stage_binome',
             'offres'

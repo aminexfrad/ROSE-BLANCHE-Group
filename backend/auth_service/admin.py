@@ -14,9 +14,9 @@ from .models import User
 class UserAdmin(BaseUserAdmin):
     """Admin configuration for custom User model"""
     
-    list_display = ('email', 'nom', 'prenom', 'role', 'is_active', 'date_joined')
-    list_filter = ('role', 'is_active', 'is_staff', 'date_joined')
-    search_fields = ('email', 'nom', 'prenom')
+    list_display = ('email', 'nom', 'prenom', 'role', 'entreprise', 'is_active', 'date_joined')
+    list_filter = ('role', 'entreprise', 'is_active', 'is_staff', 'date_joined')
+    search_fields = ('email', 'nom', 'prenom', 'entreprise__nom')
     ordering = ('-date_joined',)
     
     fieldsets = (
@@ -25,7 +25,7 @@ class UserAdmin(BaseUserAdmin):
             'fields': ('nom', 'prenom', 'telephone', 'avatar')
         }),
         (_('Rôle et permissions'), {
-            'fields': ('role', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')
+            'fields': ('role', 'entreprise', 'is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions')
         }),
         (_('Informations académiques/professionnelles'), {
             'fields': ('departement', 'institut', 'specialite', 'bio')
@@ -38,7 +38,7 @@ class UserAdmin(BaseUserAdmin):
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('email', 'password1', 'password2', 'nom', 'prenom', 'role'),
+            'fields': ('email', 'password1', 'password2', 'nom', 'prenom', 'role', 'entreprise'),
         }),
     )
     

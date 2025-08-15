@@ -14,9 +14,9 @@ from .models import Demande
 class DemandeAdmin(admin.ModelAdmin):
     """Admin configuration for Demande model"""
     
-    list_display = ('nom_complet', 'email', 'institut', 'type_stage', 'niveau', 'pfe_reference_display', 'stage_binome', 'status', 'created_at')
-    list_filter = ('status', 'type_stage', 'institut', 'stage_binome', 'created_at')
-    search_fields = ('nom', 'prenom', 'email', 'institut', 'specialite', 'pfe_reference')
+    list_display = ('nom_complet', 'email', 'institut', 'type_stage', 'niveau', 'pfe_reference_display', 'stage_binome', 'entreprise', 'status', 'created_at')
+    list_filter = ('status', 'type_stage', 'institut', 'stage_binome', 'entreprise', 'created_at')
+    search_fields = ('nom', 'prenom', 'email', 'institut', 'specialite', 'pfe_reference', 'entreprise__nom')
     ordering = ('-created_at',)
     readonly_fields = ('created_at', 'updated_at', 'nom_complet', 'nom_complet_binome', 'duree_stage', 'is_pfe_stage')
     
@@ -42,7 +42,7 @@ class DemandeAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         }),
         (_('Statut et traitement'), {
-            'fields': ('status', 'raison_refus', 'user_created')
+            'fields': ('status', 'raison_refus', 'user_created', 'entreprise')
         }),
         (_('Informations système'), {
             'fields': ('created_at', 'updated_at', 'is_pfe_stage'),

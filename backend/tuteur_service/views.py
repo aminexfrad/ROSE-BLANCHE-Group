@@ -58,7 +58,7 @@ class TuteurStagiairesView(APIView):
                 stage_data = {
                     "id": stage.id,
                     "title": stage.title,
-                    "company": stage.company,
+                    "company": stage.company_entreprise.nom if stage.company_entreprise else stage.company_name,
                     "status": stage.status,
                     "start_date": stage.start_date.isoformat(),
                     "end_date": stage.end_date.isoformat(),
@@ -132,7 +132,7 @@ class TuteurStagiaireDetailView(APIView):
             stage_data = {
                 "id": stage.id,
                 "title": stage.title,
-                "company": stage.company,
+                "company": stage.company_entreprise.nom if stage.company_entreprise else stage.company_name,
                 "status": stage.status,
                 "start_date": stage.start_date.isoformat(),
                 "end_date": stage.end_date.isoformat(),
@@ -280,7 +280,7 @@ class TuteurEvaluationsView(APIView):
                     "stage": {
                         "id": evaluation.stage.id,
                         "title": evaluation.stage.title,
-                        "company": evaluation.stage.company
+                        "company": evaluation.stage.company_entreprise.nom if evaluation.stage.company_entreprise else evaluation.stage.company_name
                     },
                     "created_at": evaluation.created_at.isoformat(),
                     "updated_at": evaluation.updated_at.isoformat()

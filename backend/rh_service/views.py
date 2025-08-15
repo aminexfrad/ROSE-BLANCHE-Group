@@ -47,7 +47,7 @@ class RHStagiairesView(APIView):
                     "active_stage": {
                         "id": active_stage.id,
                         "title": active_stage.title,
-                        "company": active_stage.company,
+                        "company": active_stage.company_entreprise.nom if active_stage.company_entreprise else active_stage.company_name,
                         "progress": active_stage.progress,
                         "start_date": active_stage.start_date.isoformat(),
                         "end_date": active_stage.end_date.isoformat(),
@@ -95,7 +95,7 @@ class RHStagiaireDetailView(APIView):
                 stage_data = {
                     "id": stage.id,
                     "title": stage.title,
-                    "company": stage.company,
+                    "company": stage.company_entreprise.nom if stage.company_entreprise else stage.company_name,
                     "status": stage.status,
                     "start_date": stage.start_date.isoformat(),
                     "end_date": stage.end_date.isoformat(),
@@ -181,7 +181,7 @@ class RHTestimonialsView(APIView):
                     "stage": {
                         "id": testimonial.stage.id,
                         "title": testimonial.stage.title,
-                        "company": testimonial.stage.company
+                        "company": testimonial.stage.company_entreprise.nom if testimonial.stage.company_entreprise else testimonial.stage.company_name
                     },
                     "moderated_by": {
                         "id": testimonial.moderated_by.id,
@@ -563,7 +563,7 @@ class RHStagesView(APIView):
                 stage_data = {
                     "id": stage.id,
                     "title": stage.title,
-                    "company": stage.company,
+                    "company": stage.company_entreprise.nom if stage.company_entreprise else stage.company_name,
                     "status": stage.status,
                     "start_date": stage.start_date.isoformat(),
                     "end_date": stage.end_date.isoformat(),
@@ -690,7 +690,7 @@ class RHStageDetailView(APIView):
                 "stage": {
                     "id": stage.id,
                     "title": stage.title,
-                    "company": stage.company,
+                    "company": stage.company_entreprise.nom if stage.company_entreprise else stage.company_name,
                     "status": stage.status,
                     "start_date": stage.start_date.isoformat(),
                     "end_date": stage.end_date.isoformat(),
@@ -765,7 +765,7 @@ class RHEvaluationsView(APIView):
                     "stage": {
                         "id": eval.stage.id,
                         "title": eval.stage.title,
-                        "company": eval.stage.company
+                        "company": eval.stage.company_entreprise.nom if eval.stage.company_entreprise else eval.stage.company_name
                     },
                     "created_at": eval.created_at.isoformat()
                 }
@@ -854,7 +854,7 @@ class RHReportsView(APIView):
                     progress_data.append({
                         "stage_id": stage.id,
                         "title": stage.title,
-                        "company": stage.company,
+                        "company": stage.company_entreprise.nom if stage.company_entreprise else stage.company_name,
                         "stagiaire": stage.stagiaire.get_full_name(),
                         "progress": stage.progress,
                         "status": stage.status,
@@ -1320,7 +1320,7 @@ class RHCreateStageForStagiaireView(APIView):
                 'stage': {
                     'id': stage.id,
                     'title': stage.title,
-                    'company': stage.company,
+                    'company': stage.company_entreprise.nom if stage.company_entreprise else stage.company_name,
                     'location': stage.location,
                     'start_date': stage.start_date,
                     'end_date': stage.end_date,

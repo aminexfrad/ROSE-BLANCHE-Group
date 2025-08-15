@@ -5,13 +5,46 @@ Intellectual Property – Protected by international copyright law.
 """
 
 from django.contrib import admin
-from .models import OffreStage, PFEReport, PFEDocument
+from .models import Entreprise, OffreStage, PFEReport, PFEDocument
+
+@admin.register(Entreprise)
+class EntrepriseAdmin(admin.ModelAdmin):
+    list_display = ('nom', 'secteur_activite', 'ville', 'pays', 'is_active', 'nombre_stagiaires', 'nombre_rh')
+    list_filter = ('is_active', 'secteur_activite', 'pays', 'ville')
+    search_fields = ('nom', 'description', 'secteur_activite', 'ville')
+    readonly_fields = ('nombre_stagiaires', 'nombre_rh', 'created_at', 'updated_at')
+    fieldsets = (
+        ('Informations de base', {
+            'fields': ('nom', 'description', 'secteur_activite')
+        }),
+        ('Localisation', {
+            'fields': ('adresse', 'ville', 'pays')
+        }),
+        ('Contact', {
+            'fields': ('telephone', 'email', 'site_web')
+        }),
+        ('Médias', {
+            'fields': ('logo',)
+        }),
+        ('Statut', {
+            'fields': ('is_active',)
+        }),
+        ('Statistiques', {
+            'fields': ('nombre_stagiaires', 'nombre_rh'),
+            'classes': ('collapse',)
+        }),
+        ('Métadonnées', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        })
+    )
 
 @admin.register(OffreStage)
 class OffreStageAdmin(admin.ModelAdmin):
-    list_display = ('reference', 'title', 'diplome', 'specialite', 'nombre_postes', 'ville')
-    search_fields = ('reference', 'title', 'specialite', 'ville')
-    fields = ('reference', 'title', 'description', 'objectifs', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville')
+    list_display = ('reference', 'title', 'entreprise', 'diplome', 'specialite', 'nombre_postes', 'ville')
+    list_filter = ('entreprise', 'status', 'type', 'ville')
+    search_fields = ('reference', 'title', 'specialite', 'ville', 'entreprise__nom')
+    fields = ('reference', 'title', 'description', 'objectifs', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville', 'entreprise', 'status', 'type', 'validated')
 
 @admin.register(PFEReport)
 class PFEReportAdmin(admin.ModelAdmin):
