@@ -80,12 +80,6 @@ export function Navbar({ isPublic = false }: NavbarProps) {
             ))}
 
             <div className="flex items-center gap-3 ml-6">
-              <Link href="/public/demande-stage">
-                <Button className="bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-semibold transition-colors">
-                  Postuler
-                </Button>
-              </Link>
-
               <Link href="/login">
                 <Button
                   variant="outline"
@@ -130,12 +124,6 @@ export function Navbar({ isPublic = false }: NavbarProps) {
               ))}
 
               <div className="pt-4 space-y-2">
-                <Link href="/public/demande-stage" onClick={() => setIsMobileMenuOpen(false)}>
-                  <Button className="w-full bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold">
-                    Postuler
-                  </Button>
-                </Link>
-
                 <Link href="/login" onClick={() => setIsMobileMenuOpen(false)}>
                   <Button
                     variant="outline"

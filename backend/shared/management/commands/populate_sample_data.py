@@ -471,7 +471,7 @@ class Command(BaseCommand):
                     'nombre_postes': random.randint(1, 3),
                     'ville': random.choice(locations),
                     'status': random.choice(['open', 'open', 'open', 'closed']),
-                    'type': random.choice(['Classique', 'PFE']),
+                    'type': 'PFE',
                     'validated': random.choice([True, True, True, False]),
                 }
             )

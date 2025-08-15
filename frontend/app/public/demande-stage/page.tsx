@@ -92,7 +92,7 @@ export default function DemandeStage() {
     demandeStageBinome: null,
   })
   
-  const isPFEStage = formData.typeStage === 'Stage PFE' || formData.typeStage === 'Stage de Fin d\'Études'
+  const isPFEStage = formData.typeStage === 'Stage PFE'
   
   // Handle URL parameters to pre-fill form data from PFE book
   useEffect(() => {
@@ -566,9 +566,6 @@ export default function DemandeStage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Stage PFE">Stage PFE</SelectItem>
-                        <SelectItem value="Stage d'Été">Stage d'Été</SelectItem>
-                        <SelectItem value="Stage d'Observation">Stage d'Observation</SelectItem>
-                        <SelectItem value="Stage de Fin d'Études">Stage de Fin d'Études</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

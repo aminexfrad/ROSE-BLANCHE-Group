@@ -26,13 +26,13 @@ interface OffreStage {
   reference: string;
   title: string;
   description: string;
-  objectifs: string;
+  objectives: string;
   keywords: string;
   diplome: string;
   specialite: string;
   nombre_postes: number;
   ville: string;
-  id: string; // Added id for selection
+  id: number;
 }
 
 export default function PFEBookPage() {
@@ -89,7 +89,7 @@ export default function PFEBookPage() {
       ville: offer.ville,
       title: offer.title,
       description: offer.description,
-      objectifs: offer.objectifs,
+      objectives: offer.objectives,
       keywords: offer.keywords,
       nombre_postes: offer.nombre_postes.toString()
     })
@@ -135,15 +135,11 @@ export default function PFEBookPage() {
       <>
         <Navbar isPublic={true} />
         <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-rose-100 pt-16">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-center min-h-screen">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="flex justify-center items-center py-12">
               <div className="text-center">
-                <div className="relative">
-                  <div className="w-16 h-16 border-4 border-red-200 border-t-red-600 rounded-full animate-spin mx-auto mb-6"></div>
-                  <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-rose-400 rounded-full animate-spin mx-auto" style={{ animationDelay: '0.5s' }}></div>
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-3">Chargement de la bibliothèque PFE</h2>
-                <p className="text-gray-600 text-lg">Découverte des opportunités...</p>
+                <Loader2 className="h-8 w-8 text-red-600 mx-auto mb-4 animate-spin" />
+                <p className="text-gray-600">Chargement des offres de stage...</p>
               </div>
             </div>
           </div>
@@ -158,17 +154,11 @@ export default function PFEBookPage() {
       <>
         <Navbar isPublic={true} />
         <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-rose-100 pt-16">
-          <div className="container mx-auto px-4 py-8">
-            <div className="flex items-center justify-center min-h-screen">
-              <div className="text-center max-w-md">
-                <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                  <AlertCircle className="h-10 w-10 text-red-600" />
-                </div>
-                <h2 className="text-2xl font-bold text-gray-900 mb-3">Erreur de chargement</h2>
-                <p className="text-gray-600 mb-6">{error}</p>
-                <Button onClick={() => window.location.reload()} className="bg-red-600 hover:bg-red-700">
-                  Réessayer
-                </Button>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="flex justify-center items-center py-12">
+              <div className="text-center">
+                <AlertCircle className="h-8 w-8 text-red-600 mx-auto mb-4" />
+                <p className="text-gray-600">Erreur: {error}</p>
               </div>
             </div>
           </div>
@@ -191,18 +181,19 @@ export default function PFEBookPage() {
                 <BookOpen className="h-4 w-4" />
                 Bibliothèque des Opportunités
               </div>
-              <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
                 Découvrez les Offres de Stage
               </h1>
-              <p className="text-base md:text-lg text-gray-700 max-w-3xl mx-auto leading-relaxed">
-                Explorez une collection exclusive d'opportunités de stage dans lrose blanche group. 
+              <p className="text-sm md:text-base text-gray-700 max-w-3xl mx-auto leading-relaxed">
+                Explorez une collection exclusive d'opportunités de stage dans Rose Blanche Group. 
                 Trouvez votre prochaine aventure professionnelle.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="container mx-auto px-4 pb-16">
+        <div className="container mx-auto px-4 py-8">
+
           {/* Statistiques */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             {[
@@ -238,27 +229,30 @@ export default function PFEBookPage() {
                 bgColor: "bg-orange-50",
                 textColor: "text-orange-600"
               },
-            ].map((stat, index) => (
-              <Card
-                key={index}
-                className="group relative overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 bg-white/80 backdrop-blur-sm"
-              >
-                <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
-                <CardHeader className="pb-4">
-                  <div className="flex items-center justify-between">
-                    <div className={`p-3 rounded-xl ${stat.bgColor}`}>
-                      <stat.icon className={`h-8 w-8 ${stat.textColor}`} />
+            ].map((stat, index) => {
+              const IconComponent = stat.icon
+              return (
+                <Card
+                  key={index}
+                  className="group relative overflow-hidden border-0 shadow-lg hover:shadow-2xl transition-all duration-500 hover:scale-105 bg-white/80 backdrop-blur-sm"
+                >
+                  <div className={`absolute inset-0 bg-gradient-to-br ${stat.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`}></div>
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <div className={`p-3 rounded-xl ${stat.bgColor}`}>
+                        <IconComponent className={`h-8 w-8 ${stat.textColor}`} />
+                      </div>
+                      <div className="text-right">
+                        <div className="text-4xl font-bold text-gray-900">{stat.value}</div>
+                      </div>
                     </div>
-                    <div className="text-right">
-                      <div className="text-4xl font-bold text-gray-900">{stat.value}</div>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <h3 className="font-semibold text-lg text-gray-900">{stat.title}</h3>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <h3 className="font-semibold text-lg text-gray-900">{stat.title}</h3>
+                  </CardContent>
+                </Card>
+              )
+            })}
           </div>
 
           {/* Filtres */}
@@ -402,6 +396,7 @@ export default function PFEBookPage() {
               </div>
             )}
           </div>
+
           {/* Floating summary and submit button */}
           {selectedOffers.length > 0 && (
             <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-white/90 border border-red-200 rounded-xl shadow-2xl px-8 py-4 flex flex-col items-center gap-2">

@@ -873,10 +873,9 @@ class OffreStage(models.Model):
     status = models.CharField(_('statut'), max_length=20, choices=STATUS_CHOICES, default='draft')
 
     TYPE_CHOICES = [
-        ('Classique', 'Classique'),
         ('PFE', 'PFE'),
     ]
-    type = models.CharField(_('type'), max_length=20, choices=TYPE_CHOICES, default='Classique')
+    type = models.CharField(_('type'), max_length=20, choices=TYPE_CHOICES, default='PFE')
 
     validated = models.BooleanField(_('validée'), default=False)
 

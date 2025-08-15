@@ -35,10 +35,10 @@ class DemandeCreateView(generics.CreateAPIView):
         email = serializer.validated_data.get('email')
         type_stage = serializer.validated_data.get('type_stage')
         offer_ids = serializer.validated_data.get('offer_ids', [])
-        if type_stage in ['Stage PFE', "Stage de Fin d'Études"]:
+        if type_stage == 'Stage PFE':
             existing = Demande.objects.filter(
                 email=email,
-                type_stage__in=['Stage PFE', "Stage de Fin d'Études"],
+                type_stage='Stage PFE',
                 status__in=[Demande.Status.PENDING, Demande.Status.APPROVED]
             )
             if existing.exists():

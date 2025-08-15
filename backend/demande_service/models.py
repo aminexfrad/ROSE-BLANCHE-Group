@@ -21,9 +21,6 @@ class Demande(models.Model):
     
     class TypeStage(models.TextChoices):
         PFE = 'Stage PFE', _('Stage PFE')
-        ETE = 'Stage d\'Été', _('Stage d\'Été')
-        OBSERVATION = 'Stage d\'Observation', _('Stage d\'Observation')
-        FIN_ETUDES = 'Stage de Fin d\'Études', _('Stage de Fin d\'Études')
     
     # Candidate principal information
     nom = models.CharField(_('nom'), max_length=100)
@@ -116,7 +113,7 @@ class Demande(models.Model):
     @property
     def is_pfe_stage(self):
         """Check if this is a PFE stage"""
-        return self.type_stage in ['Stage PFE', 'Stage de Fin d\'Études']
+        return self.type_stage in ['Stage PFE']
     
     def approve(self, user_created=None):
         """Approve the demande and optionally create a user"""

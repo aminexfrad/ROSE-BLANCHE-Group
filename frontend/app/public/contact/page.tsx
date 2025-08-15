@@ -294,9 +294,9 @@ export default function ContactPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
               {
-                question: "Comment postuler pour un stage ?",
+                question: "Comment postuler pour un stage PFE ?",
                 answer:
-                  "Rendez-vous sur notre page de demande de stage, remplissez le formulaire avec vos informations et téléversez les documents requis.",
+                  "Rendez-vous sur notre PFE Book, sélectionnez un ou plusieurs projets qui vous intéressent, puis utilisez le bouton 'Postuler' pour accéder au formulaire de candidature.",
               },
               {
                 question: "Qui peut utiliser StageBloom ?",

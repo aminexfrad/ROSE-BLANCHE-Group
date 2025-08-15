@@ -32,12 +32,6 @@ export function Footer() {
               Contact
             </Link>
             <Link 
-              href="/public/demande-stage" 
-              className="text-gray-600 hover:text-red-600 transition-colors"
-            >
-              Candidature
-            </Link>
-            <Link 
               href="/login" 
               className="text-gray-600 hover:text-red-600 transition-colors"
             >

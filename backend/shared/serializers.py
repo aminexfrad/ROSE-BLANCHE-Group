@@ -240,7 +240,7 @@ class OffreStageCreateSerializer(serializers.ModelSerializer):
     
     def create(self, validated_data):
         validated_data.setdefault('status', 'draft')
-        validated_data.setdefault('type', 'Classique')
+        validated_data.setdefault('type', 'PFE')
         validated_data.setdefault('validated', False)
         return super().create(validated_data)
 

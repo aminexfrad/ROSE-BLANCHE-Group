@@ -212,7 +212,7 @@ class DemandeSerializer(serializers.ModelSerializer):
                     f'Les champs suivants sont obligatoires pour un stage en binôme: {", ".join(missing_fields)}'
                 )
         
-        if type_stage in ['Stage PFE', "Stage de Fin d'Études"]:
+        if type_stage == 'Stage PFE':
             if offer_ids and len(offer_ids) > 0:
                 if len(offer_ids) > 4:
                     raise serializers.ValidationError('Vous pouvez sélectionner jusqu\'à 4 offres maximum.')

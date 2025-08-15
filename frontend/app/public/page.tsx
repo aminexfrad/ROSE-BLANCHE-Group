@@ -429,12 +429,12 @@ export default function PublicHomePage() {
               className="flex flex-col sm:flex-row gap-4 justify-center mb-12 px-4"
               style={fadeInUp(sectionVisibility.hero, 0.4)}
             >
-              <Link href="/public/demande-stage" className="w-full sm:w-auto">
+              <Link href="/public/pfe-book" className="w-full sm:w-auto">
                 <Button
                   size="lg"
                   className="group bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-6 sm:px-8 py-3 sm:py-4 text-base sm:text-lg font-semibold hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl cursor-pointer rounded-xl transform hover:-translate-y-1 w-full sm:w-auto relative overflow-hidden border-2 border-red-500"
                 >
-                  <span className="relative z-10">Commencer votre aventure</span>
+                  <span className="relative z-10">Explorer nos projets PFE</span>
                   <ArrowRight className="ml-2 h-4 w-4 sm:h-5 sm:w-5 group-hover:translate-x-1 transition-transform duration-300 relative z-10" />
                   <div className="absolute inset-0 bg-gradient-to-r from-red-700 to-red-800 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 </Button>
@@ -656,12 +656,12 @@ export default function PublicHomePage() {
               Rejoignez la communauté Rose Blanche et écrivez avec nous les prochains chapitres 
               de cette success story tunisienne. Votre avenir professionnel commence ici.
             </p>
-            <Link href="/public/demande-stage">
+            <Link href="/public/pfe-book">
               <Button
                 size="lg"
                 className="group bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-8 py-4 text-lg font-semibold hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl cursor-pointer rounded-xl transform hover:-translate-y-1"
               >
-                Écrire votre histoire
+                Explorer nos projets PFE
                 <ArrowUpRight className="ml-2 h-5 w-5 group-hover:translate-x-1 group-hover:-translate-y-1 transition-transform duration-300" />
               </Button>
             </Link>
