@@ -106,7 +106,8 @@ class Stage(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        return f"Stage: {self.title} - {self.stagiaire.get_full_name()} - {self.company_entreprise.nom}"
+        company_name = self.company_entreprise.nom if self.company_entreprise else self.company_name or 'Aucune entreprise'
+        return f"Stage: {self.title} - {self.stagiaire.get_full_name()} - {company_name}"
     
     @property
     def duration_days(self):

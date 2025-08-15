@@ -6,6 +6,8 @@ Intellectual Property – Protected by international copyright law.
 
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 
 class Demande(models.Model):
@@ -147,12 +149,39 @@ class Demande(models.Model):
             self.entreprise = first_offre.entreprise
             self.save(update_fields=['entreprise'])
     
+    def update_pfe_reference_from_offres(self):
+        """Update PFE reference based on the first offer"""
+        first_offre = self.offres.first()
+        if first_offre and first_offre.reference and first_offre.reference != 'Inconnu':
+            self.pfe_reference = first_offre.reference
+            self.save(update_fields=['pfe_reference'])
+    
+    def update_fields_from_offres(self):
+        """Update both entreprise and PFE reference from offers"""
+        first_offre = self.offres.first()
+        if first_offre:
+            updated_fields = []
+            
+            # Update entreprise
+            if first_offre.entreprise and not self.entreprise:
+                self.entreprise = first_offre.entreprise
+                updated_fields.append('entreprise')
+            
+            # Update PFE reference
+            if first_offre.reference and first_offre.reference != 'Inconnu' and not self.pfe_reference:
+                self.pfe_reference = first_offre.reference
+                updated_fields.append('pfe_reference')
+            
+            # Save if any fields were updated
+            if updated_fields:
+                self.save(update_fields=updated_fields)
+    
     def save(self, *args, **kwargs):
-        """Override save to automatically set entreprise if not set"""
+        """Override save to automatically set entreprise and PFE reference if not set"""
         super().save(*args, **kwargs)
-        # Auto-set entreprise if not already set
-        if not self.entreprise and self.offres.exists():
-            self.update_entreprise_from_offres()
+        # Auto-set entreprise and PFE reference if not already set
+        if self.offres.exists():
+            self.update_fields_from_offres()
 
 
 class DemandeOffre(models.Model):
@@ -185,3 +214,18 @@ class DemandeOffre(models.Model):
         if not self.entreprise and self.offre:
             self.entreprise = self.offre.entreprise
         super().save(*args, **kwargs)
+
+
+# Signal handlers to automatically update Demande fields
+@receiver(post_save, sender=DemandeOffre)
+def update_demande_from_demande_offre(sender, instance, created, **kwargs):
+    """Update Demande fields when DemandeOffre is created or updated"""
+    if instance.demande:
+        instance.demande.update_fields_from_offres()
+
+
+@receiver(post_delete, sender=DemandeOffre)
+def update_demande_after_offre_deletion(sender, instance, **kwargs):
+    """Update Demande fields when DemandeOffre is deleted"""
+    if instance.demande:
+        instance.demande.update_fields_from_offres()

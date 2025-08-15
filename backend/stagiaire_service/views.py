@@ -53,7 +53,7 @@ class InternshipView(APIView):
             response_data = {
                 "id": internship.id,
                 "title": internship.title,
-                "company": internship.company,
+                "company": internship.company_entreprise.nom if internship.company_entreprise else internship.company_name or 'Aucune entreprise',
                 "status": internship.status,
                 "start_date": internship.start_date.isoformat(),
                 "end_date": internship.end_date.isoformat(),
