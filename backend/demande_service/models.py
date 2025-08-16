@@ -180,9 +180,56 @@ class Demande(models.Model):
     def save(self, *args, **kwargs):
         """Override save to automatically set entreprise and PFE reference if not set"""
         super().save(*args, **kwargs)
+        
         # Auto-set entreprise and PFE reference if not already set
         if self.offres.exists():
             self.update_fields_from_offres()
+        
+        # Additional check: if we have an offre but no entreprise/reference, try to set them
+        if not self.entreprise or not self.pfe_reference:
+            first_offre = self.offres.first()
+            if first_offre:
+                updated_fields = []
+                
+                # Update entreprise if missing
+                if first_offre.entreprise and not self.entreprise:
+                    self.entreprise = first_offre.entreprise
+                    updated_fields.append('entreprise')
+                    print(f"✅ Entreprise auto-remplie lors de la sauvegarde: {first_offre.entreprise.nom}")
+                
+                # Update PFE reference if missing
+                if first_offre.reference and first_offre.reference != 'Inconnu' and not self.pfe_reference:
+                    self.pfe_reference = first_offre.reference
+                    updated_fields.append('pfe_reference')
+                    print(f"✅ Référence PFE auto-remplie lors de la sauvegarde: {first_offre.reference}")
+                
+                # Save if any fields were updated
+                if updated_fields:
+                    self.save(update_fields=updated_fields)
+    
+    def clean(self):
+        """Validate the model before saving"""
+        from django.core.exceptions import ValidationError
+        
+        # Check if this demande has any offres
+        if self.offres.exists():
+            # Get all offres for this demande
+            offres = self.offres.all()
+            
+            # Check if any of these offres are already used in other demandes by the same email
+            for offre in offres:
+                existing_demandes = Demande.objects.filter(
+                    email=self.email,
+                    offres=offre
+                ).exclude(id=self.id)  # Exclude current demande if updating
+                
+                if existing_demandes.exists():
+                    raise ValidationError(
+                        f"Vous avez déjà soumis une demande pour l'offre '{offre.title}' "
+                        f"(référence: {offre.reference}). Chaque offre ne peut être sélectionnée qu'une seule fois."
+                    )
+        
+        super().clean()
 
 
 class DemandeOffre(models.Model):

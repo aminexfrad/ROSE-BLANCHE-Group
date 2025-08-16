@@ -76,84 +76,99 @@ class DemandeCreateView(generics.CreateAPIView):
                 # Check if this specific offer is already in existing demands
                 selected_offer_id = offer_ids[0]  # Only one offer
                 
-                for existing_demande in existing_pfe_demandes:
-                    existing_offres = existing_demande.offres.all()
-                    existing_offer_ids = [offre.id for offre in existing_offres]
-                    
-                    # If this offer is already in an existing demand, block the submission
-                    if selected_offer_id in existing_offer_ids:
-                        # Check the status of this offer in the existing demande
-                        from .models import DemandeOffre
-                        try:
-                            demande_offre = DemandeOffre.objects.get(
-                                demande=existing_demande,
-                                offre_id=selected_offer_id
-                            )
-                            if demande_offre.status == 'accepted':
-                                raise APIException(f"Vous avez déjà une demande acceptée pour l'offre {selected_offer_id}. Chaque offre ne peut être sélectionnée qu'une seule fois.")
-                            elif demande_offre.status == 'rejected':
-                                raise APIException(f"Vous avez déjà soumis une demande pour l'offre {selected_offer_id} qui a été rejetée. Chaque offre ne peut être sélectionnée qu'une seule fois.")
-                            else:
-                                raise APIException(f"Vous avez déjà une demande en attente pour l'offre {selected_offer_id}. Chaque offre ne peut être sélectionnée qu'une seule fois.")
-                        except DemandeOffre.DoesNotExist:
-                            raise APIException(f"Vous avez déjà soumis une demande pour l'offre {selected_offer_id}. Chaque offre ne peut être sélectionnée qu'une seule fois.")
-                
-                # Also check all previous demands (including rejected ones) for accepted offers
-                all_previous_demandes = Demande.objects.filter(
+                # IMPORTANT: Check if this specific offer is already used in ANY demande (including rejected ones)
+                # This prevents candidates from applying to the same offer multiple times
+                all_existing_demandes_for_offer = Demande.objects.filter(
                     email=email,
-                    type_stage='Stage PFE'
+                    type_stage='Stage PFE',
+                    offres__id=selected_offer_id
                 )
                 
-                for previous_demande in all_previous_demandes:
-                    if previous_demande.status == Demande.Status.REJECTED:
-                        # Check if the selected offer was accepted in this rejected demande
-                        from .models import DemandeOffre
-                        accepted_offres = DemandeOffre.objects.filter(
-                            demande=previous_demande,
-                            status='accepted'
-                        )
-                        accepted_offer_ids = [do.offre.id for do in accepted_offres]
-                        
-                        if selected_offer_id in accepted_offer_ids:
-                            raise APIException("Vous ne pouvez pas soumettre une nouvelle demande pour une offre qui a déjà été acceptée dans une demande précédente.")
+                if all_existing_demandes_for_offer.exists():
+                    raise APIException(
+                        f"Vous avez déjà soumis une demande pour cette offre. "
+                        f"Chaque offre ne peut être sélectionnée qu'une seule fois, "
+                        f"même si la demande précédente a été rejetée."
+                    )
                 
                 # Check total number of PFE demands (should not exceed 4)
                 # Only count pending and approved demands
                 active_demands_count = existing_pfe_demandes.count()
                 if active_demands_count >= 4:
-                    raise APIException(f"Vous avez atteint la limite de 4 demandes PFE maximum (actuellement {active_demands_count} en cours). Vous ne pouvez plus soumettre de nouvelles demandes.")
+                    raise APIException(
+                        f"Vous avez atteint la limite de 4 demandes PFE maximum "
+                        f"(actuellement {active_demands_count} en cours). "
+                        f"Vous ne pouvez plus soumettre de nouvelles demandes."
+                    )
                 
             else:
                 # For PFE demands, exactly one offer must be selected
                 raise APIException("Pour un stage PFE, vous devez sélectionner exactement une offre.")
-                
-                # If no specific offers selected, check total count
-                active_demands_count = existing_pfe_demandes.count()
-                if active_demands_count >= 4:
-                    raise APIException(f"Vous avez atteint la limite de 4 demandes PFE maximum (actuellement {active_demands_count} en cours). Vous ne pouvez plus soumettre de nouvelles demandes.")
         
         try:
             demande = serializer.save()
+            
+            # Auto-fill entreprise and PFE reference from the selected offer
+            if offer_ids:
+                from shared.models import OffreStage
+                try:
+                    offre = OffreStage.objects.get(id=offer_ids[0])
+                    
+                    # Auto-fill entreprise if not set
+                    if offre.entreprise and not demande.entreprise:
+                        demande.entreprise = offre.entreprise
+                        demande.save(update_fields=['entreprise'])
+                        print(f"✅ Entreprise auto-remplie: {offre.entreprise.nom}")
+                    
+                    # Auto-fill PFE reference if not set
+                    if offre.reference and offre.reference != 'Inconnu' and not demande.pfe_reference:
+                        demande.pfe_reference = offre.reference
+                        demande.save(update_fields=['pfe_reference'])
+                        print(f"✅ Référence PFE auto-remplie: {offre.reference}")
+                    
+                except OffreStage.DoesNotExist:
+                    print(f"⚠️  Offre {offer_ids[0]} non trouvée")
             
             # Increment candidate's application count if authenticated
             if self.request.user.is_authenticated and hasattr(self.request.user, 'candidat_profile'):
                 candidat = self.request.user.candidat_profile
                 candidat.increment_demandes_count()
             
-            # Create dashboard notifications for RH users (NO EMAILS)
+            # Create dashboard notifications for RH users
             from shared.models import Notification
             from auth_service.models import User
             
-            # Get RH users
-            rh_users = User.objects.filter(role='rh', is_active=True)
+            # Get RH users - prioritize RH users from the specific company if available
+            rh_users = []
             
+            if demande.entreprise:
+                # First, try to find RH users from the specific company
+                company_rh_users = User.objects.filter(
+                    role='rh', 
+                    is_active=True, 
+                    entreprise=demande.entreprise
+                )
+                rh_users.extend(company_rh_users)
+                print(f"✅ Notifications envoyées aux RH de l'entreprise: {demande.entreprise.nom}")
+            
+            # Also notify general RH users (for admin purposes)
+            general_rh_users = User.objects.filter(
+                role='rh', 
+                is_active=True
+            ).exclude(id__in=[rh.id for rh in rh_users])
+            rh_users.extend(general_rh_users)
+            
+            # Create notifications
             for rh_user in rh_users:
+                company_info = f" ({demande.entreprise.nom})" if demande.entreprise else ""
                 Notification.objects.create(
                     recipient=rh_user,
                     title='Nouvelle demande de stage',
-                    message=f'Nouvelle candidature reçue de {demande.prenom} {demande.nom} ({demande.institut}) pour un stage {demande.type_stage}.',
+                    message=f'Nouvelle candidature reçue de {demande.prenom} {demande.nom} ({demande.institut}) pour un stage {demande.type_stage}{company_info}.',
                     notification_type='info'
                 )
+            
+            print(f"✅ {len(rh_users)} notification(s) créée(s) pour les RH")
                 
         except Exception as e:
             import traceback
