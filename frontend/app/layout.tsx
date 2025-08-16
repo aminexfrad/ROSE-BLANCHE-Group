@@ -9,10 +9,8 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { AuthProvider } from "@/contexts/auth-context"
-import { CandidateAuthProvider } from "@/contexts/candidate-auth-context"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
-import { ErrorBoundary } from "@/components/error-boundary"
 import { Providers } from "@/components/providers"
 
 // Optimize font loading
@@ -101,24 +99,20 @@ export default function RootLayout({
         {/* Performance hints - removed /api preload since API is on different server */}
       </head>
       <body className={`${inter.className} min-h-screen antialiased`} suppressHydrationWarning>
-        <ErrorBoundary>
-          <Providers>
-            <ThemeProvider
-              attribute="class"
-              defaultTheme="light"
-              enableSystem
-              disableTransitionOnChange
-            >
-              <AuthProvider>
-                <CandidateAuthProvider>
-                  {children}
-                  <Toaster />
-                  {/* Performance tracker temporarily disabled */}
-                </CandidateAuthProvider>
-              </AuthProvider>
-            </ThemeProvider>
-          </Providers>
-        </ErrorBoundary>
+        <Providers>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <AuthProvider>
+              {children}
+              <Toaster />
+              {/* Performance tracker temporarily disabled */}
+            </AuthProvider>
+          </ThemeProvider>
+        </Providers>
       </body>
     </html>
   )

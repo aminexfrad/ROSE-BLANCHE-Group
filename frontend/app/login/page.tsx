@@ -9,7 +9,6 @@
 import { useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
-import { useCandidateAuth } from "@/contexts/candidate-auth-context"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -32,8 +31,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loginType, setLoginType] = useState<'user' | 'candidate'>('user')
-  const { login, user } = useAuth()
-  const { loginCandidat, candidat } = useCandidateAuth()
+  const { login, loginCandidat, user, candidat } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()

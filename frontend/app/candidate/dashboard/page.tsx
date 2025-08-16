@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { useToast } from "@/hooks/use-toast"
-import { useCandidateAuth } from "@/contexts/candidate-auth-context"
+import { useAuth } from "@/contexts/auth-context"
 import { apiClient, CandidatDashboard, Application } from "@/lib/api"
 import { 
   Briefcase, 
@@ -35,7 +35,7 @@ import {
 
 export default function CandidateDashboardPage() {
   const { toast } = useToast()
-  const { candidat, loading: authLoading, logoutCandidat } = useCandidateAuth()
+  const { candidat, loading: authLoading, logout } = useAuth()
   const [dashboard, setDashboard] = useState<CandidatDashboard | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -84,7 +84,7 @@ export default function CandidateDashboardPage() {
           variant: "destructive"
         })
         // Use the candidate auth context to logout
-        await logoutCandidat()
+        await logout()
         window.location.href = '/login'
         return
       }
@@ -224,7 +224,7 @@ export default function CandidateDashboardPage() {
               <Button 
                 variant="outline" 
                 onClick={async () => {
-                  await logoutCandidat()
+                  await logout()
                   window.location.href = '/login'
                 }}
                 className="flex items-center gap-2 text-red-600 border-red-300 hover:bg-red-50"

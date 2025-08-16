@@ -1531,20 +1531,38 @@ class ApiClient {
 
   // Candidate API methods
   async registerCandidat(formData: FormData): Promise<{ candidat: Candidat; access: string; refresh: string }> {
-    return this.request<{ candidat: Candidat; access: string; refresh: string }>('/candidat/register/', {
+    const response = await this.request<{ candidat: Candidat; access: string; refresh: string }>('/candidat/register/', {
       method: 'POST',
       body: formData
     })
+    
+    // Store tokens consistently with regular login
+    this.token = response.access
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('token', response.access)
+      localStorage.setItem('refreshToken', response.refresh)
+    }
+    
+    return response
   }
 
   async loginCandidat(email: string, password: string): Promise<{ candidat: Candidat; access: string; refresh: string }> {
-    return this.request<{ candidat: Candidat; access: string; refresh: string }>('/candidat/login/', {
+    const response = await this.request<{ candidat: Candidat; access: string; refresh: string }>('/candidat/login/', {
       method: 'POST',
       body: JSON.stringify({ email, password }),
       headers: {
         'Content-Type': 'application/json'
       }
     })
+    
+    // Store tokens consistently with regular login
+    this.token = response.access
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('token', response.access)
+      localStorage.setItem('refreshToken', response.refresh)
+    }
+    
+    return response
   }
 
   async getCandidatDashboard(): Promise<CandidatDashboard> {
