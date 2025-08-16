@@ -8,6 +8,7 @@ from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
+from django.utils import timezone
 
 
 class Demande(models.Model):
@@ -229,3 +230,53 @@ def update_demande_after_offre_deletion(sender, instance, **kwargs):
     """Update Demande fields when DemandeOffre is deleted"""
     if instance.demande:
         instance.demande.update_fields_from_offres()
+
+
+# Signal handler to automatically increment candidat's demande count
+@receiver(post_save, sender=Demande)
+def increment_candidat_demande_count(sender, instance, created, **kwargs):
+    """Increment candidat's demande count when a new demande is created"""
+    if created:
+        try:
+            # Try to find the candidat by email
+            from shared.models import Candidat
+            candidat = Candidat.objects.filter(user__email=instance.email).first()
+            
+            if candidat:
+                # Increment the count
+                candidat.nombre_demandes_soumises += 1
+                candidat.date_derniere_demande = timezone.now()
+                candidat.save(update_fields=['nombre_demandes_soumises', 'date_derniere_demande'])
+                print(f"✅ Compteur de demandes incrémenté pour {candidat.user.get_full_name()}: {candidat.nombre_demandes_soumises}")
+            else:
+                print(f"⚠️  Candidat non trouvé pour l'email: {instance.email}")
+                
+        except Exception as e:
+            print(f"❌ Erreur lors de l'incrémentation du compteur: {e}")
+            import traceback
+            traceback.print_exc()
+
+
+# Signal handler to decrement candidat's demande count when demande is deleted
+@receiver(post_delete, sender=Demande)
+def decrement_candidat_demande_count(sender, instance, **kwargs):
+    """Decrement candidat's demande count when a demande is deleted"""
+    try:
+        # Try to find the candidat by email
+        from shared.models import Candidat
+        candidat = Candidat.objects.filter(user__email=instance.email).first()
+        
+        if candidat and candidat.nombre_demandes_soumises > 0:
+            # Decrement the count
+            candidat.nombre_demandes_soumises = max(0, candidat.nombre_demandes_soumises - 1)
+            candidat.save(update_fields=['nombre_demandes_soumises'])
+            print(f"✅ Compteur de demandes décrémenté pour {candidat.user.get_full_name()}: {candidat.nombre_demandes_soumises}")
+        elif candidat:
+            print(f"⚠️  Compteur déjà à 0 pour {candidat.user.get_full_name()}")
+        else:
+            print(f"⚠️  Candidat non trouvé pour l'email: {instance.email}")
+            
+    except Exception as e:
+        print(f"❌ Erreur lors de la décrémentation du compteur: {e}")
+        import traceback
+        traceback.print_exc()
