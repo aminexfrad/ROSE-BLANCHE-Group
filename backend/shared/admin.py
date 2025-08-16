@@ -5,7 +5,11 @@ Intellectual Property – Protected by international copyright law.
 """
 
 from django.contrib import admin
-from .models import Entreprise, OffreStage, PFEReport, PFEDocument
+from django.utils.html import format_html
+from django.urls import reverse
+from django.utils.safestring import mark_safe
+from .models import Entreprise, OffreStage, PFEReport, PFEDocument, Candidat, Candidature
+from django.utils import timezone
 
 @admin.register(Entreprise)
 class EntrepriseAdmin(admin.ModelAdmin):
@@ -83,29 +87,85 @@ class PFEReportAdmin(admin.ModelAdmin):
 
 @admin.register(PFEDocument)
 class PFEDocumentAdmin(admin.ModelAdmin):
-    list_display = ('title', 'authors', 'year', 'speciality', 'status', 'published_at', 'download_count', 'view_count')
-    list_filter = ('status', 'year', 'speciality', 'published_at')
-    search_fields = ('title', 'authors', 'keywords', 'abstract')
-    readonly_fields = ('created_at', 'updated_at', 'published_at', 'download_count', 'view_count')
+    list_display = ['title', 'authors', 'year', 'speciality', 'status', 'published_at']
+    list_filter = ['status', 'year', 'speciality', 'published_at']
+    search_fields = ['title', 'description', 'authors', 'keywords', 'abstract']
+    readonly_fields = ['created_at', 'updated_at', 'download_count', 'view_count']
+    list_per_page = 20
+
+
+@admin.register(Candidat)
+class CandidatAdmin(admin.ModelAdmin):
+    list_display = [
+        'user', 'institut', 'specialite', 'niveau', 
+        'nombre_demandes_soumises', 'demandes_restantes', 'is_active', 'created_at'
+    ]
+    list_filter = ['is_active', 'niveau', 'institut', 'created_at']
+    search_fields = [
+        'user__email', 'user__nom', 'user__prenom', 
+        'institut', 'specialite', 'niveau'
+    ]
+    readonly_fields = [
+        'nombre_demandes_soumises', 'demandes_restantes', 
+        'date_derniere_demande', 'created_at', 'updated_at'
+    ]
     fieldsets = (
-        ('Informations de base', {
-            'fields': ('title', 'description', 'authors', 'year', 'speciality', 'supervisor')
+        ('Informations utilisateur', {
+            'fields': ('user', 'is_active')
         }),
-        ('Contenu', {
-            'fields': ('keywords', 'abstract')
+        ('Informations académiques', {
+            'fields': ('institut', 'specialite', 'niveau')
         }),
-        ('Fichiers', {
-            'fields': ('pdf_file', 'presentation_file')
+        ('Informations supplémentaires', {
+            'fields': ('bio', 'linkedin_url', 'portfolio_url')
         }),
-        ('Statut', {
-            'fields': ('status', 'published_at', 'published_by')
+        ('Suivi des demandes', {
+            'fields': (
+                'nombre_demandes_soumises', 'nombre_demandes_max', 
+                'demandes_restantes', 'date_derniere_demande'
+            )
         }),
-        ('Statistiques', {
-            'fields': ('download_count', 'view_count'),
-            'classes': ('collapse',)
-        }),
-        ('Métadonnées', {
+        ('Timestamps', {
             'fields': ('created_at', 'updated_at'),
             'classes': ('collapse',)
         })
     )
+    list_per_page = 20
+    
+    def demandes_restantes(self, obj):
+        return obj.demandes_restantes
+    demandes_restantes.short_description = 'Demandes restantes'
+
+
+@admin.register(Candidature)
+class CandidatureAdmin(admin.ModelAdmin):
+    list_display = [
+        'candidat', 'offre', 'status', 'created_at', 'reviewed_at'
+    ]
+    list_filter = ['status', 'created_at', 'reviewed_at']
+    search_fields = [
+        'candidat__user__email', 'candidat__user__nom', 
+        'candidat__user__prenom', 'offre__reference', 'offre__title'
+    ]
+    readonly_fields = ['created_at', 'updated_at']
+    fieldsets = (
+        ('Informations de base', {
+            'fields': ('candidat', 'offre', 'demande', 'status')
+        }),
+        ('Documents', {
+            'fields': ('cv', 'lettre_motivation', 'autres_documents')
+        }),
+        ('Feedback', {
+            'fields': ('feedback', 'raison_refus')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at', 'reviewed_at'),
+            'classes': ('collapse',)
+        })
+    )
+    list_per_page = 20
+    
+    def save_model(self, request, obj, form, change):
+        if change and 'status' in form.changed_data:
+            obj.reviewed_at = timezone.now()
+        super().save_model(request, obj, form, change)

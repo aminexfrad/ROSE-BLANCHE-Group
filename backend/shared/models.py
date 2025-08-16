@@ -1045,3 +1045,148 @@ class PFEReport(models.Model):
         """Increment download count"""
         self.download_count += 1
         self.save(update_fields=['download_count'])
+
+class Candidat(models.Model):
+    """
+    Candidat model for internship candidates
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='candidat_profile')
+    
+    # Academic information
+    institut = models.CharField(_('institut'), max_length=200)
+    specialite = models.CharField(_('spécialité'), max_length=200)
+    niveau = models.CharField(_('niveau'), max_length=100)  # e.g., "Bac+3", "Bac+4", "Bac+5"
+    
+    # Additional information
+    bio = models.TextField(_('biographie'), blank=True)
+    linkedin_url = models.URLField(_('URL LinkedIn'), blank=True)
+    portfolio_url = models.URLField(_('URL Portfolio'), blank=True)
+    
+    # Application tracking
+    nombre_demandes_soumises = models.PositiveIntegerField(_('nombre de demandes soumises'), default=0)
+    nombre_demandes_max = models.PositiveIntegerField(_('nombre maximum de demandes'), default=4)
+    date_derniere_demande = models.DateTimeField(_('date de dernière demande'), null=True, blank=True)
+    
+    # Status
+    is_active = models.BooleanField(_('actif'), default=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('candidat')
+        verbose_name_plural = _('candidats')
+        db_table = 'candidat'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"{self.user.get_full_name()} - {self.specialite}"
+    
+    @property
+    def demandes_restantes(self):
+        """Calculate remaining application slots"""
+        return max(0, self.nombre_demandes_max - self.nombre_demandes_soumises)
+    
+    @property
+    def peut_soumettre(self):
+        """Check if candidate can submit another application"""
+        return self.can_submit_demande()
+    
+    def can_submit_demande(self):
+        """Check if candidate can submit another application"""
+        return self.demandes_restantes > 0 and self.is_active
+    
+    def increment_demandes_count(self):
+        """Increment the number of submitted applications"""
+        self.nombre_demandes_soumises += 1
+        self.date_derniere_demande = timezone.now()
+        self.save(update_fields=['nombre_demandes_soumises', 'date_derniere_demande'])
+
+
+class Candidature(models.Model):
+    """
+    Candidature model for internship applications
+    """
+    class Status(models.TextChoices):
+        PENDING = 'pending', _('En attente')
+        UNDER_REVIEW = 'under_review', _('En cours de révision')
+        ACCEPTED = 'accepted', _('Acceptée')
+        REJECTED = 'rejected', _('Rejetée')
+        WITHDRAWN = 'withdrawn', _('Retirée')
+    
+    candidat = models.ForeignKey(Candidat, on_delete=models.CASCADE, related_name='candidatures')
+    offre = models.ForeignKey(OffreStage, on_delete=models.CASCADE, related_name='candidatures')
+    demande = models.ForeignKey(Demande, on_delete=models.CASCADE, related_name='candidatures', null=True, blank=True)
+    
+    # Status
+    status = models.CharField(
+        _('statut'),
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING
+    )
+    
+    # Documents
+    cv = models.FileField(_('CV'), upload_to='candidatures/cv/', blank=True, null=True)
+    lettre_motivation = models.FileField(_('lettre de motivation'), upload_to='candidatures/lettres/', blank=True, null=True)
+    autres_documents = models.FileField(_('autres documents'), upload_to='candidatures/autres/', blank=True, null=True)
+    
+    # Feedback
+    feedback = models.TextField(_('feedback'), blank=True)
+    raison_refus = models.TextField(_('raison du refus'), blank=True)
+    
+    # Review tracking
+    reviewed_at = models.DateTimeField(_('date de révision'), null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        related_name='candidatures_reviewed'
+    )
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('candidature')
+        verbose_name_plural = _('candidatures')
+        db_table = 'candidature'
+        ordering = ['-created_at']
+        unique_together = ['candidat', 'offre']
+    
+    def __str__(self):
+        return f"{self.candidat.user.get_full_name()} - {self.offre.title}"
+    
+    def accept(self, reviewed_by_user):
+        """Accept the candidature"""
+        self.status = self.Status.ACCEPTED
+        self.reviewed_at = timezone.now()
+        self.reviewed_by = reviewed_by_user
+        self.save()
+        
+        # Increment candidate's application count
+        self.candidat.increment_demandes_count()
+    
+    def reject(self, raison_refus, reviewed_by_user):
+        """Reject the candidature with reason"""
+        self.status = self.Status.REJECTED
+        self.raison_refus = raison_refus
+        self.reviewed_at = timezone.now()
+        self.reviewed_by = reviewed_by_user
+        self.save()
+    
+    def withdraw(self):
+        """Withdraw the candidature"""
+        self.status = self.Status.WITHDRAWN
+        self.save()
+    
+    def is_under_review(self):
+        """Check if candidature is under review"""
+        return self.status in [self.Status.UNDER_REVIEW, self.Status.PENDING]
+    
+    def can_be_reviewed(self):
+        """Check if candidature can be reviewed"""
+        return self.status == self.Status.PENDING

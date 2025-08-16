@@ -15,7 +15,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { useToast } from "@/hooks/use-toast"
-import { Upload, Send, CheckCircle, AlertCircle, Loader2, User, Building, Calendar, FileText, BookOpen, Home, ArrowLeft } from "lucide-react"
+import { Upload, Send, CheckCircle, AlertCircle, Loader2, User, Building, Calendar, FileText, BookOpen, Home, ArrowLeft, UserCheck } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { apiClient } from "@/lib/api"
@@ -63,8 +63,14 @@ export default function DemandeStage() {
   const [submitting, setSubmitting] = useState(false)
   const [isPrefilledFromOffer, setIsPrefilledFromOffer] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
-  const [selectedOfferIds, setSelectedOfferIds] = useState<number[]>([]);
-  const [selectedOfferReferences, setSelectedOfferReferences] = useState<string[]>([]);
+  const [selectedOfferIds, setSelectedOfferIds] = useState<number[]>([])
+  const [selectedOfferReferences, setSelectedOfferReferences] = useState<string[]>([])
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isProfileLoaded, setIsProfileLoaded] = useState(false)
+  
+  // Add state for offers
+  const [offers, setOffers] = useState<any[]>([]);
+  const [offersLoading, setOffersLoading] = useState(true);
   
   // Form data
   const [formData, setFormData] = useState<FormData>({
@@ -93,6 +99,22 @@ export default function DemandeStage() {
   })
   
   const isPFEStage = formData.typeStage === 'Stage PFE'
+  
+  // Fetch offers on component mount
+  useEffect(() => {
+    const fetchOffers = async () => {
+      try {
+        setOffersLoading(true);
+        const res = await apiClient.getOffresStage({ type: 'PFE' });
+        setOffers(res.results || []);
+      } catch (error) {
+        console.error('Erreur lors de la récupération des offres:', error);
+      } finally {
+        setOffersLoading(false);
+      }
+    };
+    fetchOffers();
+  }, []);
   
   // Handle URL parameters to pre-fill form data from PFE book
   useEffect(() => {
@@ -125,56 +147,103 @@ export default function DemandeStage() {
     setIsPrefilledFromOffer(false);
   }, [searchParams, toast]);
 
+  // Pre-fill form with user/candidat profile if authenticated
+  useEffect(() => {
+    const prefillFromProfile = async () => {
+      try {
+        // Check if user is authenticated
+        const token = localStorage.getItem('token');
+        if (!token) {
+          console.log('No token found, user not authenticated');
+          return;
+        }
+
+        // Token is already in localStorage, no need to set it in apiClient
+        console.log('Token found, user authenticated');
+
+        // Try to get candidat profile first (since this is for stage requests)
+        try {
+          const candidatProfile = await apiClient.getCandidatProfile();
+          console.log('Candidat profile found:', candidatProfile);
+          
+          setFormData(prev => ({
+            ...prev,
+            nom: candidatProfile.user.nom || prev.nom,
+            prenom: candidatProfile.user.prenom || prev.prenom,
+            email: candidatProfile.user.email || prev.email,
+            telephone: candidatProfile.user.telephone || prev.telephone,
+            institut: candidatProfile.institut || prev.institut,
+            specialite: candidatProfile.specialite || prev.specialite,
+            niveau: candidatProfile.niveau || prev.niveau,
+          }));
+          
+          // Mark as authenticated
+          setIsAuthenticated(true);
+          setIsProfileLoaded(true);
+          console.log('Form pre-filled with candidat profile');
+          
+        } catch (candidatError) {
+          console.log('Candidat profile fetch failed, trying user profile:', candidatError);
+          
+          // If candidat profile fails, try regular user profile
+          try {
+            const profile = await apiClient.getProfile();
+            setFormData(prev => ({
+              ...prev,
+              nom: profile.nom || prev.nom,
+              prenom: profile.prenom || prev.prenom,
+              email: profile.email || prev.email,
+              telephone: profile.telephone || prev.telephone,
+              institut: profile.institut || prev.institut,
+              specialite: profile.specialite || prev.specialite,
+              // niveau is not available in user profile, keep existing value
+            }));
+            console.log('Form pre-filled with user profile:', profile);
+          } catch (profileError) {
+            console.log('User profile also failed:', profileError);
+          }
+        }
+      } catch (error) {
+        console.log('Authentication check failed:', error);
+      }
+    };
+
+    prefillFromProfile();
+  }, []);
+
   // Function to handle offer selection and auto-fill fields
-  const handleOfferSelection = async (offerIds: number[]) => {
+  const handleOfferSelection = (offerIds: number[]) => {
+    // Only allow single offer selection
+    if (offerIds.length > 1) {
+      toast({
+        title: "Sélection limitée",
+        description: "Vous ne pouvez sélectionner qu'une seule offre par demande.",
+        variant: "destructive",
+      })
+      return
+    }
+    
     setSelectedOfferIds(offerIds);
     
     if (offerIds.length > 0) {
-      try {
-        // Fetch offer details to auto-fill fields
-        const res = await apiClient.getOffresStage();
-        const all = res.results || [];
-        const selected = all.filter((o: any) => offerIds.includes(o.id));
-        
-        if (selected.length > 0) {
-          const firstOffer = selected[0];
-          
-          // Auto-fill PFE reference if only one offer
-          if (selected.length === 1) {
-            setFormData(prev => ({
-              ...prev,
-              pfeReference: firstOffer.reference || '',
-            }));
-          }
-          
-          // Auto-fill entreprise information
-          if (firstOffer.entreprise) {
-            console.log('Entreprise auto-remplie:', firstOffer.entreprise);
-            // You can add entreprise field to formData if needed
-          }
-          
-          // Update selected offer references
-          setSelectedOfferReferences(selected.map((o: any) => o.reference));
-          
-          console.log('Offres sélectionnées:', selected.map(o => ({ 
-            id: o.id, 
-            title: o.title, 
-            reference: o.reference,
-            entreprise: o.entreprise?.nom 
-          })));
-        }
-      } catch (error) {
-        console.error('Erreur lors de la récupération des détails des offres:', error);
+      const selectedOffer = offers.find(offer => offer.id === offerIds[0]);
+      if (selectedOffer) {
+        setFormData(prev => ({
+          ...prev,
+          pfeReference: selectedOffer.reference || '',
+          typeStage: selectedOffer.type || 'Stage PFE'
+        }));
+        setIsPrefilledFromOffer(true);
       }
     } else {
-      // Clear fields when no offers selected
       setFormData(prev => ({
         ...prev,
         pfeReference: '',
+        typeStage: ''
       }));
-      setSelectedOfferReferences([]);
+      setIsPrefilledFromOffer(false);
     }
-  };
+  }
 
 
   const [errors, setErrors] = useState({
@@ -333,10 +402,6 @@ export default function DemandeStage() {
         date_debut: formData.dateDebut,
         date_fin: formData.dateFin,
         stage_binome: formData.stageBinome,
-        nom_binome: formData.nomBinome,
-        prenom_binome: formData.prenomBinome,
-        email_binome: formData.emailBinome,
-        telephone_binome: formData.telephoneBinome,
         selectedOfferIds,
         pfeReference: formData.pfeReference
       })
@@ -355,7 +420,13 @@ export default function DemandeStage() {
         router.push('/public/demande-stage/confirmation')
       }, 2000)
     } catch (error: any) {
+      console.error('Full error object:', error)
+      console.error('Error message:', error.message)
+      console.error('Error response:', error.response)
+      console.error('Error status:', error.status)
+      
       let errorMsg = error.message || "Échec de la soumission de la demande. Veuillez réessayer."
+      
       // Try to extract detailed validation errors if present
       if (error.response && typeof error.response === 'object') {
         if (Array.isArray(error.response)) {
@@ -364,6 +435,18 @@ export default function DemandeStage() {
           errorMsg = Object.values(error.response).flat().join(' ')
         }
       }
+      
+      // Check for specific error types
+      if (error.message?.includes('Erreur serveur')) {
+        errorMsg = "Erreur de connexion au serveur. Veuillez vérifier votre connexion internet et réessayer."
+      } else if (error.status === 500) {
+        errorMsg = "Erreur interne du serveur. Veuillez réessayer plus tard."
+      } else if (error.status === 400) {
+        errorMsg = "Données invalides. Veuillez vérifier vos informations et réessayer."
+      } else if (error.status === 401) {
+        errorMsg = "Session expirée. Veuillez vous reconnecter."
+      }
+      
       setFormError(errorMsg)
       toast({
         title: "Erreur",
@@ -472,6 +555,22 @@ export default function DemandeStage() {
             </div>
           </div>
 
+          {/* Authenticated user indicator */}
+          {isAuthenticated && isProfileLoaded && (
+            <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-3">
+                <UserCheck className="h-5 w-5 text-blue-600" />
+                <div>
+                  <h3 className="font-semibold text-blue-800">Connecté en tant que candidat</h3>
+                  <p className="text-sm text-blue-700">
+                    Vos informations personnelles ont été pré-remplies automatiquement. 
+                    Vous pouvez maintenant vous concentrer sur les fichiers à télécharger.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Pre-filled from offer indicator */}
           {isPrefilledFromOffer && (
             <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
@@ -574,6 +673,66 @@ export default function DemandeStage() {
               {/* Step 2: Academic Information */}
               {currentStep === 2 && (
                 <div className="space-y-6">
+                  {/* Offer Selection for PFE */}
+                  <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg">
+                    <h3 className="font-semibold text-blue-800 mb-3">Sélection des Projets PFE</h3>
+                    <p className="text-sm text-blue-700 mb-4">
+                      Sélectionnez un ou plusieurs projets PFE pour pré-remplir automatiquement certains champs.
+                    </p>
+                    
+                    {/* Offer Selection Component */}
+                    <div className="space-y-4">
+                      <Label className="text-sm font-medium text-blue-800">
+                        Projets PFE disponibles :
+                      </Label>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
+                        {offersLoading ? (
+                          <div className="col-span-2 text-center py-4">
+                            <Loader2 className="h-6 w-6 animate-spin mx-auto text-blue-600" />
+                            <p className="text-sm text-blue-600 mt-2">Chargement des offres...</p>
+                          </div>
+                        ) : offers.length === 0 ? (
+                          <div className="col-span-2 text-center py-4 text-blue-600">
+                            Aucune offre PFE disponible pour le moment.
+                          </div>
+                        ) : (
+                          offers.map((offer) => (
+                                <div key={offer.id} className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50">
+                                  <input
+                                    type="radio"
+                                    id={`offer-${offer.id}`}
+                                    name="selectedOffer"
+                                    value={offer.id}
+                                    checked={selectedOfferIds.includes(offer.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        handleOfferSelection([parseInt(e.target.value)]);
+                                      }
+                                    }}
+                                    className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300"
+                                  />
+                                  <label htmlFor={`offer-${offer.id}`} className="flex-1 cursor-pointer">
+                                    <div className="font-medium text-gray-900">{offer.title}</div>
+                                    <div className="text-sm text-gray-500">
+                                      Référence: {offer.reference} | Entreprise: {offer.entreprise?.nom || 'Non spécifiée'}
+                                    </div>
+                                  </label>
+                                </div>
+                          ))
+                        )}
+                      </div>
+                      
+                      {/* Selected Offers Summary */}
+                      {selectedOfferIds.length > 0 && (
+                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <div className="text-sm text-blue-800">
+                            <strong>Offre sélectionnée :</strong> {selectedOfferIds.length} projet sélectionné
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
                   {/* Institut */}
                   <div>
                     <Label htmlFor="institut">Institut *</Label>

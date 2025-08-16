@@ -14,8 +14,8 @@ if (typeof window !== 'undefined') {
   validateEnvironment()
 }
 
-// Use direct backend URL instead of proxy
-const API_BASE_URL = 'http://localhost:8000/api'
+// Use environment variable for API base URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api'
 
 // Request deduplication cache
 const pendingRequests = new Map<string, Promise<any>>()
@@ -55,7 +55,7 @@ export interface User {
   email: string
   nom: string
   prenom: string
-  role: 'stagiaire' | 'tuteur' | 'rh' | 'admin'
+  role: 'stagiaire' | 'tuteur' | 'rh' | 'admin' | 'candidat'
   telephone?: string
   departement?: string
   institut?: string
@@ -64,6 +64,80 @@ export interface User {
   avatar?: string
   entreprise?: Entreprise
   date_joined: string
+}
+
+export interface Candidat {
+  id: number
+  user: {
+    id: number
+    email: string
+    nom: string
+    prenom: string
+    telephone?: string
+    date_joined: string
+    last_login: string
+  }
+  nombre_demandes_soumises: number
+  nombre_demandes_max: number
+  demandes_restantes: number
+  peut_soumettre: boolean
+  institut?: string
+  specialite?: string
+  niveau?: string
+  bio?: string
+  linkedin_url?: string
+  portfolio_url?: string
+  is_active: boolean
+  date_derniere_demande?: string
+  created_at: string
+  updated_at: string
+}
+
+export interface Candidature {
+  id: number
+  candidat: Candidat
+  offre: {
+    id: number
+    reference: string
+    title: string
+    entreprise?: string
+  }
+  status: 'pending' | 'under_review' | 'accepted' | 'rejected' | 'withdrawn'
+  cv?: string
+  lettre_motivation?: string
+  autres_documents?: string
+  feedback?: string
+  raison_refus?: string
+  created_at: string
+  updated_at: string
+  reviewed_at?: string
+}
+
+export interface CandidatDashboard {
+  demandes: Application[]
+  statistiques: {
+    total_demandes: number
+    demandes_en_attente: number
+    demandes_en_revision: number
+    demandes_acceptees: number
+    demandes_rejetees: number
+    demandes_restantes: number
+    peut_soumettre: boolean
+  }
+}
+
+export interface PublicOffreStage {
+  id: number
+  reference: string
+  title: string
+  description: string
+  entreprise?: string
+  ville: string
+  type: string
+  specialite: string
+  diplome: string
+  nombre_postes: number
+  keywords?: string
 }
 
 export interface Application {
@@ -298,7 +372,7 @@ class ApiClient {
   constructor() {
     // Load token from localStorage on initialization
     if (typeof window !== 'undefined') {
-      this.token = localStorage.getItem('auth_token')
+      this.token = localStorage.getItem('token')
     }
   }
 
@@ -417,6 +491,17 @@ class ApiClient {
           originalErrorData = {};
         }
         
+        // Check if this is a candidate endpoint (which doesn't have refresh)
+        const isCandidateEndpoint = url.includes('/candidat/');
+        
+        if (isCandidateEndpoint) {
+          // For candidate endpoints, just clear tokens and throw session expired error
+          this.token = null
+          localStorage.removeItem('token')
+          localStorage.removeItem('refreshToken')
+          throw new Error('Session expirée. Veuillez vous reconnecter.');
+        }
+        
         try {
           await this.refreshToken()
           // Retry the request with new token
@@ -442,8 +527,8 @@ class ApiClient {
         } catch (refreshError) {
           // If refresh fails, clear tokens and throw original error
           this.token = null
-          localStorage.removeItem('auth_token')
-          localStorage.removeItem('refresh_token')
+          localStorage.removeItem('token')
+          localStorage.removeItem('refreshToken')
           
           // Handle specific error cases for the original response
           if (originalErrorData.error === 'No active internship found') {
@@ -500,6 +585,17 @@ class ApiClient {
         }
         
         if (response.status === 401) {
+          // Check if this is a candidate endpoint (which doesn't have refresh)
+          const isCandidateEndpoint = url.includes('/candidat/');
+          
+          if (isCandidateEndpoint) {
+            // For candidate endpoints, just clear tokens and throw session expired error
+            this.token = null
+            localStorage.removeItem('token')
+            localStorage.removeItem('refreshToken')
+            throw new Error('Session expirée. Veuillez vous reconnecter.');
+          }
+          
           // Try to refresh token if we have one
           const refreshToken = localStorage.getItem('refreshToken')
           if (refreshToken) {
@@ -646,7 +742,7 @@ class ApiClient {
         localStorage.removeItem('token')
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('user')
-        localStorage.removeItem('auth_token') // Also clear the old key
+        localStorage.removeItem('token') // Also clear the old key
       }
     }
   }
@@ -1389,48 +1485,111 @@ class ApiClient {
 
   // RH Survey Management
   async getRHSurveys() {
-    return this.executeRequest('/api/rh/surveys/', 'GET');
+    return this.executeRequest('/api/rh/surveys/', { method: 'GET' });
   }
 
   async createRHSurvey(surveyData: any) {
-    return this.executeRequest('/api/rh/surveys/', 'POST', surveyData);
+    return this.executeRequest('/api/rh/surveys/', { method: 'POST', body: JSON.stringify(surveyData) });
   }
 
   async getRHSurveyDetail(surveyId: number) {
-    return this.executeRequest(`/api/rh/surveys/${surveyId}/`, 'GET');
+    return this.executeRequest(`/api/rh/surveys/${surveyId}/`, { method: 'GET' });
   }
 
   async updateRHSurvey(surveyId: number, surveyData: any) {
-    return this.executeRequest(`/api/rh/surveys/${surveyId}/`, 'PUT', surveyData);
+    return this.executeRequest(`/api/rh/surveys/${surveyId}/`, { method: 'PUT', body: JSON.stringify(surveyData) });
   }
 
   async deleteRHSurvey(surveyId: number) {
-    return this.executeRequest(`/api/rh/surveys/${surveyId}/`, 'DELETE');
+    return this.executeRequest(`/api/rh/surveys/${surveyId}/`, { method: 'DELETE' });
   }
 
   async performRHSurveyAction(surveyId: number, action: string) {
-    return this.executeRequest(`/api/rh/surveys/${surveyId}/action/`, 'POST', { action });
+    return this.executeRequest(`/api/rh/surveys/${surveyId}/action/`, { method: 'POST', body: JSON.stringify({ action }) });
   }
 
   async getRHSurveyAnalysis() {
-    return this.executeRequest('/api/rh/surveys/analysis/', 'GET');
+    return this.executeRequest('/api/rh/surveys/analysis/', { method: 'GET' });
   }
 
   // Stagiaire Survey Management
   async getStagiaireSurveys() {
-    return this.executeRequest('/api/stagiaire/surveys/', 'GET');
+    return this.executeRequest('/api/stagiaire/surveys/', { method: 'GET' });
   }
 
   async getStagiaireSurveyDetail(surveyId: number) {
-    return this.executeRequest(`/api/stagiaire/surveys/${surveyId}/`, 'GET');
+    return this.executeRequest(`/api/stagiaire/surveys/${surveyId}/`, { method: 'GET' });
   }
 
   async submitStagiaireSurveyResponse(surveyId: number, responseData: any) {
-    return this.executeRequest(`/api/stagiaire/surveys/${surveyId}/respond/`, 'POST', responseData);
+    return this.executeRequest(`/api/stagiaire/surveys/${surveyId}/respond/`, { method: 'POST', body: JSON.stringify(responseData) });
   }
 
   async getStagiaireSurveyHistory() {
-    return this.executeRequest('/api/stagiaire/surveys/history/', 'GET');
+    return this.executeRequest('/api/stagiaire/surveys/history/', { method: 'GET' });
+  }
+
+  // Candidate API methods
+  async registerCandidat(formData: FormData): Promise<{ candidat: Candidat; access: string; refresh: string }> {
+    return this.request<{ candidat: Candidat; access: string; refresh: string }>('/candidat/register/', {
+      method: 'POST',
+      body: formData
+    })
+  }
+
+  async loginCandidat(email: string, password: string): Promise<{ candidat: Candidat; access: string; refresh: string }> {
+    return this.request<{ candidat: Candidat; access: string; refresh: string }>('/candidat/login/', {
+      method: 'POST',
+      body: JSON.stringify({ email, password }),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+  }
+
+  async getCandidatDashboard(): Promise<CandidatDashboard> {
+    return this.request<CandidatDashboard>('/candidat/dashboard/', {}, { skipCache: true })
+  }
+
+  async getCandidatProfile(): Promise<Candidat> {
+    return this.request<Candidat>('/candidat/profile/')
+  }
+
+  async updateCandidatProfile(formData: FormData): Promise<Candidat> {
+    return this.request<Candidat>('/candidat/profile/', {
+      method: 'PUT',
+      body: formData
+    })
+  }
+
+  async getCandidatures(): Promise<Candidature[]> {
+    return this.request<Candidature[]>('/candidat/candidatures/')
+  }
+
+  async createCandidature(formData: FormData): Promise<Candidature> {
+    return this.request<Candidature>('/candidat/candidatures/create/', {
+      method: 'POST',
+      body: formData
+    })
+  }
+
+  async getCandidature(id: number): Promise<Candidature> {
+    return this.request<Candidature>(`/candidat/candidatures/${id}/`)
+  }
+
+  async checkCandidatStatus(): Promise<{ is_candidat: boolean; candidat?: { id: number; nombre_demandes_soumises: number; demandes_restantes: number; peut_soumettre: boolean } }> {
+    return this.request<{ is_candidat: boolean; candidat?: { id: number; nombre_demandes_soumises: number; demandes_restantes: number; peut_soumettre: boolean } }>('/candidat/status/', {
+      method: 'POST'
+    })
+  }
+
+  // Public offers API methods
+  async getPublicOffres(): Promise<{ results: PublicOffreStage[]; count: number }> {
+    return this.request<{ results: PublicOffreStage[]; count: number }>('/candidat/offres/')
+  }
+
+  async getPublicOffre(id: number): Promise<PublicOffreStage> {
+    return this.request<PublicOffreStage>(`/candidat/offres/${id}/`)
   }
 }
 

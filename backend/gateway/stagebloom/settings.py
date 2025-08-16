@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'shared',
     'admin_service',
     'notification_service',  # New notification service
+    'candidat_service',  # New candidat service
 ]
 
 MIDDLEWARE = [

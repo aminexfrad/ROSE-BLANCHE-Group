@@ -7,62 +7,56 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { apiClient } from "@/lib/api"
+import { apiClient, PublicOffreStage } from "@/lib/api"
 import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileText, Search, Filter, Download, Eye, Calendar, Users, Loader2, AlertCircle, BookOpen, MapPin, Clock, Star, ArrowRight, Building2, GraduationCap } from "lucide-react"
+import { FileText, Search, Filter, Download, Eye, Calendar, Users, Loader2, AlertCircle, BookOpen, MapPin, Clock, Star, ArrowRight, Building2, GraduationCap, LogIn, UserPlus, Briefcase, UserCheck } from "lucide-react"
 import { Checkbox } from "@/components/ui/checkbox"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
-import { toast } from "@/hooks/use-toast"
-
-interface OffreStage {
-  reference: string;
-  title: string;
-  description: string;
-  objectives: string;
-  keywords: string;
-  diplome: string;
-  specialite: string;
-  nombre_postes: number;
-  ville: string;
-  id: number;
-}
+import { useToast } from "@/hooks/use-toast"
 
 export default function PFEBookPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
-  const [offers, setOffers] = useState<OffreStage[]>([])
+  const [offers, setOffers] = useState<PublicOffreStage[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [specialityFilter, setSpecialityFilter] = useState("all")
   const [diplomeFilter, setDiplomeFilter] = useState("all")
   const [villeFilter, setVilleFilter] = useState("all")
-  // Add state for expanded descriptions
-  const [expandedDescriptions, setExpandedDescriptions] = useState<{ [ref: string]: boolean }>({});
-  const [selectedOffers, setSelectedOffers] = useState<OffreStage[]>([])
+  const [expandedDescriptions, setExpandedDescriptions] = useState<{ [ref: string]: boolean }>({})
+  const [selectedOffers, setSelectedOffers] = useState<PublicOffreStage[]>([])
   const [selectionError, setSelectionError] = useState<string | null>(null)
+  
+  // Candidate authentication state
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [candidateStatus, setCandidateStatus] = useState<{
+    is_candidat: boolean
+    candidat?: {
+      id: number
+      nombre_demandes_soumises: number
+      demandes_restantes: number
+      peut_soumettre: boolean
+    }
+  } | null>(null)
 
   const toggleDescription = (ref: string) => {
-    setExpandedDescriptions(prev => ({ ...prev, [ref]: !prev[ref] }));
-  };
+    setExpandedDescriptions(prev => ({ ...prev, [ref]: !prev[ref] }))
+  }
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const params = new URLSearchParams()
-        if (searchTerm) params.append('search', searchTerm)
-        if (specialityFilter !== "all") params.append('specialite', specialityFilter)
-        if (diplomeFilter !== "all") params.append('diplome', diplomeFilter)
-        if (villeFilter !== "all") params.append('ville', villeFilter)
-        const response = await apiClient.getOffresStage(Object.fromEntries(params))
+        const response = await apiClient.getPublicOffres()
         setOffers(response.results || [])
       } catch (err: any) {
         setError(err.message || "Erreur lors du chargement des offres de stage")
@@ -70,8 +64,27 @@ export default function PFEBookPage() {
         setLoading(false)
       }
     }
+    
+    const checkAuthStatus = async () => {
+      const token = localStorage.getItem('token')
+      if (token) {
+        try {
+          const status = await apiClient.checkCandidatStatus()
+          setCandidateStatus(status)
+          setIsAuthenticated(status.is_candidat)
+        } catch (err) {
+          // Token might be invalid, clear it
+          localStorage.removeItem('token')
+          localStorage.removeItem('refreshToken')
+          setIsAuthenticated(false)
+          setCandidateStatus(null)
+        }
+      }
+    }
+
     fetchData()
-  }, [searchTerm, specialityFilter, diplomeFilter, villeFilter])
+    checkAuthStatus()
+  }, [])
 
   const resetFilters = () => {
     setSearchTerm("")
@@ -80,7 +93,26 @@ export default function PFEBookPage() {
     setVilleFilter("all")
   }
 
-  const handleApplyToOffer = (offer: OffreStage) => {
+  const handleApplyToOffer = async (offer: PublicOffreStage) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Connexion requise",
+        description: "Vous devez vous connecter pour postuler à cette offre",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!candidateStatus?.candidat?.peut_soumettre) {
+      toast({
+        title: "Limite atteinte",
+        description: "Vous avez atteint la limite de candidatures. Attendez qu'une candidature soit traitée.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Redirect to application form
     const params = new URLSearchParams({
       type: 'PFE',
       pfeReference: offer.reference,
@@ -89,46 +121,87 @@ export default function PFEBookPage() {
       ville: offer.ville,
       title: offer.title,
       description: offer.description,
-      objectives: offer.objectives,
-      keywords: offer.keywords,
       nombre_postes: offer.nombre_postes.toString()
     })
     router.push(`/public/demande-stage?${params.toString()}`)
   }
 
-  const handleToggleOffer = (offer: OffreStage) => {
+  const handleToggleOffer = (offer: PublicOffreStage) => {
     const alreadySelected = selectedOffers.some(o => o.id === offer.id)
     if (alreadySelected) {
       setSelectedOffers(selectedOffers.filter(o => o.id !== offer.id))
-      setSelectionError(null)
     } else {
-      if (selectedOffers.length >= 4) {
-        setSelectionError("Vous pouvez sélectionner jusqu'à 4 offres maximum.")
-        toast({ title: "Limite atteinte", description: "Vous ne pouvez pas sélectionner plus de 4 offres.", variant: "destructive" })
+      // Only allow single selection for PFE offers
+      if (selectedOffers.length >= 1) {
+        toast({
+          title: "Sélection limitée",
+          description: "Vous ne pouvez sélectionner qu'une seule offre PFE par demande.",
+          variant: "destructive"
+        })
         return
       }
-      setSelectedOffers([...selectedOffers, offer])
-      setSelectionError(null)
+      setSelectedOffers([offer])
     }
   }
 
-  const handleSendGroupedDemande = () => {
+  const handleBulkApply = () => {
     if (selectedOffers.length === 0) {
-      setSelectionError("Veuillez sélectionner au moins une offre.")
-      toast({ title: "Aucune offre sélectionnée", description: "Sélectionnez au moins une offre pour postuler.", variant: "destructive" })
+      setSelectionError("Veuillez sélectionner une offre")
       return
     }
-    // Redirect to demande-stage with offer IDs as query params
-    const params = new URLSearchParams()
-    params.append('type', 'PFE')
-    selectedOffers.forEach(o => params.append('offerIds', o.id.toString()))
+
+    if (selectedOffers.length > 1) {
+      setSelectionError("Vous ne pouvez sélectionner qu'une seule offre PFE par demande")
+      return
+    }
+
+    if (!isAuthenticated) {
+      toast({
+        title: "Connexion requise",
+        description: "Vous devez vous connecter pour postuler à cette offre",
+        variant: "destructive"
+      })
+      return
+    }
+
+    if (!candidateStatus?.candidat?.peut_soumettre) {
+      toast({
+        title: "Limite atteinte",
+        description: "Vous avez atteint la limite de candidatures. Attendez qu'une candidature soit traitée.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Redirect to application form with single offer
+    const offer = selectedOffers[0]
+    const params = new URLSearchParams({
+      type: 'PFE',
+      pfeReference: offer.reference,
+      specialite: offer.specialite,
+      diplome: offer.diplome,
+      ville: offer.ville,
+      title: offer.title,
+      description: offer.description,
+      nombre_postes: offer.nombre_postes.toString()
+    })
     router.push(`/public/demande-stage?${params.toString()}`)
   }
 
-  // Get unique values for filters
-  const specialities = [...new Set(offers.map(o => o.specialite))].filter(Boolean)
-  const diplomes = [...new Set(offers.map(o => o.diplome))].filter(Boolean)
-  const villes = [...new Set(offers.map(o => o.ville))].filter(Boolean)
+  const filteredOffers = offers.filter(offer => {
+    const matchesSearch = offer.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         offer.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         offer.reference.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSpeciality = specialityFilter === "all" || offer.specialite === specialityFilter
+    const matchesDiplome = diplomeFilter === "all" || offer.diplome === diplomeFilter
+    const matchesVille = villeFilter === "all" || offer.ville === villeFilter
+    
+    return matchesSearch && matchesSpeciality && matchesDiplome && matchesVille
+  })
+
+  const uniqueSpecialities = [...new Set(offers.map(o => o.specialite))]
+  const uniqueDiplomes = [...new Set(offers.map(o => o.diplome))]
+  const uniqueVilles = [...new Set(offers.map(o => o.ville))]
 
   if (loading) {
     return (
@@ -184,10 +257,69 @@ export default function PFEBookPage() {
               <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
                 Découvrez les Offres de Stage
               </h1>
-              <p className="text-sm md:text-base text-gray-700 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-sm md:text-base text-gray-700 max-w-3xl mx-auto leading-relaxed mb-8">
                 Explorez une collection exclusive d'opportunités de stage dans Rose Blanche Group. 
                 Trouvez votre prochaine aventure professionnelle.
               </p>
+              
+              {/* Authentication Section */}
+              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                {!isAuthenticated ? (
+                  <>
+                    <Button 
+                      onClick={() => router.push('/login')}
+                      className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-8 py-3"
+                    >
+                      <LogIn className="h-4 w-4 mr-2" />
+                      Se connecter
+                    </Button>
+                    <Button 
+                      onClick={() => router.push('/login?register=true')}
+                      variant="outline"
+                      className="border-red-300 text-red-700 hover:bg-red-50 hover:border-red-500 px-8 py-3"
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Créer un compte
+                    </Button>
+                  </>
+                ) : (
+                  <div className="bg-white/80 backdrop-blur-sm rounded-xl p-6 border border-red-200 shadow-lg">
+                    <div className="flex items-center gap-3 mb-3">
+                      <Briefcase className="h-5 w-5 text-red-600" />
+                      <h3 className="font-semibold text-gray-900">Espace Candidat</h3>
+                    </div>
+                    <div className="text-sm text-gray-600 mb-4">
+                      <p>Vous êtes connecté en tant que candidat</p>
+                      <p>Candidatures restantes: <span className="font-semibold text-red-600">{candidateStatus?.candidat?.demandes_restantes || 0}</span></p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button 
+                        onClick={() => router.push('/candidate/dashboard')}
+                        variant="outline"
+                        size="sm"
+                        className="border-red-300 text-red-700 hover:bg-red-50"
+                      >
+                        <Briefcase className="h-4 w-4 mr-2" />
+                        Mon tableau de bord
+                      </Button>
+                      <Button 
+                        onClick={() => {
+                          localStorage.removeItem('token')
+                          localStorage.removeItem('refreshToken')
+                          setIsAuthenticated(false)
+                          setCandidateStatus(null)
+                          router.push('/public/pfe-book')
+                        }}
+                        variant="outline"
+                        size="sm"
+                        className="border-gray-300 text-gray-700 hover:bg-gray-50"
+                      >
+                        Se déconnecter
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -282,7 +414,7 @@ export default function PFEBookPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Toutes les spécialités</SelectItem>
-                    {specialities.map(speciality => (
+                    {uniqueSpecialities.map(speciality => (
                       <SelectItem key={speciality} value={speciality}>{speciality}</SelectItem>
                     ))}
                   </SelectContent>
@@ -293,7 +425,7 @@ export default function PFEBookPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Tous les diplômes</SelectItem>
-                    {diplomes.map(diplome => (
+                    {uniqueDiplomes.map(diplome => (
                       <SelectItem key={diplome} value={diplome}>{diplome}</SelectItem>
                     ))}
                   </SelectContent>
@@ -304,7 +436,7 @@ export default function PFEBookPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">Toutes les villes</SelectItem>
-                    {villes.map(ville => (
+                    {uniqueVilles.map(ville => (
                       <SelectItem key={ville} value={ville}>{ville}</SelectItem>
                     ))}
                   </SelectContent>
@@ -323,10 +455,51 @@ export default function PFEBookPage() {
             </CardContent>
           </Card>
 
+          {/* Candidate Status Display */}
+          {isAuthenticated && candidateStatus?.candidat && (
+            <Card className="bg-gradient-to-r from-green-50 to-emerald-100 border border-green-200 mb-8">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 bg-green-100 rounded-full flex items-center justify-center">
+                      <UserCheck className="h-5 w-5 text-green-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-green-800">Connecté en tant que candidat</h3>
+                      <p className="text-sm text-green-700">
+                        Vous pouvez soumettre jusqu'à 4 demandes PFE différentes
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-2xl font-bold text-green-800">
+                      {candidateStatus.candidat.demandes_restantes}
+                    </div>
+                    <div className="text-sm text-green-600">demandes restantes</div>
+                  </div>
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-4 text-sm">
+                  <div className="text-center">
+                    <div className="font-semibold text-green-800">{candidateStatus.candidat.nombre_demandes_soumises}</div>
+                    <div className="text-green-600">soumises</div>
+                  </div>
+                  <div className="text-center">
+                    <div className={`font-semibold ${candidateStatus.candidat.peut_soumettre ? 'text-green-800' : 'text-red-600'}`}>
+                      {candidateStatus.candidat.peut_soumettre ? 'Oui' : 'Non'}
+                    </div>
+                    <div className={candidateStatus.candidat.peut_soumettre ? 'text-green-600' : 'text-red-600'}>
+                      peut soumettre
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Liste des offres */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-            {offers.length > 0 ? (
-              offers.map((offer, index) => {
+            {filteredOffers.length > 0 ? (
+              filteredOffers.map((offer, index) => {
                 const checked = selectedOffers.some(o => o.id === offer.id)
                 return (
                   <Card
@@ -370,7 +543,8 @@ export default function PFEBookPage() {
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-2">
-                          {offer.keywords.split(',').map((kw, idx) => (
+                          {/* Only show keywords if they exist */}
+                          {offer.keywords && offer.keywords.split(',').map((kw: string, idx: number) => (
                             <Badge key={idx} variant="outline" className="text-xs bg-red-50 border-red-200 text-red-700">
                               {kw.trim()}
                             </Badge>
@@ -379,11 +553,54 @@ export default function PFEBookPage() {
                         <div className="pt-2">
                           <span className="block text-xs text-gray-400 font-mono">Réf: {offer.reference}</span>
                         </div>
-                        <div className="pt-4 flex justify-between items-center">
-                          <Checkbox checked={checked} onCheckedChange={() => handleToggleOffer(offer)} id={`offer-${offer.id}`} />
-                          <label htmlFor={`offer-${offer.id}`} className="ml-2 text-sm font-medium text-gray-700 cursor-pointer">
-                            {checked ? "Sélectionnée" : "Sélectionner"}
-                          </label>
+                        
+                        {/* Individual Apply Button */}
+                        <div className="pt-4">
+                          {isAuthenticated ? (
+                            candidateStatus?.candidat?.peut_soumettre ? (
+                              <Button 
+                                onClick={() => handleApplyToOffer(offer)}
+                                className="w-full bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white"
+                              >
+                                <Briefcase className="h-4 w-4 mr-2" />
+                                Postuler maintenant
+                              </Button>
+                            ) : (
+                              <Button 
+                                disabled
+                                className="w-full bg-gray-400 text-gray-600 cursor-not-allowed"
+                              >
+                                <AlertCircle className="h-4 w-4 mr-2" />
+                                Limite de candidatures atteinte
+                              </Button>
+                            )
+                          ) : (
+                            <Button 
+                              onClick={() => router.push('/login')}
+                              variant="outline"
+                              className="w-full border-red-300 text-red-700 hover:bg-red-50 hover:border-red-500"
+                            >
+                              <LogIn className="h-4 w-4 mr-2" />
+                              Se connecter pour postuler
+                            </Button>
+                          )}
+                        </div>
+                        
+                        {/* Bulk Selection (keep for backward compatibility) */}
+                        <div className="pt-2 flex justify-between items-center">
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="radio"
+                              id={`offer-${offer.id}`}
+                              name="selectedOffer"
+                              checked={checked}
+                              onChange={() => handleToggleOffer(offer)}
+                              className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300"
+                            />
+                            <label htmlFor={`offer-${offer.id}`} className="text-sm font-medium text-gray-700 cursor-pointer">
+                              {checked ? "Sélectionnée" : "Sélectionner cette offre"}
+                            </label>
+                          </div>
                         </div>
                       </div>
                     </CardContent>
@@ -400,16 +617,32 @@ export default function PFEBookPage() {
           {/* Floating summary and submit button */}
           {selectedOffers.length > 0 && (
             <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 bg-white/90 border border-red-200 rounded-xl shadow-2xl px-8 py-4 flex flex-col items-center gap-2">
-              <div className="font-semibold text-red-700 mb-2">Offres sélectionnées ({selectedOffers.length}/4):</div>
+              <div className="font-semibold text-red-700 mb-2">Offre sélectionnée ({selectedOffers.length}/1):</div>
               <ul className="mb-2">
                 {selectedOffers.map(o => (
-                  <li key={o.id} className="text-gray-800 text-sm">{o.title} <span className="text-xs text-gray-400">({o.reference})</span></li>
+                  <li key={o.id} className="text-sm text-gray-600 flex items-center gap-2">
+                    <Briefcase className="h-3 w-3 text-red-500" />
+                    {o.title} - {o.reference}
+                  </li>
                 ))}
               </ul>
-              <Button className="bg-gradient-to-r from-red-600 to-red-700 text-white" onClick={handleSendGroupedDemande}>
-                Envoyer la demande PFE
-              </Button>
-              {selectionError && <div className="text-xs text-red-600 mt-1">{selectionError}</div>}
+              <div className="flex gap-2">
+                <Button
+                  onClick={() => setSelectedOffers([])}
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                >
+                  Annuler
+                </Button>
+                <Button
+                  onClick={handleBulkApply}
+                  size="sm"
+                  className="bg-red-600 hover:bg-red-700"
+                >
+                  Postuler à cette offre
+                </Button>
+              </div>
             </div>
           )}
 

@@ -25,28 +25,120 @@ from shared.models import Stage
 
 
 class DemandeCreateView(generics.CreateAPIView):
-    """Public endpoint for submitting demande de stage"""
+    """Public endpoint for submitting demande de stage - allows both authenticated and anonymous users"""
     serializer_class = DemandeSerializer
-    permission_classes = [AllowAny]
-    # The serializer now handles offer_ids and pfe_reference logic for grouped/single-offer PFE
+    permission_classes = [AllowAny]  # Allow public submissions
+    
     def perform_create(self, serializer):
         from rest_framework.exceptions import APIException
-        # Check for existing pending/approved PFE demande for this candidate
+        
+        # Get email from the request
         email = serializer.validated_data.get('email')
+        
+        # Check if user is authenticated and has candidat profile
+        if self.request.user.is_authenticated and hasattr(self.request.user, 'candidat_profile'):
+            candidat = self.request.user.candidat_profile
+            
+            # Check if candidate can submit more applications
+            if not candidat.peut_soumettre:
+                raise APIException(
+                    f"Vous avez atteint la limite de {candidat.nombre_demandes_max} candidatures"
+                )
+        else:
+            # For anonymous users, check if they have too many pending requests
+            existing_count = Demande.objects.filter(
+                email=email,
+                status__in=[Demande.Status.PENDING, Demande.Status.APPROVED]
+            ).count()
+            
+            if existing_count >= 4:  # Limit anonymous users to 4 requests
+                raise APIException("Vous avez atteint la limite de 4 demandes de stage.")
+        
+        # Check for existing pending/approved PFE demande for this email
         type_stage = serializer.validated_data.get('type_stage')
         offer_ids = serializer.validated_data.get('offer_ids', [])
+        
         if type_stage == 'Stage PFE':
-            existing = Demande.objects.filter(
+            # Allow up to 4 different PFE demands with different offers
+            # Count only pending and approved demands (rejected ones don't count towards the limit)
+            existing_pfe_demandes = Demande.objects.filter(
                 email=email,
                 type_stage='Stage PFE',
                 status__in=[Demande.Status.PENDING, Demande.Status.APPROVED]
             )
-            if existing.exists():
-                raise APIException("Vous avez déjà une demande PFE en attente ou en cours.")
-            if offer_ids and len(offer_ids) > 4:
-                raise APIException("Vous pouvez sélectionner jusqu'à 4 offres maximum.")
+            
+            # Check if this specific combination of offers already exists
+            if offer_ids:
+                # Only allow 1 offer per demand
+                if len(offer_ids) > 1:
+                    raise APIException("Vous ne pouvez sélectionner qu'une seule offre par demande.")
+                
+                # Check if this specific offer is already in existing demands
+                selected_offer_id = offer_ids[0]  # Only one offer
+                
+                for existing_demande in existing_pfe_demandes:
+                    existing_offres = existing_demande.offres.all()
+                    existing_offer_ids = [offre.id for offre in existing_offres]
+                    
+                    # If this offer is already in an existing demand, block the submission
+                    if selected_offer_id in existing_offer_ids:
+                        # Check the status of this offer in the existing demande
+                        from .models import DemandeOffre
+                        try:
+                            demande_offre = DemandeOffre.objects.get(
+                                demande=existing_demande,
+                                offre_id=selected_offer_id
+                            )
+                            if demande_offre.status == 'accepted':
+                                raise APIException(f"Vous avez déjà une demande acceptée pour l'offre {selected_offer_id}. Chaque offre ne peut être sélectionnée qu'une seule fois.")
+                            elif demande_offre.status == 'rejected':
+                                raise APIException(f"Vous avez déjà soumis une demande pour l'offre {selected_offer_id} qui a été rejetée. Chaque offre ne peut être sélectionnée qu'une seule fois.")
+                            else:
+                                raise APIException(f"Vous avez déjà une demande en attente pour l'offre {selected_offer_id}. Chaque offre ne peut être sélectionnée qu'une seule fois.")
+                        except DemandeOffre.DoesNotExist:
+                            raise APIException(f"Vous avez déjà soumis une demande pour l'offre {selected_offer_id}. Chaque offre ne peut être sélectionnée qu'une seule fois.")
+                
+                # Also check all previous demands (including rejected ones) for accepted offers
+                all_previous_demandes = Demande.objects.filter(
+                    email=email,
+                    type_stage='Stage PFE'
+                )
+                
+                for previous_demande in all_previous_demandes:
+                    if previous_demande.status == Demande.Status.REJECTED:
+                        # Check if the selected offer was accepted in this rejected demande
+                        from .models import DemandeOffre
+                        accepted_offres = DemandeOffre.objects.filter(
+                            demande=previous_demande,
+                            status='accepted'
+                        )
+                        accepted_offer_ids = [do.offre.id for do in accepted_offres]
+                        
+                        if selected_offer_id in accepted_offer_ids:
+                            raise APIException("Vous ne pouvez pas soumettre une nouvelle demande pour une offre qui a déjà été acceptée dans une demande précédente.")
+                
+                # Check total number of PFE demands (should not exceed 4)
+                # Only count pending and approved demands
+                active_demands_count = existing_pfe_demandes.count()
+                if active_demands_count >= 4:
+                    raise APIException(f"Vous avez atteint la limite de 4 demandes PFE maximum (actuellement {active_demands_count} en cours). Vous ne pouvez plus soumettre de nouvelles demandes.")
+                
+            else:
+                # For PFE demands, exactly one offer must be selected
+                raise APIException("Pour un stage PFE, vous devez sélectionner exactement une offre.")
+                
+                # If no specific offers selected, check total count
+                active_demands_count = existing_pfe_demandes.count()
+                if active_demands_count >= 4:
+                    raise APIException(f"Vous avez atteint la limite de 4 demandes PFE maximum (actuellement {active_demands_count} en cours). Vous ne pouvez plus soumettre de nouvelles demandes.")
+        
         try:
             demande = serializer.save()
+            
+            # Increment candidate's application count if authenticated
+            if self.request.user.is_authenticated and hasattr(self.request.user, 'candidat_profile'):
+                candidat = self.request.user.candidat_profile
+                candidat.increment_demandes_count()
             
             # Create dashboard notifications for RH users (NO EMAILS)
             from shared.models import Notification

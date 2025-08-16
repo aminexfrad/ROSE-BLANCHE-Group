@@ -216,8 +216,12 @@ class DemandeSerializer(serializers.ModelSerializer):
         
         if type_stage == 'Stage PFE':
             if offer_ids and len(offer_ids) > 0:
-                if len(offer_ids) > 4:
-                    raise serializers.ValidationError('Vous pouvez sélectionner jusqu\'à 4 offres maximum.')
+                if len(offer_ids) > 1:
+                    raise serializers.ValidationError('Vous ne pouvez sélectionner qu\'une seule offre par demande.')
+                
+                # Check for duplicate offer IDs (should not happen with single offer, but safety check)
+                if len(offer_ids) != len(set(offer_ids)):
+                    raise serializers.ValidationError('Vous ne pouvez pas sélectionner la même offre plusieurs fois.')
             else:
                 # Single-offer: require pfe_reference
                 if not data.get('pfe_reference'):

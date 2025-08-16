@@ -51,6 +51,7 @@ class User(AbstractUser):
         RH = 'rh', _('RH')
         TUTEUR = 'tuteur', _('Tuteur')
         ADMIN = 'admin', _('Admin')
+        CANDIDAT = 'candidat', _('Candidat')
     
     # Override username to use email
     username = None
@@ -77,6 +78,10 @@ class User(AbstractUser):
     
     # Company association (for RH users)
     entreprise = models.ForeignKey('shared.Entreprise', on_delete=models.SET_NULL, null=True, blank=True, related_name='users', verbose_name=_('entreprise'))
+    
+    # Application tracking (for candidates)
+    max_applications = models.PositiveIntegerField(_('nombre maximum de candidatures'), default=3)
+    total_applications = models.PositiveIntegerField(_('nombre total de candidatures'), default=0)
     
     # Profile image
     avatar = models.ImageField(_('avatar'), upload_to='avatars/', blank=True, null=True)

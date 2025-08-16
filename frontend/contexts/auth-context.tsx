@@ -27,16 +27,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const refreshProfile = async () => {
     setLoading(true)
     try {
-      // Only try to get profile if we have a token
-      if (apiClient.isAuthenticated()) {
+      // Check if we have a token in localStorage
+      const token = localStorage.getItem('token')
+      if (token && apiClient.isAuthenticated()) {
         const profile = await apiClient.getProfile()
         setUser(profile)
       } else {
         setUser(null)
+        // Clear invalid tokens
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('token')
+          localStorage.removeItem('refreshToken')
+          localStorage.removeItem('user')
+        }
       }
     } catch (error: any) {
       console.error('Profile refresh error:', error)
-      // If token is invalid, clear user state
+      // If token is invalid, clear user state and redirect to main login
       if (error.message?.includes('jeton') || error.message?.includes('token') || error.message?.includes('401') || error.message?.includes('Session expirée')) {
         setUser(null)
         // Clear invalid tokens
@@ -44,6 +51,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           localStorage.removeItem('token')
           localStorage.removeItem('refreshToken')
           localStorage.removeItem('user')
+        }
+        
+        // Redirect to main login page
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login'
         }
       }
     } finally {

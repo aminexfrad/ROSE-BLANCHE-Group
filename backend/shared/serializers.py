@@ -5,7 +5,7 @@ Intellectual Property – Protected by international copyright law.
 """
 
 from rest_framework import serializers
-from .models import Entreprise, Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage, PFEReport
+from .models import Entreprise, Stage, Step, Document, Evaluation, KPIQuestion, Testimonial, Notification, PFEDocument, OffreStage, PFEReport, Candidat, Candidature
 
 from auth_service.models import User
 from auth_service.serializers import UserSerializer
@@ -347,5 +347,53 @@ class PFEReportValidationSerializer(serializers.ModelSerializer):
             instance.status = status
             instance.save()
         return instance 
+
+
+class CandidatureSerializer(serializers.ModelSerializer):
+    """Serializer for Candidature model"""
+    candidat = serializers.SerializerMethodField()
+    offre = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Candidature
+        fields = '__all__'
+    
+    def get_candidat(self, obj):
+        """Get candidat information"""
+        return {
+            'id': obj.candidat.id,
+            'user': {
+                'id': obj.candidat.user.id,
+                'email': obj.candidat.user.email,
+                'nom': obj.candidat.user.nom,
+                'prenom': obj.candidat.user.prenom
+            }
+        }
+    
+    def get_offre(self, obj):
+        """Get offre information"""
+        return {
+            'id': obj.offre.id,
+            'reference': obj.offre.reference,
+            'title': obj.offre.title,
+            'entreprise': obj.offre.entreprise.nom if obj.offre.entreprise else None
+        }
+
+
+class CandidatureCreateSerializer(serializers.ModelSerializer):
+    """Serializer for creating Candidature"""
+    
+    class Meta:
+        model = Candidature
+        fields = ['id', 'offre', 'cv', 'lettre_motivation', 'autres_documents', 'feedback']
+        read_only_fields = ['id']
+    
+    def validate_offre(self, value):
+        """Validate that the offre is open and validated"""
+        if value.status != 'open':
+            raise serializers.ValidationError("Cette offre n'est plus disponible")
+        if not value.validated:
+            raise serializers.ValidationError("Cette offre n'est pas encore validée")
+        return value 
 
  

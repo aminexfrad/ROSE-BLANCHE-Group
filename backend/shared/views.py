@@ -43,6 +43,8 @@ class APIRootView(APIView):
             "message": "StageBloom API",
             "version": "v1",
             "description": "API pour la gestion des stages et demandes",
+            "status": "running",
+            "timestamp": timezone.now().isoformat(),
             "endpoints": {
                 "auth": "/api/auth/",
                 "demandes": "/api/demandes/",
