@@ -31,7 +31,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [loginType, setLoginType] = useState<'user' | 'candidate'>('user')
-  const { login, loginCandidat, user, candidat } = useAuth()
+  const { login, loginCandidat, user, candidat, loading: authLoading } = useAuth()
   const { toast } = useToast()
   const router = useRouter()
   const searchParams = useSearchParams()
@@ -223,7 +223,7 @@ export default function LoginPage() {
 
   // Add effect to redirect after login
   useEffect(() => {
-    if (redirecting && user) {
+    if (redirecting && user && !authLoading) {
       if (user.role === "admin") router.replace("/admin")
       else if (user.role === "rh") router.replace("/rh")
       else if (user.role === "tuteur") router.replace("/tuteur")
@@ -231,11 +231,11 @@ export default function LoginPage() {
       else if (user.role === "candidat") router.replace("/candidate/dashboard")
       else router.replace("/")
     }
-  }, [redirecting, user, router])
+  }, [redirecting, user, router, authLoading])
 
-  // Redirect if already logged in
+  // Redirect if already logged in (only when not loading)
   useEffect(() => {
-    if (user && !redirecting) {
+    if (!authLoading && user && !redirecting) {
       if (user.role === "admin") router.replace("/admin")
       else if (user.role === "rh") router.replace("/rh")
       else if (user.role === "tuteur") router.replace("/tuteur")
@@ -243,17 +243,27 @@ export default function LoginPage() {
       else if (user.role === "candidat") router.replace("/candidate/dashboard")
       else router.replace("/")
     }
-  }, [user, router, redirecting])
+  }, [user, router, redirecting, authLoading])
 
-  // Redirect candidate if already logged in
+  // Redirect candidate if already logged in (only when not loading)
   useEffect(() => {
-    if (candidat && !redirecting) {
+    if (!authLoading && candidat && !redirecting) {
       router.replace("/candidate/dashboard")
     }
-  }, [candidat, router, redirecting])
+  }, [candidat, router, redirecting, authLoading])
 
   return (
     <div className="min-h-screen relative overflow-hidden">
+      {/* Loading overlay */}
+      {authLoading && (
+        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
+          <div className="bg-white rounded-lg p-6 shadow-xl">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+            <p className="mt-4 text-gray-600 text-center">Vérification de l'authentification...</p>
+          </div>
+        </div>
+      )}
+      
       {/* Animated Background Image */}
       <div className="absolute inset-0 w-full h-full z-0">
         <Image

@@ -39,30 +39,38 @@ export default function CandidateDashboardPage() {
   const [dashboard, setDashboard] = useState<CandidatDashboard | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [hasRedirected, setHasRedirected] = useState(false)
 
   useEffect(() => {
     // Check if candidate is authenticated
     if (!authLoading) {
       if (!candidat) {
-        setError('Vous devez être connecté pour accéder à cette page')
-        toast({
-          title: "Non authentifié",
-          description: "Veuillez vous connecter pour accéder à votre tableau de bord",
-          variant: "destructive"
-        })
-        // Redirect to login
-        window.location.href = '/login'
+        // Only redirect once to prevent infinite loop
+        if (!hasRedirected) {
+          setHasRedirected(true)
+          setError('Vous devez être connecté pour accéder à cette page')
+          toast({
+            title: "Non authentifié",
+            description: "Veuillez vous connecter pour accéder à votre tableau de bord",
+            variant: "destructive"
+          })
+          // Use router.push instead of window.location.href to prevent full page reload
+          setTimeout(() => {
+            window.location.href = '/login'
+          }, 1000)
+        }
         return
       }
 
       // Candidate is authenticated, fetch dashboard
       fetchDashboard()
     }
-  }, [candidat, authLoading, toast])
+  }, [candidat, authLoading, toast, hasRedirected])
 
   const fetchDashboard = async () => {
     try {
       setLoading(true)
+      setError(null)
       // Force refresh by skipping cache
       const data = await apiClient.getCandidatDashboard()
       console.log('Dashboard data received:', data)
@@ -85,7 +93,10 @@ export default function CandidateDashboardPage() {
         })
         // Use the candidate auth context to logout
         await logout()
-        window.location.href = '/login'
+        // Use setTimeout to prevent immediate redirect
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 1000)
         return
       }
       

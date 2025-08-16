@@ -47,20 +47,39 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Check if we have a token in localStorage
       const token = localStorage.getItem('token')
       if (token && isAuthenticated()) {
+        // Check if we have a candidate email stored (indicates candidate login)
+        const candidateEmail = localStorage.getItem('candidate_email')
+        
+        if (candidateEmail) {
+          // This was a candidate login, try to get candidate profile first
+          try {
+            const candidatProfile = await apiClient.getCandidatProfile()
+            setCandidat(candidatProfile)
+            setUser(null)
+            return
+          } catch (candidatError: any) {
+            console.error('Candidate profile fetch failed:', candidatError)
+            // If candidate profile fails, clear candidate email and try regular profile
+            localStorage.removeItem('candidate_email')
+          }
+        }
+        
+        // Try regular user profile
         try {
-          // First try to get regular user profile
           const profile = await apiClient.getProfile()
           setUser(profile)
           setCandidat(null)
         } catch (error: any) {
-          // If regular profile fails, try candidate profile
-          if (error.message?.includes('candidat') || error.message?.includes('403')) {
+          // If regular profile fails, try candidate profile as fallback
+          if (error.message?.includes('candidat') || error.message?.includes('403') || error.message?.includes('404')) {
             try {
               const candidatProfile = await apiClient.getCandidatProfile()
               setCandidat(candidatProfile)
               setUser(null)
+              // Store candidate email for future reference
+              localStorage.setItem('candidate_email', candidatProfile.user.email)
+              return
             } catch (candidatError: any) {
-              // If both fail, clear everything
               console.error('Both profile attempts failed:', candidatError)
               setUser(null)
               setCandidat(null)
@@ -95,8 +114,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           localStorage.removeItem('candidate_email')
         }
         
-        // Redirect to main login page
-        if (typeof window !== 'undefined') {
+        // Only redirect if we're not already on the login page
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
           window.location.href = '/login'
         }
       }
@@ -116,6 +135,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const response = await apiClient.login(email, password)
       setUser(response.user)
       setCandidat(null)
+      // Clear candidate email if it exists
+      localStorage.removeItem('candidate_email')
     } catch (error) {
       setUser(null)
       setCandidat(null)
@@ -153,6 +174,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(null)
       setCandidat(null)
       setLoading(false)
+      // Clear all auth data
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token')
+        localStorage.removeItem('refreshToken')
+        localStorage.removeItem('user')
+        localStorage.removeItem('candidate_email')
+      }
     }
   }
 
