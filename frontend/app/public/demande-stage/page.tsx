@@ -68,9 +68,7 @@ export default function DemandeStage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [isProfileLoaded, setIsProfileLoaded] = useState(false)
   
-  // Add state for offers
-  const [offers, setOffers] = useState<any[]>([]);
-  const [offersLoading, setOffersLoading] = useState(true);
+
   
   // Form data
   const [formData, setFormData] = useState<FormData>({
@@ -100,50 +98,33 @@ export default function DemandeStage() {
   
   const isPFEStage = formData.typeStage === 'Stage PFE'
   
-  // Fetch offers on component mount
-  useEffect(() => {
-    const fetchOffers = async () => {
-      try {
-        setOffersLoading(true);
-        const res = await apiClient.getOffresStage({ type: 'PFE' });
-        setOffers(res.results || []);
-      } catch (error) {
-        console.error('Erreur lors de la récupération des offres:', error);
-      } finally {
-        setOffersLoading(false);
-      }
-    };
-    fetchOffers();
-  }, []);
+
   
   // Handle URL parameters to pre-fill form data from PFE book
   useEffect(() => {
     const type = searchParams.get('type');
-    const offerIds = searchParams.getAll('offerIds').map(id => parseInt(id, 10)).filter(Boolean);
-    setSelectedOfferIds(offerIds);
-    if (type === 'PFE' && offerIds.length > 0) {
+    const pfeReference = searchParams.get('pfeReference');
+    
+    if (type === 'PFE' && pfeReference) {
+      // Set the stage type to PFE
       setFormData(prev => ({
         ...prev,
         typeStage: 'Stage PFE',
+        pfeReference: pfeReference,
       }));
       setIsPrefilledFromOffer(true);
-      // Fetch offer details for summary and reference prefill
-      apiClient.getOffresStage().then((res: { results: any[]; count: number }) => {
-        const all = res.results || [];
-        const selected = all.filter((o: any) => offerIds.includes(o.id));
-        setSelectedOfferReferences(selected.map((o: any) => o.reference));
-        // If only one offer, prefill pfeReference
-        if (selected.length === 1) {
-          setFormData(prev => ({
-            ...prev,
-            pfeReference: selected[0].reference,
-          }));
-        }
-      });
+      
+      // Set the reference for the selected offer
+      setSelectedOfferReferences([pfeReference]);
+      
+      // Clear any offer IDs since we're using pfe_reference
+      setSelectedOfferIds([]);
       return;
     }
+    
     // fallback: clear
     setSelectedOfferReferences([]);
+    setSelectedOfferIds([]);
     setIsPrefilledFromOffer(false);
   }, [searchParams, toast]);
 
@@ -211,39 +192,7 @@ export default function DemandeStage() {
     prefillFromProfile();
   }, []);
 
-  // Function to handle offer selection and auto-fill fields
-  const handleOfferSelection = (offerIds: number[]) => {
-    // Only allow single offer selection
-    if (offerIds.length > 1) {
-      toast({
-        title: "Sélection limitée",
-        description: "Vous ne pouvez sélectionner qu'une seule offre par demande.",
-        variant: "destructive",
-      })
-      return
-    }
-    
-    setSelectedOfferIds(offerIds);
-    
-    if (offerIds.length > 0) {
-      const selectedOffer = offers.find(offer => offer.id === offerIds[0]);
-      if (selectedOffer) {
-        setFormData(prev => ({
-          ...prev,
-          pfeReference: selectedOffer.reference || '',
-          typeStage: selectedOffer.type || 'Stage PFE'
-        }));
-        setIsPrefilledFromOffer(true);
-      }
-    } else {
-      setFormData(prev => ({
-        ...prev,
-        pfeReference: '',
-        typeStage: ''
-      }));
-      setIsPrefilledFromOffer(false);
-    }
-  }
+
 
 
   const [errors, setErrors] = useState({
@@ -381,12 +330,35 @@ export default function DemandeStage() {
         }
       }
       
-      // Add offer_ids for grouped PFE
-      if (selectedOfferIds.length > 0) {
-        selectedOfferIds.forEach(id => submitData.append('offer_ids', id.toString()))
-      } else if (formData.pfeReference) {
-        // Only send pfeReference for single-offer PFE
+      // Debug: Log current state
+      console.log('🔍 Debug state:', {
+        isPrefilledFromOffer,
+        formData_pfeReference: formData.pfeReference,
+        selectedOfferIds,
+        typeStage: formData.typeStage
+      })
+      
+      // Add offer_ids for grouped PFE or pfe_reference for single-offer PFE
+      if (isPrefilledFromOffer && formData.pfeReference) {
+        // When offer is pre-selected from PFE Book, send only pfe_reference
         submitData.append('pfe_reference', formData.pfeReference)
+        console.log('🔍 Adding pfe_reference for PFE Book selection:', formData.pfeReference)
+      } else if (selectedOfferIds.length > 0 && selectedOfferIds[0] !== 1) {
+        // For manually selected offers (not our dummy ID), send offer_ids
+        selectedOfferIds.forEach(id => submitData.append('offer_ids', id.toString()))
+        console.log('🔍 Adding offer_ids:', selectedOfferIds)
+      } else if (formData.pfeReference) {
+        // Fallback: send pfe_reference if available
+        submitData.append('pfe_reference', formData.pfeReference)
+        console.log('🔍 Adding pfe_reference (fallback):', formData.pfeReference)
+      } else {
+        console.log('🔍 No offer information found!')
+      }
+      
+      // Debug: Log all FormData contents
+      console.log('🔍 FormData contents:')
+      for (let [key, value] of submitData.entries()) {
+        console.log(`  ${key}: ${value}`)
       }
       
       // Submit to API
@@ -673,65 +645,20 @@ export default function DemandeStage() {
               {/* Step 2: Academic Information */}
               {currentStep === 2 && (
                 <div className="space-y-6">
-                  {/* Offer Selection for PFE */}
-                  <div className="mb-6 p-4 bg-gradient-to-r from-blue-50 to-blue-100 border border-blue-200 rounded-lg">
-                    <h3 className="font-semibold text-blue-800 mb-3">Sélection des Projets PFE</h3>
-                    <p className="text-sm text-blue-700 mb-4">
-                      Sélectionnez un ou plusieurs projets PFE pour pré-remplir automatiquement certains champs.
-                    </p>
-                    
-                    {/* Offer Selection Component */}
-                    <div className="space-y-4">
-                      <Label className="text-sm font-medium text-blue-800">
-                        Projets PFE disponibles :
-                      </Label>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-60 overflow-y-auto">
-                        {offersLoading ? (
-                          <div className="col-span-2 text-center py-4">
-                            <Loader2 className="h-6 w-6 animate-spin mx-auto text-blue-600" />
-                            <p className="text-sm text-blue-600 mt-2">Chargement des offres...</p>
-                          </div>
-                        ) : offers.length === 0 ? (
-                          <div className="col-span-2 text-center py-4 text-blue-600">
-                            Aucune offre PFE disponible pour le moment.
-                          </div>
-                        ) : (
-                          offers.map((offer) => (
-                                <div key={offer.id} className="flex items-center space-x-3 p-4 border rounded-lg hover:bg-gray-50">
-                                  <input
-                                    type="radio"
-                                    id={`offer-${offer.id}`}
-                                    name="selectedOffer"
-                                    value={offer.id}
-                                    checked={selectedOfferIds.includes(offer.id)}
-                                    onChange={(e) => {
-                                      if (e.target.checked) {
-                                        handleOfferSelection([parseInt(e.target.value)]);
-                                      }
-                                    }}
-                                    className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300"
-                                  />
-                                  <label htmlFor={`offer-${offer.id}`} className="flex-1 cursor-pointer">
-                                    <div className="font-medium text-gray-900">{offer.title}</div>
-                                    <div className="text-sm text-gray-500">
-                                      Référence: {offer.reference} | Entreprise: {offer.entreprise?.nom || 'Non spécifiée'}
-                                    </div>
-                                  </label>
-                                </div>
-                          ))
-                        )}
-                      </div>
-                      
-                      {/* Selected Offers Summary */}
-                      {selectedOfferIds.length > 0 && (
-                        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <div className="text-sm text-blue-800">
-                            <strong>Offre sélectionnée :</strong> {selectedOfferIds.length} projet sélectionné
-                          </div>
+                  {/* PFE Offer Information */}
+                  {isPrefilledFromOffer && (
+                    <div className="mb-6 p-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                        <div>
+                          <h3 className="font-semibold text-green-800">Offre PFE Sélectionnée</h3>
+                          <p className="text-sm text-green-700">
+                            Vous postulez pour l'offre : <strong>{formData.pfeReference}</strong>
+                          </p>
                         </div>
-                      )}
+                      </div>
                     </div>
-                  </div>
+                  )}
 
                   {/* Institut */}
                   <div>

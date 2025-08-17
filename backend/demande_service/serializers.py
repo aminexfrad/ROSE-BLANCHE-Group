@@ -215,17 +215,20 @@ class DemandeSerializer(serializers.ModelSerializer):
                 )
         
         if type_stage == 'Stage PFE':
-            if offer_ids and len(offer_ids) > 0:
+            # For PFE stages, we need either offer_ids OR pfe_reference
+            has_offer_ids = offer_ids and len(offer_ids) > 0
+            has_pfe_reference = data.get('pfe_reference')
+            
+            if has_offer_ids:
                 if len(offer_ids) > 1:
                     raise serializers.ValidationError('Vous ne pouvez sélectionner qu\'une seule offre par demande.')
                 
                 # Check for duplicate offer IDs (should not happen with single offer, but safety check)
                 if len(offer_ids) != len(set(offer_ids)):
                     raise serializers.ValidationError('Vous ne pouvez pas sélectionner la même offre plusieurs fois.')
-            else:
-                # Single-offer: require pfe_reference
-                if not data.get('pfe_reference'):
-                    raise serializers.ValidationError('La référence du projet PFE est obligatoire pour une demande PFE à une seule offre.')
+            elif not has_pfe_reference:
+                # If no offer_ids, pfe_reference is required
+                raise serializers.ValidationError('Pour un stage PFE, vous devez soit sélectionner une offre, soit fournir une référence PFE.')
         return data
 
     def create(self, validated_data):

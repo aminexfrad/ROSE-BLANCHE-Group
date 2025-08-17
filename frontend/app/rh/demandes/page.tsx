@@ -30,6 +30,7 @@ import {
   Calendar,
   User,
   AlertCircle,
+  Briefcase,
 } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { FaFilePdf, FaFileAlt, FaFileImage } from "react-icons/fa";
@@ -738,6 +739,14 @@ export default function RHDemandesPage() {
                             </li>
                           ))}
                         </ul>
+                      ) : application.pfe_reference ? (
+                        <div className="text-xs text-gray-800 flex items-center gap-2">
+                          <Briefcase className="h-3 w-3 text-blue-500" />
+                          <span className="font-medium">PFE: {application.pfe_reference}</span>
+                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
+                            Référence PFE
+                          </Badge>
+                        </div>
                       ) : (
                         <span className="text-xs text-gray-400">-</span>
                       )}

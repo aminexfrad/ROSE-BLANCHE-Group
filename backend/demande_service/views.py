@@ -102,13 +102,14 @@ class DemandeCreateView(generics.CreateAPIView):
                     )
                 
             else:
-                # For PFE demands, exactly one offer must be selected
-                raise APIException("Pour un stage PFE, vous devez sélectionner exactement une offre.")
+                # For PFE demands without offer_ids, check if we have pfe_reference
+                if not serializer.validated_data.get('pfe_reference'):
+                    raise APIException("Pour un stage PFE, vous devez soit sélectionner une offre, soit fournir une référence PFE.")
         
         try:
             demande = serializer.save()
             
-            # Auto-fill entreprise and PFE reference from the selected offer
+            # Auto-fill entreprise and PFE reference from the selected offer or pfe_reference
             if offer_ids:
                 from shared.models import OffreStage
                 try:
@@ -128,6 +129,22 @@ class DemandeCreateView(generics.CreateAPIView):
                     
                 except OffreStage.DoesNotExist:
                     print(f"⚠️  Offre {offer_ids[0]} non trouvée")
+            
+            # If no offer_ids but we have pfe_reference, try to find the offer and fill entreprise
+            elif not offer_ids and demande.pfe_reference:
+                from shared.models import OffreStage
+                try:
+                    offre = OffreStage.objects.get(reference=demande.pfe_reference)
+                    
+                    # Auto-fill entreprise if not set
+                    if offre.entreprise and not demande.entreprise:
+                        demande.entreprise = offre.entreprise
+                        demande.save(update_fields=['entreprise'])
+                        print(f"✅ Entreprise auto-remplie depuis pfe_reference: {offre.entreprise.nom}")
+                    
+                except OffreStage.DoesNotExist:
+                    print(f"⚠️  Offre avec référence {demande.pfe_reference} non trouvée")
+                    print("⚠️  L'entreprise ne pourra pas être remplie automatiquement")
             
             # Increment candidate's application count if authenticated
             if self.request.user.is_authenticated and hasattr(self.request.user, 'candidat_profile'):

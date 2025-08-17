@@ -939,7 +939,17 @@ class OffreStage(models.Model):
         ordering = ['-id']
 
     def __str__(self):
-        return f"{self.reference} - {self.title} - {self.entreprise.nom}"
+        return f"{self.reference} - {self.title} - {self.entreprise.nom if self.entreprise else 'Sans entreprise'}"
+    
+    def delete(self, *args, **kwargs):
+        """Override delete to handle relations properly"""
+        from demande_service.models import DemandeOffre
+        
+        # Supprimer d'abord les relations DemandeOffre
+        DemandeOffre.objects.filter(offre=self).delete()
+        
+        # Puis supprimer l'offre
+        super().delete(*args, **kwargs)
 
 class PFEReport(models.Model):
     """

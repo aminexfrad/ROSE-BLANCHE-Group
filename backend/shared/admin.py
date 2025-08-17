@@ -8,7 +8,7 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
-from .models import Entreprise, OffreStage, PFEReport, PFEDocument, Candidat, Candidature
+from .models import Entreprise, OffreStage, PFEReport, PFEDocument, Candidat
 from django.utils import timezone
 
 @admin.register(Entreprise)
@@ -45,10 +45,51 @@ class EntrepriseAdmin(admin.ModelAdmin):
 
 @admin.register(OffreStage)
 class OffreStageAdmin(admin.ModelAdmin):
-    list_display = ('reference', 'title', 'entreprise', 'diplome', 'specialite', 'nombre_postes', 'ville')
-    list_filter = ('entreprise', 'status', 'type', 'ville')
+    list_display = ('reference', 'title', 'entreprise', 'diplome', 'specialite', 'nombre_postes', 'ville', 'status', 'validated')
+    list_filter = ('entreprise', 'status', 'type', 'ville', 'validated')
     search_fields = ('reference', 'title', 'specialite', 'ville', 'entreprise__nom')
+    list_editable = ('status', 'validated')
     fields = ('reference', 'title', 'description', 'objectifs', 'keywords', 'diplome', 'specialite', 'nombre_postes', 'ville', 'entreprise', 'status', 'type', 'validated')
+    
+    actions = ['delete_selected_offres', 'mark_as_validated', 'mark_as_open']
+    
+    def delete_selected_offres(self, request, queryset):
+        """Supprimer les offres sélectionnées en gérant les relations"""
+        from demande_service.models import DemandeOffre
+        
+        count = 0
+        for offre in queryset:
+            try:
+                # Supprimer d'abord les relations DemandeOffre
+                DemandeOffre.objects.filter(offre=offre).delete()
+                # Puis supprimer l'offre
+                offre.delete()
+                count += 1
+            except Exception as e:
+                self.message_user(request, f"Erreur lors de la suppression de {offre.reference}: {e}", level='ERROR')
+        
+        if count > 0:
+            self.message_user(request, f"{count} offre(s) supprimée(s) avec succès!")
+    
+    delete_selected_offres.short_description = "Supprimer les offres sélectionnées (avec relations)"
+    
+    def mark_as_validated(self, request, queryset):
+        """Marquer les offres comme validées"""
+        updated = queryset.update(validated=True)
+        self.message_user(request, f"{updated} offre(s) marquée(s) comme validées!")
+    
+    mark_as_validated.short_description = "Marquer comme validées"
+    
+    def mark_as_open(self, request, queryset):
+        """Marquer les offres comme ouvertes"""
+        updated = queryset.update(status='open')
+        self.message_user(request, f"{updated} offre(s) marquée(s) comme ouvertes!")
+    
+    mark_as_open.short_description = "Marquer comme ouvertes"
+    
+    def get_queryset(self, request):
+        """Optimiser les requêtes avec select_related"""
+        return super().get_queryset(request).select_related('entreprise')
 
 @admin.register(PFEReport)
 class PFEReportAdmin(admin.ModelAdmin):
@@ -137,35 +178,6 @@ class CandidatAdmin(admin.ModelAdmin):
     demandes_restantes.short_description = 'Demandes restantes'
 
 
-@admin.register(Candidature)
-class CandidatureAdmin(admin.ModelAdmin):
-    list_display = [
-        'candidat', 'offre', 'status', 'created_at', 'reviewed_at'
-    ]
-    list_filter = ['status', 'created_at', 'reviewed_at']
-    search_fields = [
-        'candidat__user__email', 'candidat__user__nom', 
-        'candidat__user__prenom', 'offre__reference', 'offre__title'
-    ]
-    readonly_fields = ['created_at', 'updated_at']
-    fieldsets = (
-        ('Informations de base', {
-            'fields': ('candidat', 'offre', 'demande', 'status')
-        }),
-        ('Documents', {
-            'fields': ('cv', 'lettre_motivation', 'autres_documents')
-        }),
-        ('Feedback', {
-            'fields': ('feedback', 'raison_refus')
-        }),
-        ('Timestamps', {
-            'fields': ('created_at', 'updated_at', 'reviewed_at'),
-            'classes': ('collapse',)
-        })
-    )
-    list_per_page = 20
-    
-    def save_model(self, request, obj, form, change):
-        if change and 'status' in form.changed_data:
-            obj.reviewed_at = timezone.now()
-        super().save_model(request, obj, form, change)
+
+
+
