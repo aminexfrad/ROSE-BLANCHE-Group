@@ -262,15 +262,47 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen relative overflow-hidden">
-      {/* Loading overlay */}
-      {authLoading && (
-        <div className="absolute inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-6 shadow-xl">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600 text-center">Vérification de l'authentification...</p>
+              {/* Loading overlay */}
+        {authLoading && (
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center">
+            <div className="bg-gradient-to-br from-white via-red-50 to-red-100 rounded-2xl p-8 shadow-2xl border border-red-200/50 transform scale-100 animate-pulse">
+              {/* Animated logo */}
+              <div className="flex justify-center mb-6">
+                <div className="relative">
+                  <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                    <Shield className="h-8 w-8 text-white animate-bounce" />
+                  </div>
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-400 rounded-full animate-ping"></div>
+                </div>
+              </div>
+              
+              {/* Enhanced loading spinner */}
+              <div className="flex justify-center mb-6">
+                <div className="relative">
+                  <div className="w-12 h-12 border-4 border-red-200 rounded-full animate-spin"></div>
+                  <div className="absolute top-0 left-0 w-12 h-12 border-4 border-transparent border-t-red-500 rounded-full animate-spin"></div>
+                  <div className="absolute top-0 left-0 w-12 h-12 border-4 border-transparent border-r-red-400 rounded-full animate-spin" style={{animationDelay: '0.1s'}}></div>
+                </div>
+              </div>
+              
+              {/* Enhanced text with gradient */}
+              <div className="text-center">
+                <h3 className="text-lg font-semibold bg-gradient-to-r from-red-600 to-red-800 bg-clip-text text-transparent mb-2">
+                  Vérification en cours
+                </h3>
+                <p className="text-gray-600 text-sm animate-pulse">
+                  Vérification de l'authentification...
+                </p>
+              </div>
+              
+              {/* Decorative elements */}
+              <div className="absolute -top-2 -left-2 w-4 h-4 bg-red-300 rounded-full opacity-60 animate-bounce" style={{animationDelay: '0.2s'}}></div>
+              <div className="absolute -bottom-2 -right-2 w-3 h-3 bg-red-400 rounded-full opacity-60 animate-bounce" style={{animationDelay: '0.4s'}}></div>
+              <div className="absolute top-1/2 -left-3 w-2 h-2 bg-red-200 rounded-full opacity-60 animate-bounce" style={{animationDelay: '0.6s'}}></div>
+              <div className="absolute top-1/2 -right-3 w-2 h-2 bg-red-300 rounded-full opacity-60 animate-bounce" style={{animationDelay: '0.8s'}}></div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       
       {/* Animated Background Image */}
       <div className="absolute inset-0 w-full h-full z-0">
@@ -313,7 +345,7 @@ export default function LoginPage() {
               </div>
             </div>
             <h2 className="text-3xl font-bold text-white mb-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-              Connexion à <span className="text-red-400">StageBloom</span>
+              
             </h2>
             <p className="text-gray-100 font-medium drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
               Accédez à votre espace personnel
@@ -326,12 +358,12 @@ export default function LoginPage() {
               <CardTitle className="text-2xl font-bold text-white flex items-center justify-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
                 {isRegisterMode ? (
                   <>
-                    <UserPlus className="h-6 w-6 text-white" />
+                    <UserPlus className="h-6 w-6 text-red-400" />
                     Inscription Candidat
                   </>
                 ) : (
                   <>
-                    <Shield className="h-6 w-6 text-white" />
+                    <Shield className="h-6 w-6 text-red-400" />
                     Authentification
                   </>
                 )}
@@ -357,7 +389,7 @@ export default function LoginPage() {
                     }`}
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <Shield className="h-4 w-4" />
+                      <Shield className="h-4 w-4 text-red-400" />
                       Utilisateur
                     </div>
                   </button>
@@ -371,33 +403,19 @@ export default function LoginPage() {
                     }`}
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <UserPlus className="h-4 w-4" />
+                      <UserPlus className="h-4 w-4 text-red-400" />
                       Candidat
                     </div>
                   </button>
                 </div>
-                <div className="mt-3 p-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
-                  <p className="text-xs text-white/90 text-center drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                    {loginType === 'user' ? (
-                      <>
-                        <Shield className="h-3 w-3 inline mr-1" />
-                        <strong>Utilisateurs organisationnels </strong> 
-                      </>
-                    ) : (
-                      <>
-                        <UserPlus className="h-3 w-3 inline mr-1" />
-                        <strong>Candidats :</strong> Étudiants cherchant des stages
-                      </>
-                    )}
-                  </p>
-                </div>
+
               </div>
 
               {isRegisterMode ? (
                 <form onSubmit={handleRegister} className="space-y-6">
                   <div>
                     <Label htmlFor="nom" className="text-sm font-medium text-white flex items-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                      <UserPlus className="h-4 w-4 text-white" />
+                      <UserPlus className="h-4 w-4 text-red-400" />
                       Nom
                     </Label>
                     <Input
@@ -416,7 +434,7 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <Label htmlFor="prenom" className="text-sm font-medium text-white flex items-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                      <UserPlus className="h-4 w-4 text-white" />
+                      <UserPlus className="h-4 w-4 text-red-400" />
                       Prénom
                     </Label>
                     <Input
@@ -435,7 +453,7 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <Label htmlFor="email" className="text-sm font-medium text-white flex items-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                      <Mail className="h-4 w-4 text-white" />
+                      <Mail className="h-4 w-4 text-red-400" />
                       Email
                     </Label>
                     <Input
@@ -454,7 +472,7 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <Label htmlFor="password" className="text-sm font-medium text-white flex items-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                      <Lock className="h-4 w-4 text-white" />
+                      <Lock className="h-4 w-4 text-red-400" />
                       Mot de passe
                     </Label>
                     <div className="relative mt-2">
@@ -474,9 +492,9 @@ export default function LoginPage() {
                         className="absolute inset-y-0 right-0 pr-3 flex items-center"
                       >
                         {showRegisterPassword ? (
-                          <EyeOff className="h-5 w-5 text-white hover:text-gray-100" />
+                          <EyeOff className="h-5 w-5 text-red-400 hover:text-red-300" />
                         ) : (
-                          <Eye className="h-5 w-5 text-white hover:text-gray-100" />
+                          <Eye className="h-5 w-5 text-red-400 hover:text-red-300" />
                         )}
                       </button>
                     </div>
@@ -486,7 +504,7 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <Label htmlFor="confirmPassword" className="text-sm font-medium text-white flex items-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                      <Lock className="h-4 w-4 text-white" />
+                      <Lock className="h-4 w-4 text-red-400" />
                       Confirmer le mot de passe
                     </Label>
                     <div className="relative mt-2">
@@ -503,12 +521,12 @@ export default function LoginPage() {
                       <button
                         type="button"
                         onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                        className="absolute inset-y-0 right-0 pr-3 flex items-center"
+                        className="absolute inset-y-0 right-3 flex items-center"
                       >
                         {showConfirmPassword ? (
-                          <EyeOff className="h-5 w-5 text-white hover:text-gray-100" />
+                          <EyeOff className="h-5 w-5 text-red-400 hover:text-red-300" />
                         ) : (
-                          <Eye className="h-5 w-5 text-white hover:text-gray-100" />
+                          <Eye className="h-5 w-5 text-red-400 hover:text-red-300" />
                         )}
                       </button>
                     </div>
@@ -518,7 +536,7 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <Label htmlFor="telephone" className="text-sm font-medium text-white flex items-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                      <Phone className="h-4 w-4 text-white" />
+                      <Phone className="h-4 w-4 text-red-400" />
                       Téléphone (optionnel)
                     </Label>
                     <Input
@@ -532,7 +550,7 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <Label htmlFor="institut" className="text-sm font-medium text-white flex items-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                      <Building className="h-4 w-4 text-white" />
+                      <Building className="h-4 w-4 text-red-400" />
                       Institut
                     </Label>
                     <Input
@@ -551,7 +569,7 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <Label htmlFor="specialite" className="text-sm font-medium text-white flex items-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                      <GraduationCap className="h-4 w-4 text-white" />
+                      <GraduationCap className="h-4 w-4 text-red-400" />
                       Spécialité
                     </Label>
                     <Input
@@ -570,7 +588,7 @@ export default function LoginPage() {
                   </div>
                   <div>
                     <Label htmlFor="niveau" className="text-sm font-medium text-white flex items-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                      <Sparkles className="h-4 w-4 text-white" />
+                      <Sparkles className="h-4 w-4 text-red-400" />
                       Niveau
                     </Label>
                     <Input
@@ -598,10 +616,10 @@ export default function LoginPage() {
                         Inscription en cours...
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center">
-                        <UserPlus className="h-5 w-5 mr-2" />
-                        Créer un compte
-                      </div>
+                                          <div className="flex items-center justify-center">
+                      <UserPlus className="h-5 w-5 mr-2 text-white" />
+                      Créer un compte
+                    </div>
                     )}
                   </Button>
                 </form>
@@ -609,7 +627,7 @@ export default function LoginPage() {
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div>
                     <Label htmlFor="email" className="text-sm font-medium text-white flex items-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                      <UserCheck className="h-4 w-4 text-white" />
+                      <UserCheck className="h-4 w-4 text-red-400" />
                       Email
                     </Label>
                     <Input
@@ -629,7 +647,7 @@ export default function LoginPage() {
 
                   <div>
                     <Label htmlFor="password" className="text-sm font-medium text-white flex items-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                      <Shield className="h-4 w-4 text-white" />
+                      <Shield className="h-4 w-4 text-red-400" />
                       Mot de passe
                     </Label>
                     <div className="relative mt-2">
@@ -649,9 +667,9 @@ export default function LoginPage() {
                         className="absolute inset-y-0 right-0 pr-3 flex items-center"
                       >
                         {showPassword ? (
-                          <EyeOff className="h-5 w-5 text-white hover:text-gray-100" />
+                          <EyeOff className="h-5 w-5 text-red-400 hover:text-red-300" />
                         ) : (
-                          <Eye className="h-5 w-5 text-white hover:text-gray-100" />
+                          <Eye className="h-5 w-5 text-red-400 hover:text-red-300" />
                         )}
                       </button>
                     </div>
@@ -671,10 +689,10 @@ export default function LoginPage() {
                         Connexion en cours...
                       </div>
                     ) : (
-                      <div className="flex items-center justify-center">
-                        <LogIn className="h-5 w-5 mr-2" />
-                        Se connecter
-                      </div>
+                                          <div className="flex items-center justify-center">
+                      <LogIn className="h-5 w-5 mr-2 text-white" />
+                      Se connecter
+                    </div>
                     )}
                   </Button>
                 </form>
