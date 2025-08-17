@@ -717,33 +717,47 @@ class ApiClient {
   }
 
   async logout(): Promise<void> {
+    console.log('API Client: Starting logout...')
+    
     try {
-      const refreshToken = localStorage.getItem('refreshToken')
-      if (refreshToken) {
+      // Check if we have a token to make the logout request
+      const token = localStorage.getItem('token')
+      console.log('API Client: Token found:', !!token)
+      
+      if (token) {
         try {
+          console.log('API Client: Making logout request to backend...')
           await this.request('/auth/logout/', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ refresh: refreshToken }),
+            // Don't send refresh token in body - backend doesn't need it
           }, { skipCache: true })
+          console.log('API Client: Backend logout successful')
         } catch (backendError) {
           // If backend logout fails, just log it but don't throw
-          console.warn('Backend logout failed, but continuing with local cleanup:', backendError)
+          console.warn('API Client: Backend logout failed, but continuing with local cleanup:', backendError)
         }
+      } else {
+        console.log('API Client: No token found, skipping backend logout')
       }
     } catch (error) {
-      console.error('Logout error:', error)
+      console.error('API Client: Logout error:', error)
     } finally {
+      console.log('API Client: Clearing local data...')
+      
       // Always clear all stored data regardless of backend response
       this.token = null
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token')
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('user')
-        localStorage.removeItem('token') // Also clear the old key
+        localStorage.removeItem('candidate_email')
+        console.log('API Client: Local storage cleared')
       }
+      
+      console.log('API Client: Logout completed')
     }
   }
 

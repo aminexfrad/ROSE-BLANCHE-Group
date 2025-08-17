@@ -52,6 +52,7 @@ def logout_view(request):
         logout(request)
         return Response({'message': 'Déconnexion réussie'}, status=status.HTTP_200_OK)
     except Exception as e:
+        print(f"Logout error: {e}")  # Add logging for debugging
         return Response({'error': 'Erreur lors de la déconnexion'}, status=status.HTTP_400_BAD_REQUEST)
 
 

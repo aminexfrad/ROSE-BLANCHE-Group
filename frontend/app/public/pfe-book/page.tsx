@@ -21,10 +21,12 @@ import { fr } from "date-fns/locale"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { useToast } from "@/hooks/use-toast"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function PFEBookPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const { logout } = useAuth()
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [offers, setOffers] = useState<PublicOffreStage[]>([])
@@ -303,12 +305,32 @@ export default function PFEBookPage() {
                         Mon tableau de bord
                       </Button>
                       <Button 
-                        onClick={() => {
-                          localStorage.removeItem('token')
-                          localStorage.removeItem('refreshToken')
-                          setIsAuthenticated(false)
-                          setCandidateStatus(null)
-                          router.push('/public/pfe-book')
+                        onClick={async () => {
+                          try {
+                            await logout()
+                            setIsAuthenticated(false)
+                            setCandidateStatus(null)
+                            toast({
+                              title: "Déconnexion réussie",
+                              description: "Vous avez été déconnecté avec succès.",
+                            })
+                            // Refresh the page to ensure clean state
+                            window.location.reload()
+                          } catch (error) {
+                            console.error('Logout error:', error)
+                            // Fallback to manual cleanup
+                            localStorage.removeItem('token')
+                            localStorage.removeItem('refreshToken')
+                            localStorage.removeItem('candidate_email')
+                            setIsAuthenticated(false)
+                            setCandidateStatus(null)
+                            toast({
+                              title: "Déconnexion réussie",
+                              description: "Vous avez été déconnecté avec succès.",
+                            })
+                            // Refresh the page to ensure clean state
+                            window.location.reload()
+                          }
                         }}
                         variant="outline"
                         size="sm"

@@ -40,10 +40,32 @@ export default function CandidateDashboardPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [hasRedirected, setHasRedirected] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
 
   useEffect(() => {
+    // Don't check authentication if user is logging out
+    if (isLoggingOut) {
+      return
+    }
+    
     // Check if candidate is authenticated
     if (!authLoading) {
+      // Additional check for token in localStorage
+      const token = localStorage.getItem('token')
+      if (!token) {
+        if (!hasRedirected) {
+          setHasRedirected(true)
+          setError('Vous devez être connecté pour accéder à cette page')
+          toast({
+            title: "Non authentifié",
+            description: "Veuillez vous connecter pour accéder à votre tableau de bord",
+            variant: "destructive"
+          })
+          window.location.href = '/login'
+        }
+        return
+      }
+
       if (!candidat) {
         // Only redirect once to prevent infinite loop
         if (!hasRedirected) {
@@ -54,10 +76,8 @@ export default function CandidateDashboardPage() {
             description: "Veuillez vous connecter pour accéder à votre tableau de bord",
             variant: "destructive"
           })
-          // Use router.push instead of window.location.href to prevent full page reload
-          setTimeout(() => {
-            window.location.href = '/login'
-          }, 1000)
+          // Redirect immediately to prevent any delay
+          window.location.href = '/login'
         }
         return
       }
@@ -65,7 +85,7 @@ export default function CandidateDashboardPage() {
       // Candidate is authenticated, fetch dashboard
       fetchDashboard()
     }
-  }, [candidat, authLoading, toast, hasRedirected])
+  }, [candidat, authLoading, toast, hasRedirected, isLoggingOut])
 
   const fetchDashboard = async () => {
     try {
@@ -234,14 +254,75 @@ export default function CandidateDashboardPage() {
               </Link>
               <Button 
                 variant="outline" 
+                disabled={isLoggingOut}
                 onClick={async () => {
-                  await logout()
-                  window.location.href = '/login'
+                  try {
+                    console.log('Starting logout process...')
+                    
+                    // Set logging out state to prevent authentication checks
+                    setIsLoggingOut(true)
+                    
+                    // Show loading state
+                    toast({
+                      title: "Déconnexion en cours...",
+                      description: "Veuillez patienter.",
+                    })
+                    
+                    // Perform logout
+                    await logout()
+                    
+                    console.log('Logout completed successfully')
+                    
+                    // Show success message
+                    toast({
+                      title: "Déconnexion réussie",
+                      description: "Vous avez été déconnecté avec succès.",
+                    })
+                    
+                    // Clear any remaining data
+                    if (typeof window !== 'undefined') {
+                      localStorage.removeItem('token')
+                      localStorage.removeItem('refreshToken')
+                      localStorage.removeItem('user')
+                      localStorage.removeItem('candidate_email')
+                    }
+                    
+                    // Wait a moment for toast to show, then redirect
+                    setTimeout(() => {
+                      console.log('Redirecting to login page...')
+                      window.location.href = '/login'
+                    }, 1000)
+                    
+                  } catch (error) {
+                    console.error('Logout error:', error)
+                    
+                    // Show error message
+                    toast({
+                      title: "Erreur de déconnexion",
+                      description: "Une erreur s'est produite lors de la déconnexion.",
+                      variant: "destructive"
+                    })
+                    
+                    // Clear data manually and redirect anyway
+                    if (typeof window !== 'undefined') {
+                      localStorage.removeItem('token')
+                      localStorage.removeItem('refreshToken')
+                      localStorage.removeItem('user')
+                      localStorage.removeItem('candidate_email')
+                    }
+                    
+                    // Still redirect even if logout fails
+                    setTimeout(() => {
+                      console.log('Redirecting to login page after error...')
+                      window.location.href = '/login'
+                    }, 2000)
+                  }
                 }}
+                disabled={isLoggingOut}
                 className="flex items-center gap-2 text-red-600 border-red-300 hover:bg-red-50"
               >
                 <LogOut className="h-4 w-4" />
-                Déconnexion
+                {isLoggingOut ? 'Déconnexion...' : 'Déconnexion'}
               </Button>
             </div>
           </div>

@@ -71,6 +71,12 @@ class CandidatLoginView(generics.GenericAPIView):
                 'error': 'Ce compte n\'est pas un compte candidat'
             }, status=status.HTTP_403_FORBIDDEN)
         
+        # Additional check: ensure user role is candidate
+        if user.role != 'candidat':
+            return Response({
+                'error': 'Ce compte n\'est pas un compte candidat. Veuillez utiliser la connexion utilisateur.'
+            }, status=status.HTTP_403_FORBIDDEN)
+        
         if not user.is_active:
             return Response({
                 'error': 'Ce compte a été désactivé'

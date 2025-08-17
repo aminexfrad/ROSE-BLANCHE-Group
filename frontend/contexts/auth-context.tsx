@@ -167,20 +167,35 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }
 
   const logout = async () => {
+    console.log('Auth context: Starting logout...')
     setLoading(true)
+    
     try {
+      // Try to call backend logout
+      console.log('Auth context: Calling API logout...')
       await apiClient.logout()
+      console.log('Auth context: API logout completed')
+    } catch (error) {
+      console.error('Auth context: API logout failed:', error)
+      // Don't throw the error, continue with local cleanup
     } finally {
+      console.log('Auth context: Clearing local state and data...')
+      
+      // Clear state immediately
       setUser(null)
       setCandidat(null)
       setLoading(false)
+      
       // Clear all auth data
       if (typeof window !== 'undefined') {
         localStorage.removeItem('token')
         localStorage.removeItem('refreshToken')
         localStorage.removeItem('user')
         localStorage.removeItem('candidate_email')
+        console.log('Auth context: Local storage cleared')
       }
+      
+      console.log('Auth context: Logout completed')
     }
   }
 

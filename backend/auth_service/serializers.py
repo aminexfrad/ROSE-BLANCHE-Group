@@ -93,6 +93,13 @@ class LoginSerializer(serializers.Serializer):
                 raise serializers.ValidationError(
                     'Ce compte a été désactivé.'
                 )
+            
+            # Prevent candidates from using regular user login
+            if user.role == User.Role.CANDIDAT:
+                raise serializers.ValidationError(
+                    'Ce compte est un compte candidat. Veuillez utiliser la connexion candidat.'
+                )
+            
             attrs['user'] = user
             return attrs
         else:

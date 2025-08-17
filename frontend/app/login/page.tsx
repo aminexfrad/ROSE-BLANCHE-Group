@@ -209,6 +209,14 @@ export default function LoginPage() {
         errorMessage = "Délai d'attente dépassé. Veuillez réessayer."
       } else if (error.message?.includes('serveur')) {
         errorMessage = "Erreur serveur. Veuillez réessayer plus tard."
+      } else if (error.message?.includes('compte candidat') && loginType === 'user') {
+        errorMessage = "Ce compte est un compte candidat. Veuillez utiliser la connexion candidat."
+        // Automatically switch to candidate mode
+        setLoginType('candidate')
+      } else if (error.message?.includes('connexion utilisateur') && loginType === 'candidate') {
+        errorMessage = "Ce compte n'est pas un compte candidat. Veuillez utiliser la connexion utilisateur."
+        // Automatically switch to user mode
+        setLoginType('user')
       }
       
       toast({
@@ -348,7 +356,10 @@ export default function LoginPage() {
                         : 'text-white hover:text-white/80'
                     }`}
                   >
-                    Utilisateur
+                    <div className="flex items-center justify-center gap-2">
+                      <Shield className="h-4 w-4" />
+                      Utilisateur
+                    </div>
                   </button>
                   <button
                     type="button"
@@ -359,15 +370,27 @@ export default function LoginPage() {
                         : 'text-white hover:text-white/80'
                     }`}
                   >
-                    Candidat
+                    <div className="flex items-center justify-center gap-2">
+                      <UserPlus className="h-4 w-4" />
+                      Candidat
+                    </div>
                   </button>
                 </div>
-                <p className="text-xs text-white/80 mt-2 text-center drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
-                  {loginType === 'user' 
-                    ? 'Connectez-vous avec vos identifiants organisationnels'
-                    : 'Connectez-vous à votre compte candidat'
-                  }
-                </p>
+                <div className="mt-3 p-3 rounded-lg bg-white/10 backdrop-blur-sm border border-white/20">
+                  <p className="text-xs text-white/90 text-center drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
+                    {loginType === 'user' ? (
+                      <>
+                        <Shield className="h-3 w-3 inline mr-1" />
+                        <strong>Utilisateurs organisationnels </strong> 
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-3 w-3 inline mr-1" />
+                        <strong>Candidats :</strong> Étudiants cherchant des stages
+                      </>
+                    )}
+                  </p>
+                </div>
               </div>
 
               {isRegisterMode ? (
