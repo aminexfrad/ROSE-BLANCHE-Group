@@ -1260,30 +1260,7 @@ class ApiClient {
     })
   }
 
-  async getRHKPIGlobaux(): Promise<any> {
-    return this.request<any>('/rh/kpi-globaux/')
-  }
 
-  async triggerKPISurvey(): Promise<any> {
-    return this.request<any>('/rh/kpi-globaux/', { method: 'POST' })
-  }
-
-  async creerStagiaire(formData: FormData): Promise<User> {
-    const response = await fetch(`${API_BASE_URL}/rh/creer-stagiaire/`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${this.token}`,
-      },
-      body: formData,
-    })
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || errorData.message || errorData.error || `HTTP ${response.status}`)
-    }
-    
-    return response.json()
-  }
 
   // Admin methods
   async getUsers(params: { limit?: number; role?: string } = {}): Promise<{ results: User[]; count: number }> {

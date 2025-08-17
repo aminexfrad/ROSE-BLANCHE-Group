@@ -21,7 +21,7 @@ django.setup()
 from django.contrib.auth import get_user_model
 from demande_service.models import Demande
 from shared.models import Stage, User
-from rh_service.views import RHCreerStagiaireView, RHTuteursDisponiblesView, RHAssignerTuteurView
+from rh_service.views import RHTuteursDisponiblesView, RHAssignerTuteurView
 from rest_framework.test import APIRequestFactory
 from rest_framework.test import force_authenticate
 from rest_framework import status
@@ -80,36 +80,24 @@ def test_rh_complete_workflow():
     
     factory = APIRequestFactory()
     
-    # ÉTAPE 1: Créer un stagiaire
-    print("\n📝 ÉTAPE 1: Création d'un stagiaire")
+    # ÉTAPE 1: Utiliser un stagiaire existant
+    print("\n📝 ÉTAPE 1: Utilisation d'un stagiaire existant")
     
-    stagiaire_data = {
-        'prenom': 'Marie',
-        'nom': 'Martin',
-        'email': f'marie.martin.{timestamp}@example.com',
-        'telephone': '+33 6 98 76 54 32',
-        'institut': 'École Supérieure de Commerce',
-        'specialite': 'Marketing Digital',
-        'niveau': 'Master',
-        'type_stage': 'Stage PFE',
-        'date_debut': (datetime.now() + timedelta(days=30)).strftime('%Y-%m-%d'),
-        'date_fin': (datetime.now() + timedelta(days=120)).strftime('%Y-%m-%d'),
-        'description': 'Stage en marketing digital et réseaux sociaux'
-    }
+    # Récupérer un stagiaire existant
+    stagiaire = User.objects.filter(role='stagiaire').first()
+    if not stagiaire:
+        print("❌ Aucun stagiaire trouvé dans la base de données")
+        return
     
-    request1 = factory.post('/rh/creer-stagiaire/', stagiaire_data, format='json')
-    force_authenticate(request1, user=rh_user)
-    view1 = RHCreerStagiaireView.as_view()
-    response1 = view1(request1)
-    
-    if response1.status_code == status.HTTP_201_CREATED:
-        print("✅ Stagiaire créé avec succès")
-        stagiaire_id = response1.data['stagiaire']['id']
-        stage_id = response1.data['stage']['id']
+    stagiaire_id = stagiaire.id
+    stage = Stage.objects.filter(stagiaire=stagiaire).first()
+    if stage:
+        stage_id = stage.id
+        print(f"✅ Stagiaire trouvé: {stagiaire.prenom} {stagiaire.nom}")
         print(f"   ID Stagiaire: {stagiaire_id}")
         print(f"   ID Stage: {stage_id}")
     else:
-        print("❌ Échec de création du stagiaire")
+        print("❌ Aucun stage trouvé pour ce stagiaire")
         return
     
     # ÉTAPE 2: Vérifier les tuteurs disponibles

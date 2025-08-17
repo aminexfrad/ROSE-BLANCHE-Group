@@ -18,8 +18,7 @@ urlpatterns = [
     path('stagiaires/<int:pk>/assigner-tuteur/', views.RHAssignerTuteurView.as_view(), name='rh-assigner-tuteur'),
     path('stagiaires/<int:pk>/create-stage/', views.RHCreateStageForStagiaireView.as_view(), name='rh-create-stage'),
     
-    # Stagiaire creation
-    path('creer-stagiaire/', views.RHCreerStagiaireView.as_view(), name='rh-creer-stagiaire'),
+
     
     # Stage management
     path('stages/', views.RHStagesView.as_view(), name='rh-stages'),
@@ -32,19 +31,13 @@ urlpatterns = [
     path('testimonials/<int:pk>/approve/', views.RHTestimonialApprovalView.as_view(), name='rh-testimonial-approval'),
     path('testimonials/<int:pk>/reject/', views.RHTestimonialRejectionView.as_view(), name='rh-testimonial-rejection'),
     
-    # KPI and statistics
-    path('kpi-globaux/', views.RHKPIGlobauxView.as_view(), name='rh-kpi-globaux'),
-    path('statistiques/', views.RHStatistiquesView.as_view(), name='rh-statistiques'),
-    path('statistiques/export/', views.RHStatistiquesExportView.as_view(), name='rh-statistiques-export'),
+
     
     # Evaluations
     path('evaluations/', views.RHEvaluationsView.as_view(), name='rh-evaluations'),
     path('evaluations/<int:pk>/', views.RHEvaluationDetailView.as_view(), name='rh-evaluation-detail'),
     
-    # Reports
-    path('rapports/', views.RHReportsView.as_view(), name='rh-reports'),
-    path('rapports/generate/', views.RHReportGenerationView.as_view(), name='rh-report-generation'),
-    path('rapports/<str:report_type>/', views.RHReportDownloadView.as_view(), name='rh-report-download'),
+
     
     # Notifications
     path('notifications/', views.RHNotificationsView.as_view(), name='rh-notifications'),

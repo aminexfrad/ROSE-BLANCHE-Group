@@ -73,20 +73,7 @@ export default function RHDashboard() {
       href: "/rh/stagiaires",
       badge: stagiaires.length.toString(),
     },
-    {
-      title: "KPI Globaux",
-      description: "Analysez les performances globales",
-      icon: TrendingUp,
-      href: "/rh/kpi-globaux",
-      badge: "Urgent",
-    },
-    {
-      title: "Statistiques",
-      description: "Rapports détaillés et analyses",
-      icon: BarChart3,
-      href: "/rh/statistiques",
-      badge: null,
-    },
+
     {
       title: "Témoignages",
       description: "Validez et modérez les témoignages",
@@ -104,13 +91,7 @@ export default function RHDashboard() {
       href: "/rh/demandes",
       badge: applications.filter(app => app.status === 'pending').length.toString(),
     },
-    {
-      title: "Rapports",
-      description: "Génération et export de rapports",
-      icon: Upload,
-      href: "/rh/rapports",
-      badge: null,
-    },
+
   ]
 
   useEffect(() => {

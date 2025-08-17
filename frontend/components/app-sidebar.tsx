@@ -41,7 +41,18 @@ import {
   UserPlus,
 } from "lucide-react"
 
-const menuItems = {
+interface MenuItem {
+  title: string
+  url: string
+  icon: React.ComponentType<any>
+}
+
+interface MenuGroup {
+  title: string
+  items: MenuItem[]
+}
+
+const menuItems: Record<string, MenuGroup[]> = {
   stagiaire: [
     {
       title: "Navigation",
@@ -66,7 +77,6 @@ const menuItems = {
         { title: "Statistiques", url: "/tuteur/statistiques", icon: BarChart3 },
       ],
     },
-
   ],
   rh: [
     {
@@ -74,8 +84,6 @@ const menuItems = {
       items: [
         { title: "Tableau de bord", url: "/rh", icon: Home },
         { title: "Tous les Stagiaires", url: "/rh/stagiaires", icon: Users },
-        { title: "KPI Globaux", url: "/rh/kpi-globaux", icon: TrendingUp },
-        { title: "Statistiques", url: "/rh/statistiques", icon: BarChart3 },
       ],
     },
     {
@@ -83,10 +91,8 @@ const menuItems = {
       items: [
         { title: "Témoignages", url: "/rh/temoignages", icon: MessageSquare },
         { title: "Demandes de stage", url: "/rh/demandes", icon: FileText },
-        { title: "Rapports", url: "/rh/rapports", icon: Upload },
         { title: "PFE Digital Hub", url: "/rh/pfe-digital-hub", icon: FileText },
         { title: "Assignation Tuteurs", url: "/rh/assignation-tuteurs", icon: UserPlus },
-        { title: "Ajouter Stagiaire", url: "/rh/ajouter-stagiaire", icon: UserPlus },
       ],
     },
   ],
@@ -107,6 +113,16 @@ const menuItems = {
       ],
     },
   ],
+  candidat: [
+    {
+      title: "Candidature",
+      items: [
+        { title: "Tableau de bord", url: "/candidate", icon: Home },
+        { title: "Mes Demandes", url: "/candidate/demandes", icon: FileText },
+        { title: "Profil", url: "/candidate/profile", icon: Users },
+      ],
+    },
+  ],
 }
 
 const roleColors = {
@@ -114,6 +130,7 @@ const roleColors = {
   tuteur: "from-green-500 to-teal-600",
   rh: "from-orange-500 to-red-600",
   admin: "from-purple-500 to-pink-600",
+  candidat: "from-indigo-500 to-blue-600",
 }
 
 const roleIcons = {
@@ -121,6 +138,7 @@ const roleIcons = {
   tuteur: Users,
   rh: TrendingUp,
   admin: Shield,
+  candidat: Star,
 }
 
 export function AppSidebar() {

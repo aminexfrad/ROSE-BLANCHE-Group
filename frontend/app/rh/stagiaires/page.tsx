@@ -182,12 +182,7 @@ export default function RHStagiairesPage() {
               <Download className="mr-2 h-4 w-4" />
               Exporter
             </Button>
-            <Link href="/rh/ajouter-stagiaire">
-                              <Button className="bg-red-600 hover:bg-red-700">
-                <UserPlus className="mr-2 h-4 w-4" />
-                Ajouter stagiaire
-              </Button>
-            </Link>
+
           </div>
         </div>
 

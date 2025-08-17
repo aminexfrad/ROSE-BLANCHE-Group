@@ -21,8 +21,7 @@ def test_rh_api_endpoints():
         "/rh/stagiaires/",
         "/rh/stages/",
         "/rh/tuteurs-disponibles/",
-        "/rh/kpi-globaux/",
-        "/rh/rapports/",
+        
         "/rh/testimonials/",
         "/rh/evaluations/",
         "/rh/notifications/",

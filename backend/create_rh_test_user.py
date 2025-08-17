@@ -116,7 +116,7 @@ def create_rh_test_user():
         print(f"\n📱 Pages RH à tester:")
         print(f"   - Dashboard: /rh")
         print(f"   - Stagiaires: /rh/stagiaires")
-        print(f"   - KPI: /rh/kpi-globaux")
+
         print(f"   - Témoignages: /rh/temoignages")
         
         print(f"\n🎉 Utilisateur RH de test créé avec succès!")
