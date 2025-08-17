@@ -1,0 +1,26 @@
+StageBloom - Compte Candidat Désactivé
+=========================================
+
+Bonjour {{ prenom }} {{ nom }},
+
+Nous vous informons que votre compte candidat sur StageBloom a été désactivé automatiquement en raison d'une inactivité prolongée.
+
+RAISON DE LA DÉSACTIVATION :
+Votre compte n'a pas été utilisé depuis plus d'un an.
+
+Cette mesure est prise pour maintenir la sécurité et la qualité de notre plateforme de stages.
+
+QUE FAIRE MAINTENANT ?
+- Si vous souhaitez réactiver votre compte, contactez notre équipe support
+- Vous pouvez créer un nouveau compte si nécessaire
+- Vos données précédentes peuvent être récupérées sur demande
+
+Pour toute question ou assistance, n'hésitez pas à nous contacter.
+
+Contactez-nous : {{ site_url }}/contact
+
+---
+Ce message a été envoyé automatiquement par StageBloom.
+Si vous avez des questions, contactez-nous à l'adresse support@stagebloom.com
+
+© 2025 StageBloom. Tous droits réservés.

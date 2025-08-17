@@ -1,0 +1,32 @@
+StageBloom - Avertissement de Désactivation
+============================================
+
+Bonjour {{ prenom }} {{ nom }},
+
+⚠️ ATTENTION : Votre compte candidat sera désactivé dans {{ days_until_deactivation }} jours !
+
+Nous vous contactons pour vous informer que votre compte candidat sur StageBloom sera désactivé automatiquement dans {{ days_until_deactivation }} jours en raison d'une inactivité prolongée.
+
+ACTION REQUISE :
+Pour éviter la désactivation de votre compte, connectez-vous à votre compte dans les {{ days_until_deactivation }} prochains jours.
+
+IMPORTANT :
+Une fois désactivé, votre compte et toutes vos données seront inaccessibles. Vous devrez contacter notre support pour réactivation.
+
+COMMENT ÉVITER LA DÉSACTIVATION ?
+- Connectez-vous à votre compte candidat
+- Mettez à jour votre profil
+- Consultez les nouvelles offres de stage
+- Interagissez avec la plateforme
+
+Cette mesure est prise pour maintenir la sécurité et la qualité de notre plateforme de stages.
+
+SE CONNECTER MAINTENANT : {{ site_url }}/candidate/login
+
+Si vous avez des difficultés à accéder à votre compte, contactez-nous immédiatement.
+
+---
+Ce message a été envoyé automatiquement par StageBloom.
+Si vous avez des questions, contactez-nous à l'adresse support@stagebloom.com
+
+© 2025 StageBloom. Tous droits réservés.

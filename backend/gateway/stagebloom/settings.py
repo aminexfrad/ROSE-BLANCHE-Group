@@ -383,3 +383,19 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
+
+# Celery Beat Schedule (Periodic Tasks)
+CELERY_BEAT_SCHEDULE = {
+    'deactivate-inactive-candidates': {
+        'task': 'candidat_service.tasks.deactivate_inactive_candidate_accounts',
+        'schedule': 60 * 60 * 24 * 7,  # Every 7 days (in seconds)
+    },
+    'check-candidate-activity': {
+        'task': 'candidat_service.tasks.check_candidate_activity',
+        'schedule': 60 * 60 * 24,  # Every day (in seconds)
+    },
+    'send-deactivation-warnings': {
+        'task': 'candidat_service.tasks.send_deactivation_warnings',
+        'schedule': 60 * 60 * 24 * 7,  # Every 7 days (in seconds)
+    },
+}
