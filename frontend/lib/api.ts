@@ -900,6 +900,56 @@ class ApiClient {
     })
   }
 
+  // Interview methods
+  async scheduleInterview(demandeId: number, interviewData: {
+    date: string;
+    time: string;
+    location: string;
+    notes?: string;
+  }): Promise<{
+    message: string;
+    interview: {
+      id: number;
+      date: string;
+      time: string;
+      location: string;
+      notes: string;
+      email_sent: boolean;
+    };
+    demande_status: string;
+  }> {
+    return this.request<any>(`/demandes/${demandeId}/schedule-interview/`, {
+      method: 'POST',
+      body: JSON.stringify(interviewData),
+    })
+  }
+
+  async getInterviewDetails(demandeId: number): Promise<{
+    interview: {
+      id: number;
+      date: string;
+      time: string;
+      location: string;
+      notes: string;
+      status: string;
+      email_sent: boolean;
+      email_sent_at: string | null;
+      scheduled_by: {
+        id: number;
+        name: string;
+        email: string;
+      } | null;
+    };
+    demande: {
+      id: number;
+      status: string;
+      candidate_name: string;
+      email: string;
+    };
+  }> {
+    return this.request<any>(`/demandes/${demandeId}/interview/`)
+  }
+
   // Dashboard stats
   async getDashboardStats(): Promise<{ stats: DashboardStats }> {
     return this.request<{ stats: DashboardStats }>('/stats/')

@@ -35,6 +35,7 @@ import {
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { FaFilePdf, FaFileAlt, FaFileImage } from "react-icons/fa";
 import { useToast } from '@/components/ui/use-toast'
+import { ScheduleInterviewModal } from '@/components/schedule-interview-modal'
 
 // FilePreviewCard component for document display
 function FilePreviewCard({ label, url }: { label: string; url?: string }) {
@@ -224,6 +225,8 @@ export default function RHDemandesPage() {
   })
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
+  const [interviewModalOpen, setInterviewModalOpen] = useState(false)
+  const [selectedDemandeForInterview, setSelectedDemandeForInterview] = useState<Application | null>(null)
   const { toast } = useToast();
   // Track loading state for each offer action
   const [loadingOffers, setLoadingOffers] = useState<{ [key: string]: boolean }>({});
@@ -262,6 +265,7 @@ export default function RHDemandesPage() {
   const getStatusBadge = (status: string) => {
     const colors = {
       pending: "bg-red-100 text-red-800",
+      interview_scheduled: "bg-blue-100 text-blue-800",
       approved: "bg-green-100 text-green-800",
       rejected: "bg-red-100 text-red-800",
     }
@@ -272,6 +276,8 @@ export default function RHDemandesPage() {
     switch (status) {
       case "pending":
         return <Clock className="h-4 w-4 text-red-600" />
+      case "interview_scheduled":
+        return <Calendar className="h-4 w-4 text-blue-600" />
       case "approved":
         return <CheckCircle className="h-4 w-4 text-green-600" />
       case "rejected":
@@ -355,6 +361,24 @@ export default function RHDemandesPage() {
     }
   }
 
+  const handleScheduleInterview = (application: Application) => {
+    setSelectedDemandeForInterview(application);
+    setInterviewModalOpen(true);
+  }
+
+  const handleInterviewScheduled = () => {
+    // Refresh the applications list to show updated status
+    const fetchData = async () => {
+      try {
+        const response = await apiClient.getApplications();
+        setApplications(response.results || []);
+      } catch (err: any) {
+        console.error('Error refreshing applications:', err);
+      }
+    };
+    fetchData();
+  }
+
   if (loading) {
     return (
       <DashboardLayout allowedRoles={["rh"]} breadcrumbs={breadcrumbs}>
@@ -381,6 +405,20 @@ export default function RHDemandesPage() {
 
   return (
     <DashboardLayout allowedRoles={["rh"]} breadcrumbs={breadcrumbs}>
+      {/* Interview Scheduling Modal */}
+      {selectedDemandeForInterview && (
+        <ScheduleInterviewModal
+          isOpen={interviewModalOpen}
+          onClose={() => {
+            setInterviewModalOpen(false);
+            setSelectedDemandeForInterview(null);
+          }}
+          demandeId={selectedDemandeForInterview.id}
+          candidateName={`${selectedDemandeForInterview.prenom} ${selectedDemandeForInterview.nom}`}
+          onSuccess={handleInterviewScheduled}
+        />
+      )}
+
       {/* Details Modal */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
         <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0 bg-white shadow-2xl border-0">
@@ -782,6 +820,10 @@ export default function RHDemandesPage() {
                           </DropdownMenuItem>
                           {application.status === 'pending' && (
                             <>
+                              <DropdownMenuItem onClick={() => handleScheduleInterview(application)} className="text-blue-700 hover:text-blue-800 hover:bg-blue-50">
+                                <Calendar className="mr-2 h-4 w-4" />
+                                Planifier un entretien
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleApprove(application.id)} className="text-green-700 hover:text-green-800 hover:bg-green-50">
                                 <CheckCircle className="mr-2 h-4 w-4" />
                                 Accepter

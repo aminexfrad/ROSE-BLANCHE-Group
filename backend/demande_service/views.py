@@ -461,4 +461,161 @@ def update_demande_offre_status(request, demande_id, offre_id):
     return Response({'id': do.id, 'demande': do.demande_id, 'offre': do.offre_id, 'status': do.status}, status=status.HTTP_200_OK)
 
 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def schedule_interview(request, pk):
+    """Schedule an interview for a demande"""
+    if request.user.role not in ['rh', 'admin']:
+        return Response(
+            {'error': 'Permission refusée'}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    demande = get_object_or_404(Demande, pk=pk)
+    
+    # Check if demande is in pending status
+    if demande.status != Demande.Status.PENDING:
+        return Response(
+            {'error': 'Seules les demandes en attente peuvent faire l\'objet d\'un entretien'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Check if interview already exists
+    if hasattr(demande, 'interview'):
+        return Response(
+            {'error': 'Un entretien a déjà été planifié pour cette demande'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    # Validate request data
+    required_fields = ['date', 'time', 'location']
+    for field in required_fields:
+        if field not in request.data:
+            return Response(
+                {'error': f'Le champ "{field}" est requis'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+    
+    try:
+        from datetime import datetime
+        from django.utils import timezone
+        
+        # Parse date and time
+        interview_date = datetime.strptime(request.data['date'], '%Y-%m-%d').date()
+        interview_time = datetime.strptime(request.data['time'], '%H:%M').time()
+        
+        # Validate that interview is in the future
+        interview_datetime = datetime.combine(interview_date, interview_time)
+        if interview_datetime <= timezone.now():
+            return Response(
+                {'error': 'L\'entretien doit être planifié dans le futur'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Create interview
+        from .models import Interview
+        interview = Interview.objects.create(
+            demande=demande,
+            scheduled_by=request.user,
+            date=interview_date,
+            time=interview_time,
+            location=request.data['location'],
+            notes=request.data.get('notes', '')
+        )
+        
+        # Update demande status to interview_scheduled
+        demande.status = Demande.Status.INTERVIEW_SCHEDULED
+        demande.save(update_fields=['status'])
+        
+        # Send email notification to candidate
+        from shared.utils import MailService
+        email_sent = MailService.send_interview_notification(interview)
+        
+        return Response({
+            'message': 'Entretien planifié avec succès',
+            'interview': {
+                'id': interview.id,
+                'date': interview.date.strftime('%Y-%m-%d'),
+                'time': interview.time.strftime('%H:%M'),
+                'location': interview.location,
+                'notes': interview.notes,
+                'email_sent': email_sent
+            },
+            'demande_status': demande.status
+        }, status=status.HTTP_201_CREATED)
+        
+    except ValueError as e:
+        return Response(
+            {'error': f'Format de date/heure invalide: {str(e)}'}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    except Exception as e:
+        import traceback
+        print("DEBUG ERROR in schedule_interview:", e)
+        traceback.print_exc()
+        return Response(
+            {'error': f'Erreur lors de la planification de l\'entretien: {str(e)}'}, 
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def get_interview_details(request, pk):
+    """Get interview details for a demande"""
+    demande = get_object_or_404(Demande, pk=pk)
+    
+    # Check permissions
+    if request.user.role == 'rh':
+        if not request.user.entreprise or demande.entreprise != request.user.entreprise:
+            return Response(
+                {'error': 'Permission refusée'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+    elif request.user.role == 'candidat':
+        if demande.email != request.user.email:
+            return Response(
+                {'error': 'Permission refusée'}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+    elif request.user.role not in ['admin']:
+        return Response(
+            {'error': 'Permission refusée'}, 
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    # Check if interview exists
+    if not hasattr(demande, 'interview'):
+        return Response(
+            {'error': 'Aucun entretien planifié pour cette demande'}, 
+            status=status.HTTP_404_NOT_FOUND
+        )
+    
+    interview = demande.interview
+    
+    return Response({
+        'interview': {
+            'id': interview.id,
+            'date': interview.date.strftime('%Y-%m-%d'),
+            'time': interview.time.strftime('%H:%M'),
+            'location': interview.location,
+            'notes': interview.notes,
+            'status': interview.status,
+            'email_sent': interview.email_sent,
+            'email_sent_at': interview.email_sent_at.isoformat() if interview.email_sent_at else None,
+            'scheduled_by': {
+                'id': interview.scheduled_by.id,
+                'name': interview.scheduled_by.get_full_name(),
+                'email': interview.scheduled_by.email
+            } if interview.scheduled_by else None
+        },
+        'demande': {
+            'id': demande.id,
+            'status': demande.status,
+            'candidate_name': demande.nom_complet,
+            'email': demande.email
+        }
+    }, status=status.HTTP_200_OK)
+
+
 

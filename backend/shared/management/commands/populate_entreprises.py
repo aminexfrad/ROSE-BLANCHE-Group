@@ -26,8 +26,8 @@ class Command(BaseCommand):
                 defaults={
                     'description': 'Entreprise leader dans le secteur agricole et agroalimentaire',
                     'secteur_activite': 'Agriculture et Agroalimentaire',
-                    'ville': 'Casablanca',
-                    'pays': 'Maroc',
+                    'ville': 'Sousse',
+                    'pays': 'Tunisie',
                     'telephone': '+212 5 22 30 00 00',
                     'email': 'contact@roseblanche.ma',
                     'site_web': 'https://www.roseblanche.ma',
@@ -43,21 +43,21 @@ class Command(BaseCommand):
             # Create additional sample companies
             sample_companies = [
                 {
-                    'nom': 'TechMaroc Solutions',
+                    'nom': 'TechTunisie Solutions',
                     'description': 'Entreprise spécialisée dans le développement de solutions technologiques innovantes',
                     'secteur_activite': 'Technologie et Développement',
                     'ville': 'Rabat',
-                    'pays': 'Maroc',
+                    'pays': 'Tunisie',
                     'telephone': '+212 5 37 70 00 00',
-                    'email': 'contact@techmaroc.ma',
-                    'site_web': 'https://www.techmaroc.ma'
+                    'email': 'contact@techTunisie.ma',
+                    'site_web': 'https://www.techTunisie.ma'
                 },
                 {
-                    'nom': 'GreenEnergy Maroc',
+                    'nom': 'GreenEnergy Tunisie',
                     'description': 'Entreprise leader dans les énergies renouvelables et le développement durable',
                     'secteur_activite': 'Énergies Renouvelables',
                     'ville': 'Marrakech',
-                    'pays': 'Maroc',
+                    'pays': 'Tunisie',
                     'telephone': '+212 5 24 30 00 00',
                     'email': 'info@greenenergy.ma',
                     'site_web': 'https://www.greenenergy.ma'
@@ -66,8 +66,8 @@ class Command(BaseCommand):
                     'nom': 'FinancePlus',
                     'description': 'Institution financière spécialisée dans le financement des PME',
                     'secteur_activite': 'Finance et Banque',
-                    'ville': 'Casablanca',
-                    'pays': 'Maroc',
+                    'ville': 'Sousse',
+                    'pays': 'Tunisie',
                     'telephone': '+212 5 22 40 00 00',
                     'email': 'contact@financeplus.ma',
                     'site_web': 'https://www.financeplus.ma'
@@ -117,7 +117,7 @@ class Command(BaseCommand):
                             description=f'Entreprise créée automatiquement pour le stage: {stage.title}',
                             secteur_activite='À définir',
                             ville='À définir',
-                            pays='Maroc',
+                            pays='Tunisie',
                             is_active=True
                         )
                         stage.company_entreprise = new_company

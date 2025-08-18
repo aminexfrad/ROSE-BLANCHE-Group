@@ -7,7 +7,7 @@ Intellectual Property – Protected by international copyright law.
 from django.contrib import admin
 from django.utils.translation import gettext_lazy as _
 from django.utils.html import format_html
-from .models import Demande
+from .models import Demande, Interview
 
 
 @admin.register(Demande)
@@ -69,3 +69,46 @@ class DemandeAdmin(admin.ModelAdmin):
         return obj.is_pfe_stage
     is_pfe_stage.short_description = _('Stage PFE')
     is_pfe_stage.boolean = True
+
+
+@admin.register(Interview)
+class InterviewAdmin(admin.ModelAdmin):
+    """Admin configuration for Interview model"""
+    
+    list_display = ('demande_candidate', 'demande_entreprise', 'interview_datetime', 'location', 'status', 'email_sent', 'scheduled_by', 'created_at')
+    list_filter = ('status', 'email_sent', 'date', 'scheduled_by', 'created_at')
+    search_fields = ('demande__nom', 'demande__prenom', 'demande__email', 'location', 'notes')
+    ordering = ('-created_at',)
+    readonly_fields = ('created_at', 'updated_at', 'email_sent_at', 'formatted_datetime')
+    
+    fieldsets = (
+        (_('Informations de l\'entretien'), {
+            'fields': ('demande', 'scheduled_by', 'date', 'time', 'location', 'notes')
+        }),
+        (_('Statut et notifications'), {
+            'fields': ('status', 'email_sent', 'email_sent_at')
+        }),
+        (_('Informations système'), {
+            'fields': ('created_at', 'updated_at', 'formatted_datetime'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def demande_candidate(self, obj):
+        return obj.demande.nom_complet
+    demande_candidate.short_description = _('Candidat')
+    demande_candidate.admin_order_field = 'demande__nom'
+    
+    def demande_entreprise(self, obj):
+        return obj.demande.entreprise.nom if obj.demande.entreprise else '-'
+    demande_entreprise.short_description = _('Entreprise')
+    demande_entreprise.admin_order_field = 'demande__entreprise__nom'
+    
+    def interview_datetime(self, obj):
+        return obj.formatted_datetime
+    interview_datetime.short_description = _('Date et heure')
+    interview_datetime.admin_order_field = 'date'
+    
+    def formatted_datetime(self, obj):
+        return obj.formatted_datetime
+    formatted_datetime.short_description = _('Date et heure formatées')

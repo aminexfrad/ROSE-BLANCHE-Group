@@ -19,7 +19,7 @@ class Entreprise(models.Model):
     secteur_activite = models.CharField(_('secteur d\'activité'), max_length=200, blank=True)
     adresse = models.TextField(_('adresse'), blank=True)
     ville = models.CharField(_('ville'), max_length=100, blank=True)
-    pays = models.CharField(_('pays'), max_length=100, default='Maroc')
+    pays = models.CharField(_('pays'), max_length=100, default='Tunisie')
     telephone = models.CharField(_('téléphone'), max_length=20, blank=True)
     email = models.EmailField(_('email'), blank=True)
     site_web = models.URLField(_('site web'), blank=True)

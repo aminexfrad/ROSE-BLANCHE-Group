@@ -26,8 +26,8 @@ def create_rh_test_user():
             defaults={
                 "description": "Entreprise de test pour le frontend RH",
                 "secteur_activite": "Technologie",
-                "ville": "Casablanca",
-                "pays": "Maroc"
+                "ville": "Sousse",
+                "pays": "Tunisie"
             }
         )
         

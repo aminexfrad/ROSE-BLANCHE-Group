@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
                 ('secteur_activite', models.CharField(blank=True, max_length=200, verbose_name="secteur d'activité")),
                 ('adresse', models.TextField(blank=True, verbose_name='adresse')),
                 ('ville', models.CharField(blank=True, max_length=100, verbose_name='ville')),
-                ('pays', models.CharField(default='Maroc', max_length=100, verbose_name='pays')),
+                ('pays', models.CharField(default='Tunisie', max_length=100, verbose_name='pays')),
                 ('telephone', models.CharField(blank=True, max_length=20, verbose_name='téléphone')),
                 ('email', models.EmailField(blank=True, max_length=254, verbose_name='email')),
                 ('site_web', models.URLField(blank=True, verbose_name='site web')),

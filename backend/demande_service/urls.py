@@ -19,6 +19,10 @@ urlpatterns = [
     path('<int:pk>/', views.DemandeDetailView.as_view(), name='detail'),
     path('<int:pk>/approve/', views.approve_demande, name='approve'),
     path('<int:pk>/reject/', views.reject_demande, name='reject'),
+    
+    # Interview endpoints
+    path('<int:pk>/schedule-interview/', views.schedule_interview, name='schedule_interview'),
+    path('<int:pk>/interview/', views.get_interview_details, name='get_interview_details'),
 ]
 
 urlpatterns += [

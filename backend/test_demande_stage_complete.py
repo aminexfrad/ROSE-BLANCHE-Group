@@ -78,7 +78,7 @@ def test_demande_stage_complete():
         defaults={
             'description': 'Stage de fin d\'études en développement web full stack avec React et Django',
             'entreprise': entreprise,
-            'ville': 'Casablanca, Maroc',
+            'ville': 'Sousse, Tunisie',
             'type': 'PFE',
             'status': 'open',
             'diplome': 'Bac+5',

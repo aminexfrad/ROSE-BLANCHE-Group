@@ -19,6 +19,7 @@ class Demande(models.Model):
     
     class Status(models.TextChoices):
         PENDING = 'pending', _('En attente')
+        INTERVIEW_SCHEDULED = 'interview_scheduled', _('En attente d\'entretien')
         APPROVED = 'approved', _('Approuvée')
         REJECTED = 'rejected', _('Rejetée')
     
@@ -327,3 +328,67 @@ def decrement_candidat_demande_count(sender, instance, **kwargs):
         print(f"❌ Erreur lors de la décrémentation du compteur: {e}")
         import traceback
         traceback.print_exc()
+
+
+class Interview(models.Model):
+    """
+    Interview model for scheduling interviews with candidates
+    """
+    demande = models.OneToOneField(Demande, on_delete=models.CASCADE, related_name='interview')
+    scheduled_by = models.ForeignKey(
+        'auth_service.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='interviews_scheduled',
+        verbose_name=_('planifié par')
+    )
+    
+    # Interview details
+    date = models.DateField(_('date'))
+    time = models.TimeField(_('heure'))
+    location = models.CharField(_('lieu'), max_length=500)
+    notes = models.TextField(_('notes'), blank=True)
+    
+    # Status
+    class Status(models.TextChoices):
+        SCHEDULED = 'scheduled', _('Planifié')
+        COMPLETED = 'completed', _('Terminé')
+        CANCELLED = 'cancelled', _('Annulé')
+        NO_SHOW = 'no_show', _('Absent')
+    
+    status = models.CharField(
+        _('statut'),
+        max_length=20,
+        choices=Status.choices,
+        default=Status.SCHEDULED
+    )
+    
+    # Email notification tracking
+    email_sent = models.BooleanField(_('email envoyé'), default=False)
+    email_sent_at = models.DateTimeField(_('email envoyé le'), null=True, blank=True)
+    
+    # Timestamps
+    created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
+    
+    class Meta:
+        verbose_name = _('entretien')
+        verbose_name_plural = _('entretiens')
+        db_table = 'interview'
+        ordering = ['-created_at']
+    
+    def __str__(self):
+        return f"Entretien - {self.demande.nom_complet} - {self.date} {self.time}"
+    
+    @property
+    def datetime(self):
+        """Return combined date and time"""
+        from django.utils import timezone
+        return timezone.make_aware(
+            timezone.datetime.combine(self.date, self.time)
+        )
+    
+    @property
+    def formatted_datetime(self):
+        """Return formatted date and time for display"""
+        return f"{self.date.strftime('%d/%m/%Y')} à {self.time.strftime('%H:%M')}"

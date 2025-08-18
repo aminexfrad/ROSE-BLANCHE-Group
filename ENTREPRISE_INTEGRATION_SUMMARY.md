@@ -116,7 +116,7 @@ This document summarizes the changes made to link Responsable RH entities to spe
 - **File**: `backend/shared/management/commands/populate_entreprises.py`
 - **Purpose**: Populate database with sample companies and link existing data
 - **Features**:
-  - Creates sample companies (Rose Blanche Group, TechMaroc Solutions, etc.)
+  - Creates sample companies (Rose Blanche Group, TechTunisie Solutions, etc.)
   - Links existing stages and offers to companies
   - Creates RH users for each company
   - Handles data migration gracefully
@@ -193,8 +193,8 @@ OffreStage:
 entreprise = Entreprise.objects.create(
     nom='New Company',
     secteur_activite='Technology',
-    ville='Casablanca',
-    pays='Maroc'
+    ville='Sousse',
+    pays='Tunisie'
 )
 ```
 

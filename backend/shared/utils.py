@@ -251,6 +251,69 @@ class MailService:
         )
     
     @staticmethod
+    def send_interview_notification(interview) -> bool:
+        """
+        Send interview notification email to candidate.
+        
+        Args:
+            interview: Interview object with demande and details
+            
+        Returns:
+            bool: True if email was sent successfully
+        """
+        demande = interview.demande
+        
+        # Get company name from demande
+        company_name = demande.entreprise.nom if demande.entreprise else "Notre entreprise"
+        
+        # Get internship title from offers or PFE reference
+        internship_title = "Stage"
+        if demande.is_pfe_stage and demande.pfe_reference:
+            internship_title = f"Stage PFE - {demande.pfe_reference}"
+        elif hasattr(demande, 'demande_offres') and demande.demande_offres.exists():
+            # Get the first accepted offer or first offer
+            first_offre = demande.demande_offres.select_related('offre').first()
+            if first_offre:
+                internship_title = first_offre.offre.title
+        
+        # Get contact information from the RH who scheduled the interview
+        contact_email = interview.scheduled_by.email if interview.scheduled_by else "rh@stagebloom.com"
+        contact_phone = interview.scheduled_by.telephone if interview.scheduled_by and interview.scheduled_by.telephone else "Non renseigné"
+        
+        subject = f'Entretien planifié - {internship_title}'
+        
+        context = {
+            'candidate_name': demande.nom_complet,
+            'company_name': company_name,
+            'internship_title': internship_title,
+            'interview_date': interview.date.strftime('%d/%m/%Y'),
+            'interview_time': interview.time.strftime('%H:%M'),
+            'interview_location': interview.location,
+            'interview_notes': interview.notes,
+            'contact_email': contact_email,
+            'contact_phone': contact_phone,
+            'site_url': getattr(settings, 'SITE_URL', 'http://localhost:3000')
+        }
+        
+        success = MailService.send_email(
+            subject=subject,
+            recipient_list=[demande.email],
+            template_name='emails/interview_scheduled.txt',
+            context=context,
+            html_template_name='emails/interview_scheduled.html'
+        )
+        
+        if success:
+            # Update interview record to mark email as sent
+            from django.utils import timezone
+            interview.email_sent = True
+            interview.email_sent_at = timezone.now()
+            interview.save(update_fields=['email_sent', 'email_sent_at'])
+            logger.info(f"Interview notification email sent to {demande.email}")
+        
+        return success
+
+    @staticmethod
     def test_email_configuration() -> bool:
         """
         Test email configuration by sending a test email.

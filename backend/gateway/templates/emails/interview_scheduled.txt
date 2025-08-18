@@ -1,0 +1,44 @@
+Entretien planifié - StageBloom
+================================
+
+Bonjour {{ candidate_name }},
+
+Nous avons le plaisir de vous informer que votre candidature pour le stage "{{ internship_title }}" a été retenue pour un entretien.
+
+DÉTAILS DE L'ENTRETIEN
+======================
+
+Entreprise : {{ company_name }}
+Stage : {{ internship_title }}
+Date : {{ interview_date }}
+Heure : {{ interview_time }}
+Lieu : {{ interview_location }}
+
+PRÉPARATION RECOMMANDÉE
+=======================
+
+- Préparez votre CV et lettre de motivation
+- Révisez les détails du stage et de l'entreprise
+- Préparez des questions sur le poste et l'entreprise
+- Arrivez 10 minutes avant l'heure prévue
+
+{% if interview_notes %}
+INFORMATIONS SUPPLÉMENTAIRES
+============================
+
+{{ interview_notes }}
+{% endif %}
+
+EN CAS DE QUESTION
+==================
+
+N'hésitez pas à nous contacter si vous avez des questions concernant cet entretien.
+
+Email : {{ contact_email }}
+Téléphone : {{ contact_phone }}
+
+Nous vous souhaitons bonne chance pour votre entretien !
+
+---
+Cet email a été envoyé automatiquement par StageBloom
+© 2025 StageBloom. Tous droits réservés.

@@ -133,6 +133,7 @@ export default function CandidateDashboardPage() {
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       pending: { label: 'En attente', variant: 'secondary', icon: Clock },
+      interview_scheduled: { label: 'Entretien planifié', variant: 'default', icon: Calendar },
       under_review: { label: 'En révision', variant: 'default', icon: Eye },
       accepted: { label: 'Acceptée', variant: 'default', icon: CheckCircle },
       rejected: { label: 'Rejetée', variant: 'destructive', icon: XCircle },
@@ -431,6 +432,32 @@ export default function CandidateDashboardPage() {
                           </h4>
                           {getStatusBadge(demande.status)}
                         </div>
+
+                        {/* Interview Information */}
+                        {demande.status === 'interview_scheduled' && demande.interview && (
+                          <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Calendar className="w-4 h-4 text-blue-600" />
+                              <span className="font-semibold text-blue-900">Entretien planifié</span>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm text-blue-800">
+                              <div>
+                                <strong>Date :</strong> {new Date(demande.interview.date).toLocaleDateString('fr-FR')}
+                              </div>
+                              <div>
+                                <strong>Heure :</strong> {demande.interview.time}
+                              </div>
+                              <div className="md:col-span-2">
+                                <strong>Lieu :</strong> {demande.interview.location}
+                              </div>
+                              {demande.interview.notes && (
+                                <div className="md:col-span-2">
+                                  <strong>Notes :</strong> {demande.interview.notes}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )}
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
                           <div className="flex items-center gap-2">
