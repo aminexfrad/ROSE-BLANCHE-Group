@@ -1,4 +1,4 @@
-Entretien planifié - StageBloom
+Entretien planifié - ROSE BLANCHE Group
 ================================
 
 Bonjour {{ candidate_name }},
@@ -40,5 +40,5 @@ Téléphone : {{ contact_phone }}
 Nous vous souhaitons bonne chance pour votre entretien !
 
 ---
-Cet email a été envoyé automatiquement par StageBloom
-© 2025 StageBloom. Tous droits réservés.
+Cet email a été envoyé automatiquement par ROSE BLANCHE Group
+© 2025 ROSE BLANCHE Group. Tous droits réservés.
