@@ -1,0 +1,14 @@
+Bonjour,
+
+Le tuteur {{ tuteur_name }} a validé l'entretien avec {{ candidate_name }}.
+
+Détails de l'entretien validé:
+- Date: {{ proposed_date }}
+- Heure: {{ proposed_time }}
+- Lieu: {{ location }}
+- Filiale: {{ filiale_name }}
+
+L'entretien est maintenant confirmé et le candidat a été notifié.
+
+Cordialement,
+L'équipe StageBloom

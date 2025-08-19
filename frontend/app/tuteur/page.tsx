@@ -27,6 +27,7 @@ import {
   AlertCircle,
   Eye,
   Edit,
+  Calendar,
 } from "lucide-react"
 import Link from "next/link"
 import { useAuth } from "@/contexts/auth-context"
@@ -55,10 +56,11 @@ export default function TuteurDashboard() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const [internshipsResponse, statsResponse, interviewReqs] = await Promise.all([
+        
+        // Fetch basic data
+        const [internshipsResponse, statsResponse] = await Promise.all([
           apiClient.getTuteurStages(),
-          apiClient.getTuteurStatistics(),
-          apiClient.getTuteurInterviewRequests().catch(() => ({ count: 0 }))
+          apiClient.getTuteurStatistics()
         ])
         
         setInternships(internshipsResponse.results || [])
@@ -70,7 +72,38 @@ export default function TuteurDashboard() {
           pending_evaluations: statsResponse.pending_evaluations || 0,
           recent_activities: 0, // Not available in tuteur stats
         })
-        setInterviewRequestsCount(interviewReqs.count || 0)
+
+        // Fetch interview requests count
+        try {
+          const interviewReqs = await apiClient.getTuteurInterviewRequests()
+          setInterviewRequestsCount(interviewReqs.count || 0)
+        } catch (interviewError) {
+          console.log('Interview requests endpoint not available, trying alternative method...')
+          
+          // Alternative: Count from applications
+          try {
+            const response = await apiClient.getApplications()
+            let interviewCount = 0
+            const currentUser = apiClient.getCurrentUser()
+            
+            response.results?.forEach((application: any) => {
+              if (application.interview_requests) {
+                application.interview_requests.forEach((request: any) => {
+                  if (request.tuteur && 
+                      (request.tuteur.id === currentUser?.id || request.tuteur.email === currentUser?.email) &&
+                      request.status === 'PENDING_TUTEUR') {
+                    interviewCount++
+                  }
+                })
+              }
+            })
+            
+            setInterviewRequestsCount(interviewCount)
+          } catch (altError) {
+            console.error('Could not fetch interview count:', altError)
+            setInterviewRequestsCount(0)
+          }
+        }
       } catch (err: any) {
         console.error('Error fetching data:', err)
         setError(err.message || 'Failed to load dashboard data')
@@ -114,7 +147,8 @@ export default function TuteurDashboard() {
     stagiaire: { label: "Stagiaire", color: "bg-gradient-to-r from-blue-500 to-cyan-600 text-white" },
     tuteur: { label: "Tuteur", color: "bg-gradient-to-r from-green-500 to-emerald-600 text-white" },
     admin: { label: "Administrateur", color: "bg-gradient-to-r from-purple-500 to-pink-600 text-white" },
-  }[user?.role || "tuteur"]
+    candidat: { label: "Candidat", color: "bg-gradient-to-r from-gray-500 to-slate-600 text-white" },
+  }[user?.role || "tuteur"] || { label: "Tuteur", color: "bg-gradient-to-r from-green-500 to-emerald-600 text-white" }
 
   if (loading) {
     return (
@@ -147,10 +181,10 @@ export default function TuteurDashboard() {
       badge: internships.length.toString(),
     },
     {
-      title: "Demandes d'entretien",
-      description: "Confirmez votre disponibilité pour les entretiens",
+      title: "Entretiens",
+      description: "Gérez vos entretiens avec les candidats",
       icon: Calendar,
-      href: "/tuteur/evaluations", // Placeholder, dedicated page can be added
+      href: "/tuteur/entretiens",
       badge: interviewRequestsCount > 0 ? interviewRequestsCount.toString() : null,
     },
     {

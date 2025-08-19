@@ -6,210 +6,103 @@
 
 "use client"
 
-import { useEffect, useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/contexts/auth-context"
-import { apiClient, Application } from "@/lib/api"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import {
-  FileText,
-  Search,
-  Filter,
-  MoreHorizontal,
-  Eye,
-  CheckCircle,
-  X as XCloseIcon,
-  Clock,
-  Download,
-  Building,
-  Calendar,
-  User,
-  AlertCircle,
-  Briefcase,
-} from "lucide-react"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
-import { FaFilePdf, FaFileAlt, FaFileImage } from "react-icons/fa";
-import { useToast } from '@/components/ui/use-toast'
-import { ScheduleInterviewModal } from '@/components/schedule-interview-modal'
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { useToast } from "@/hooks/use-toast"
+import { AlertCircle, Calendar, Clock, MapPin, User, FileText, CheckCircle, Clock4, Eye, Download, Mail, Phone, Building, GraduationCap, CalendarDays, MapPin as MapPinIcon, XCircle } from "lucide-react"
+import { apiClient } from "@/lib/api"
+import { ScheduleInterviewModal } from "@/components/schedule-interview-modal"
+import { RHProposalResponseModal } from "@/components/rh-proposal-response-modal"
 
-// FilePreviewCard component for document display
-function FilePreviewCard({ label, url }: { label: string; url?: string }) {
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const isPDF = url && url.toLowerCase().endsWith(".pdf");
-  const isImage = url && /\.(jpg|jpeg|png|gif|webp)$/i.test(url);
-
-  // Handle preview generation
-  const generatePreview = async () => {
-    if (!url) return;
-    
-    try {
-      setLoading(true);
-      setError(false);
-      
-      // For PDFs and images, we'll use the direct URL
-      if (isPDF || isImage) {
-        setPreviewUrl(url);
-        return;
-      }
-      
-      // For other file types, we'll show a placeholder
-      setPreviewUrl(null);
-    } catch (err) {
-      setError(true);
-    } finally {
-      setLoading(false);
+interface Application {
+  id: number
+  nom: string
+  prenom: string
+  email: string
+  telephone: string
+  institut: string
+  specialite: string
+  type_stage: string
+  niveau: string
+  date_debut: string
+  date_fin: string
+  status: string
+  created_at: string
+  cv?: string
+  lettre_motivation?: string
+  demande_stage?: string
+  cv_binome?: string
+  lettre_motivation_binome?: string
+  demande_stage_binome?: string
+  entreprise?: {
+    id: number
+    nom: string
+  }
+  offres?: Array<{
+    id: number
+    titre: string
+    entreprise: {
+      id: number
+      nom: string
     }
-  };
+    status: string
+  }>
 
-  // Generate preview when component mounts or URL changes
-  useEffect(() => {
-    generatePreview();
-  }, [url]);
+  interview_requests?: Array<{
+    id: number
+    status: string
+    proposed_date: string
+    proposed_time: string
+    suggested_date?: string
+    suggested_time?: string
+    location: string
+    tuteur: {
+      id: number
+      name: string
+      email: string
+    }
+    filiale: {
+      id: number
+      name: string
+    }
+    tuteur_comment?: string
+    created_at: string
+  }>
+}
 
-  // Handle iframe load events
-  const handleIframeLoad = () => {
-    setLoading(false);
-  };
+interface FilePreviewCardProps {
+  label: string
+  url?: string
+}
 
-  const handleIframeError = () => {
-    setLoading(false);
-    setError(true);
-  };
-
-  // Check if URL is valid
-  const isValidUrl = url && (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('/'));
+function FilePreviewCard({ label, url }: FilePreviewCardProps) {
+  if (!url) {
+  return (
+      <div className="flex items-center gap-2 text-gray-500">
+        <FileText className="h-4 w-4" />
+        <span className="text-sm">{label} - Non fourni</span>
+      </div>
+    )
+  }
 
   return (
-    <div className="bg-gradient-to-r from-red-50 to-red-100 rounded-xl shadow-sm border border-red-200 p-4 mb-4 hover:shadow-md transition-all duration-300">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-3">
-          <div className={`p-2 rounded-lg ${isPDF ? 'bg-red-100' : isImage ? 'bg-green-100' : 'bg-blue-100'}`}>
-            {isPDF ? <FaFilePdf className="text-red-600 h-5 w-5" /> : 
-             isImage ? <FaFileImage className="text-green-600 h-5 w-5" /> : 
-             <FaFileAlt className="text-red-600 h-5 w-5" />}
-          </div>
-          <div>
-            <h4 className="font-semibold text-red-900">{label}</h4>
-            <p className="text-sm text-red-600">
-              {isPDF ? 'Document PDF' : isImage ? 'Image' : 'Document'}
-            </p>
-          </div>
-        </div>
-        {url && (
-          <Button
-            size="sm"
-            className="bg-red-600 hover:bg-red-700 text-white border-0 transition-all duration-200 hover:scale-105"
-            onClick={() => window.open(url, '_blank')}
-          >
-            <Download className="h-4 w-4 mr-2" />
-            Télécharger
-          </Button>
-        )}
-      </div>
-      
-      {/* File Preview Section */}
-      {url && isValidUrl ? (
-        <div className="relative bg-white rounded-lg overflow-hidden min-h-[200px] border border-red-100">
-          {loading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 z-10">
-              <div className="flex flex-col items-center gap-2">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600"></div>
-                <span className="text-sm text-red-600">Chargement...</span>
-              </div>
-            </div>
-          )}
-          
-          {!loading && !error && previewUrl && (
-            <>
-              {isPDF ? (
-                <div className="relative">
-                  <iframe
-                    src={previewUrl}
-                    width="100%"
-                    height="300px"
-                    title={`${label} Preview`}
-                    className="rounded-lg"
-                    onLoad={handleIframeLoad}
-                    onError={handleIframeError}
-                    sandbox="allow-same-origin allow-scripts"
-                  />
-                </div>
-              ) : isImage ? (
-                <div className="p-4">
-                  <img
-                    src={previewUrl}
-                    alt={label}
-                    className="max-w-full h-auto rounded-lg shadow-sm"
-                    onLoad={handleIframeLoad}
-                    onError={handleIframeError}
-                  />
-                </div>
-              ) : (
-                <div className="p-6 text-center">
-                  <FileText className="h-16 w-16 text-red-400 mx-auto mb-3" />
-                  <p className="text-red-600 text-sm mb-2">Aperçu non disponible</p>
-                  <p className="text-red-500 text-xs">Cliquez sur Télécharger pour voir le fichier</p>
-                </div>
-              )}
-            </>
-          )}
-          
-          {error && (
-            <div className="p-6 text-center">
-              <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-3" />
-              <p className="text-red-600 text-sm font-medium">Erreur de prévisualisation</p>
-              <p className="text-red-500 text-xs mt-1">Le fichier ne peut pas être affiché</p>
-              <div className="mt-3 space-y-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-red-200 text-red-600 hover:bg-red-50 mr-2"
-                  onClick={generatePreview}
-                >
-                  Réessayer
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="border-red-200 text-red-600 hover:bg-red-50"
-                  onClick={() => window.open(url, '_blank')}
-                >
-                  Ouvrir dans un nouvel onglet
-                </Button>
-
-              </div>
-            </div>
-          )}
-        </div>
-      ) : url ? (
-        <div className="p-6 text-center bg-red-50 rounded-lg border border-red-100">
-          <AlertCircle className="h-12 w-12 text-red-400 mx-auto mb-3" />
-          <p className="text-red-600 text-sm font-medium">URL de fichier invalide</p>
-          <p className="text-red-500 text-xs mt-1">Le lien vers le fichier n'est pas valide</p>
-          <Button
-            variant="outline"
-            size="sm"
-            className="mt-3 border-red-200 text-red-600 hover:bg-red-50"
-            onClick={() => window.open(url, '_blank')}
-          >
-            Essayer d'ouvrir le lien
-          </Button>
-        </div>
-      ) : (
-        <div className="p-6 text-center bg-red-50 rounded-lg border border-red-100">
-          <FileText className="h-12 w-12 text-red-300 mx-auto mb-2" />
-          <p className="text-red-500 text-sm italic">Aucun document fourni</p>
-        </div>
-      )}
+    <div className="flex items-center gap-2">
+      <FileText className="h-4 w-4 text-blue-600" />
+      <a
+        href={url}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-sm text-blue-600 hover:underline"
+      >
+        {label}
+      </a>
     </div>
-  );
+  )
 }
 
 export default function RHDemandesPage() {
@@ -227,7 +120,9 @@ export default function RHDemandesPage() {
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [interviewModalOpen, setInterviewModalOpen] = useState(false)
   const [selectedDemandeForInterview, setSelectedDemandeForInterview] = useState<Application | null>(null)
-  const { toast } = useToast();
+  const [selectedInterviewRequest, setSelectedInterviewRequest] = useState<any>(null)
+  const [proposalResponseModalOpen, setProposalResponseModalOpen] = useState(false)
+  const { toast } = useToast()
   // Track loading state for each offer action
   const [loadingOffers, setLoadingOffers] = useState<{ [key: string]: boolean }>({});
 
@@ -263,73 +158,34 @@ export default function RHDemandesPage() {
   }, [user])
 
   const getStatusBadge = (status: string) => {
-    const colors = {
-      pending: "bg-red-100 text-red-800",
-      interview_scheduled: "bg-blue-100 text-blue-800",
-      approved: "bg-green-100 text-green-800",
-      rejected: "bg-red-100 text-red-800",
-    }
-    return colors[status as keyof typeof colors] || "bg-gray-100 text-gray-800"
-  }
-
-  const getStatusIcon = (status: string) => {
     switch (status) {
-      case "pending":
-        return <Clock className="h-4 w-4 text-red-600" />
-      case "interview_scheduled":
-        return <Calendar className="h-4 w-4 text-blue-600" />
-      case "approved":
-        return <CheckCircle className="h-4 w-4 text-green-600" />
-      case "rejected":
-        return <AlertCircle className="h-4 w-4 text-red-600" />
+      case 'pending':
+        return <Badge variant="secondary">En attente</Badge>
+      case 'interview_scheduled':
+        return <Badge variant="outline">Entretien planifié</Badge>
+      case 'approved':
+        return <Badge variant="default">Approuvée</Badge>
+      case 'rejected':
+        return <Badge variant="destructive">Rejetée</Badge>
       default:
-        return <FileText className="h-4 w-4 text-gray-600" />
+        return <Badge variant="outline">{status}</Badge>
     }
   }
 
-  const handleApprove = async (id: number) => {
-    try {
-      await apiClient.approveApplication(id)
-      // Refresh data
-      const response = await apiClient.getApplications()
-      setApplications(response.results || [])
-    } catch (err: any) {
-      console.error('Error approving application:', err)
-      setError(err.message || 'Failed to approve application')
+  const getInterviewStatusBadge = (status: string) => {
+    switch (status) {
+      case 'PENDING_TUTEUR':
+        return <Badge className="bg-yellow-100 text-yellow-800">En attente du tuteur</Badge>
+      case 'VALIDATED':
+        return <Badge className="bg-green-100 text-green-800">Validé</Badge>
+      case 'REVISION_REQUESTED':
+        return <Badge className="bg-blue-100 text-blue-800">Révision demandée</Badge>
+      default:
+        return <Badge variant="outline">{status}</Badge>
     }
   }
 
-  const handleReject = async (id: number) => {
-    try {
-      await apiClient.rejectApplication(id, 'Rejeté par RH')
-      // Refresh data
-      const response = await apiClient.getApplications()
-      setApplications(response.results || [])
-    } catch (err: any) {
-      console.error('Error rejecting application:', err)
-      setError(err.message || 'Failed to reject application')
-    }
-  }
 
-  const handleShowDetails = (application: Application) => {
-    setSelectedApplication(application)
-    setDetailsOpen(true)
-  }
-
-  const handleDownloadDocuments = (application: Application) => {
-    // Open all available documents in new tabs (including binôme)
-    const files = [
-      { url: application.cv, name: 'CV.pdf' },
-      { url: application.lettre_motivation, name: 'LettreMotivation.pdf' },
-      { url: application.demande_stage, name: 'DemandeStage.pdf' },
-      { url: application.cv_binome, name: 'CV_Binome.pdf' },
-      { url: application.lettre_motivation_binome, name: 'LettreMotivation_Binome.pdf' },
-      { url: application.demande_stage_binome, name: 'DemandeStage_Binome.pdf' },
-    ].filter(f => f.url)
-    files.forEach(file => {
-      window.open(file.url, '_blank')
-    })
-  }
 
   const handleApproveOffer = async (demandeId: number, offerId: number) => {
     const key = `${demandeId}-${offerId}`;
@@ -338,9 +194,9 @@ export default function RHDemandesPage() {
       await apiClient.updateDemandeOffreStatus(demandeId, offerId, 'accepted');
       const response = await apiClient.getApplications();
       setApplications(response.results || []);
-      toast({ title: 'Succès', description: 'Offre acceptée et autres offres rejetées.' });
+      toast({ title: 'Succès', description: 'Offre approuvée.' });
     } catch (err) {
-      toast({ title: 'Erreur', description: 'Erreur lors de l\'acceptation de l\'offre', variant: 'destructive' });
+      toast({ title: 'Erreur', description: 'Erreur lors de l\'approbation de l\'offre', variant: 'destructive' });
     } finally {
       setLoadingOffers((prev) => ({ ...prev, [key]: false }));
     }
@@ -377,6 +233,72 @@ export default function RHDemandesPage() {
       }
     };
     fetchData();
+  }
+
+  const handleProposalResponse = (interviewRequest: any) => {
+    setSelectedInterviewRequest(interviewRequest);
+    setProposalResponseModalOpen(true);
+  }
+
+  const handleProposalResponseSuccess = () => {
+    // Refresh applications to get updated interview requests
+    const fetchData = async () => {
+      try {
+        const response = await apiClient.getApplications();
+        setApplications(response.results || []);
+      } catch (err: any) {
+        console.error('Error refreshing applications:', err);
+      }
+    };
+    fetchData();
+  }
+
+  const handleDirectReject = async (application: Application) => {
+    try {
+      // Reject the entire application
+      await apiClient.rejectApplication(application.id, 'Candidature rejetée directement par RH');
+      
+      // Refresh the applications list
+      const response = await apiClient.getApplications();
+      setApplications(response.results || []);
+      
+      toast({ 
+        title: 'Succès', 
+        description: `Candidature de ${application.prenom} ${application.nom} rejetée.`,
+        variant: 'default'
+      });
+    } catch (err: any) {
+      console.error('Error rejecting application:', err);
+      toast({ 
+        title: 'Erreur', 
+        description: 'Erreur lors du rejet de la candidature',
+        variant: 'destructive'
+      });
+    }
+  }
+
+  const handleAcceptCandidate = async (application: Application) => {
+    try {
+      // Accept the candidate and convert to stagiaire
+      await apiClient.approveApplication(application.id);
+      
+      // Refresh the applications list
+      const response = await apiClient.getApplications();
+      setApplications(response.results || []);
+      
+      toast({ 
+        title: 'Candidat accepté! 🎉', 
+        description: `${application.prenom} ${application.nom} est maintenant stagiaire dans votre filiale.`,
+        variant: 'default'
+      });
+    } catch (err: any) {
+      console.error('Error accepting candidate:', err);
+      toast({ 
+        title: 'Erreur', 
+        description: 'Erreur lors de la conversion en stagiaire',
+        variant: 'destructive'
+      });
+    }
   }
 
   if (loading) {
@@ -420,435 +342,520 @@ export default function RHDemandesPage() {
         />
       )}
 
+      {/* RH Proposal Response Modal */}
+      {selectedInterviewRequest && (
+        <RHProposalResponseModal
+          isOpen={proposalResponseModalOpen}
+          onClose={() => {
+            setProposalResponseModalOpen(false);
+            setSelectedInterviewRequest(null);
+          }}
+          requestId={selectedInterviewRequest.id}
+          candidateName={`${selectedInterviewRequest.demande?.prenom || ''} ${selectedInterviewRequest.demande?.nom || ''}`}
+          suggestedDate={selectedInterviewRequest.suggested_date}
+          suggestedTime={selectedInterviewRequest.suggested_time}
+          originalDate={selectedInterviewRequest.proposed_date}
+          originalTime={selectedInterviewRequest.proposed_time}
+          location={selectedInterviewRequest.location}
+          tuteurComment={selectedInterviewRequest.tuteur_comment}
+          onSuccess={handleProposalResponseSuccess}
+        />
+      )}
+
       {/* Details Modal */}
       <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
-        <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto p-0 bg-white shadow-2xl border-0">
-          {/* Enhanced Header */}
-          <div className="bg-gradient-to-br from-red-600 via-red-700 to-red-800 text-white p-8 rounded-t-xl relative overflow-hidden">
-            {/* Background Pattern */}
-            <div className="absolute inset-0 opacity-10">
-              <div className="absolute top-0 right-0 w-32 h-32 bg-white rounded-full -mr-16 -mt-16"></div>
-              <div className="absolute bottom-0 left-0 w-24 h-24 bg-white rounded-full -ml-12 -mb-12"></div>
-            </div>
-            
-            <div className="relative z-10">
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-white/20 rounded-xl backdrop-blur-sm border border-white/30">
-                  <FileText className="h-8 w-8 text-white" />
-                </div>
-                <div className="flex-1">
-                  <DialogTitle className="text-3xl font-bold tracking-tight mb-2">
-                    Détails de la demande
-                  </DialogTitle>
-                  <p className="text-red-100 text-lg font-medium">
-                    Informations complètes du candidat
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Détails de la candidature</DialogTitle>
+            <DialogDescription>
+              Informations complètes sur la demande de stage
+            </DialogDescription>
+          </DialogHeader>
           
           {selectedApplication && (
-            <div className="p-8 space-y-8">
-              {/* Enhanced Status and Actions Section */}
-              <div className="flex items-center justify-between bg-gradient-to-r from-gray-50 to-gray-100 p-6 rounded-2xl border border-gray-200">
-                <div className="flex items-center gap-4">
-                  <div className={`px-6 py-3 rounded-full text-sm font-bold shadow-lg ${
-                    selectedApplication.status === 'approved' 
-                      ? 'bg-gradient-to-r from-green-500 to-green-600 text-white border-2 border-green-400' 
-                      : selectedApplication.status === 'rejected'
-                      ? 'bg-gradient-to-r from-red-500 to-red-600 text-white border-2 border-red-400'
-                      : 'bg-gradient-to-r from-yellow-500 to-yellow-600 text-white border-2 border-yellow-400'
-                  }`}>
-                    {selectedApplication.status === 'approved' && <CheckCircle className="h-5 w-5 mr-2 inline" />}
-                    {selectedApplication.status === 'rejected' && <AlertCircle className="h-5 w-5 mr-2 inline" />}
-                    {selectedApplication.status === 'pending' && <Clock className="h-5 w-5 mr-2 inline" />}
-                    {selectedApplication.status === 'approved' ? 'Approuvée' : 
-                     selectedApplication.status === 'rejected' ? 'Rejetée' : 'En attente'}
+            <div className="space-y-6">
+              {/* Candidate Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <User className="h-5 w-5" />
+                    Informations du candidat
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Nom complet:</span>
+                      <span>{selectedApplication.prenom} {selectedApplication.nom}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      <span>{selectedApplication.email}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Phone className="h-4 w-4" />
+                      <span>{selectedApplication.telephone}</span>
                   </div>
-                  <div className="text-sm text-gray-600">
-                    <span className="font-medium">ID:</span> #{selectedApplication.id}
                   </div>
                 </div>
                 
-                {/* Enhanced Download Button */}
-                <Button
-                  onClick={() => {
-                    const urls = [
-                      selectedApplication.cv,
-                      selectedApplication.lettre_motivation,
-                      selectedApplication.demande_stage,
-                      selectedApplication.cv_binome,
-                      selectedApplication.lettre_motivation_binome,
-                      selectedApplication.demande_stage_binome,
-                    ].filter(Boolean);
-                    urls.forEach(url => {
-                      if (url) window.open(url, '_blank');
-                    });
-                  }}
-                  className="bg-red-600 hover:bg-red-700 text-white px-8 py-4 rounded-xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-105 font-semibold text-lg"
-                >
-                  <Download className="h-6 w-6 mr-3" />
-                  Télécharger tous les documents
-                </Button>
-              </div>
-
-              {/* Enhanced Candidate Information Cards */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Personal Information */}
-                <Card className="border-0 shadow-xl bg-gradient-to-br from-red-50 via-white to-red-50 rounded-2xl overflow-hidden">
-                  <CardHeader className="pb-4 bg-gradient-to-r from-red-600 to-red-700 text-white">
-                    <CardTitle className="flex items-center gap-3 text-white text-xl">
-                      <div className="p-2 bg-white/20 rounded-lg">
-                        <User className="h-6 w-6" />
-                      </div>
-                      Informations personnelles
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
-                      <span className="font-semibold text-gray-700">Nom complet</span>
-                      <span className="text-gray-900 font-bold text-lg">{selectedApplication.prenom} {selectedApplication.nom}</span>
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <GraduationCap className="h-5 w-5" />
+                    Informations académiques
+                  </h3>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Building className="h-4 w-4" />
+                      <span>{selectedApplication.institut}</span>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
-                      <span className="font-semibold text-gray-700">Email</span>
-                      <span className="text-red-600 font-semibold hover:text-red-700 transition-colors cursor-pointer">{selectedApplication.email}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Spécialité:</span>
+                      <span>{selectedApplication.specialite}</span>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
-                      <span className="font-semibold text-gray-700">Téléphone</span>
-                      <span className="text-gray-900 font-medium">{selectedApplication.telephone || 'Non renseigné'}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Niveau:</span>
+                      <span>{selectedApplication.niveau}</span>
                     </div>
-                  </CardContent>
-                </Card>
-
-                {/* Academic Information */}
-                <Card className="border-0 shadow-xl bg-gradient-to-br from-red-50 via-white to-red-50 rounded-2xl overflow-hidden">
-                  <CardHeader className="pb-4 bg-gradient-to-r from-red-600 to-red-700 text-white">
-                    <CardTitle className="flex items-center gap-3 text-white text-xl">
-                      <div className="p-2 bg-white/20 rounded-lg">
-                        <Building className="h-6 w-6" />
-                      </div>
-                      Informations académiques
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="p-6 space-y-4">
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
-                      <span className="font-semibold text-gray-700">Institut</span>
-                      <span className="text-gray-900 font-bold text-lg">{selectedApplication.institut}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium">Type de stage:</span>
+                      <span>{selectedApplication.type_stage}</span>
                     </div>
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
-                      <span className="font-semibold text-gray-700">Spécialité</span>
-                      <span className="text-gray-900 font-semibold">{selectedApplication.specialite}</span>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
-                      <span className="font-semibold text-gray-700">Niveau</span>
-                      <span className="text-gray-900 font-semibold">{selectedApplication.niveau}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Enhanced Stage Information */}
-              <Card className="border-0 shadow-xl bg-gradient-to-br from-green-50 via-white to-green-50 rounded-2xl overflow-hidden">
-                <CardHeader className="pb-4 bg-gradient-to-r from-green-600 to-green-700 text-white">
-                  <CardTitle className="flex items-center gap-3 text-white text-xl">
-                    <div className="p-2 bg-white/20 rounded-lg">
-                      <Calendar className="h-6 w-6" />
-                    </div>
-                    Informations du stage
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
-                      <span className="font-semibold text-gray-700">Type de stage</span>
-                      <Badge variant="secondary" className="bg-green-100 text-green-800 px-4 py-2 text-sm font-semibold border border-green-200">
-                        {selectedApplication.type_stage}
-                      </Badge>
-                    </div>
-                    <div className="flex items-center justify-between p-4 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 hover:shadow-md transition-all duration-200">
-                      <span className="font-semibold text-gray-700">Période</span>
-                      <div className="text-right">
-                        <div className="text-gray-900 font-bold text-lg">
-                          {new Date(selectedApplication.date_debut).toLocaleDateString('fr-FR')}
-                        </div>
-                        <div className="text-gray-500 text-sm font-medium">au {new Date(selectedApplication.date_fin).toLocaleDateString('fr-FR')}</div>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Enhanced Documents Section */}
-              <div className="space-y-6">
-                <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-2xl border border-red-200">
-                  <div className="w-2 h-8 bg-gradient-to-b from-red-600 to-red-700 rounded-full"></div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-red-900">Documents du candidat principal</h3>
-                    <p className="text-red-600 text-sm">Tous les documents soumis par le candidat</p>
                   </div>
                 </div>
+              </div>
+
+              {/* Stage Period */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <CalendarDays className="h-5 w-5" />
+                  Période de stage
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Date de début:</span>
+                    <span>{new Date(selectedApplication.date_debut).toLocaleDateString()}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">Date de fin:</span>
+                    <span>{new Date(selectedApplication.date_fin).toLocaleDateString()}</span>
+                    </div>
+                    </div>
+              </div>
+
+              {/* Selected Offers */}
+              {selectedApplication.offres && selectedApplication.offres.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <MapPinIcon className="h-5 w-5" />
+                    Offres sélectionnées ({selectedApplication.offres.length})
+                  </h3>
+                  <div className="space-y-3">
+                    {selectedApplication.offres.map((offre) => (
+                      <div key={offre.id} className="border rounded-lg p-4 bg-gray-50">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <h4 className="font-bold text-lg text-blue-900">{offre.titre}</h4>
+                            <div className="text-xs text-gray-500 mb-1">Référence: {offre.id}</div>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Building className="h-4 w-4 text-gray-500" />
+                              <span className="text-sm font-medium text-gray-700">{offre.entreprise.nom}</span>
+                            </div>
+                            <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
+                              <span className="flex items-center gap-1">
+                                <span className="font-medium">Statut:</span>
+                                {getStatusBadge(offre.status)}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            {offre.status === 'pending' && (
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleApproveOffer(selectedApplication.id, offre.id)}
+                                  disabled={loadingOffers[`${selectedApplication.id}-${offre.id}`]}
+                                  className="bg-green-600 hover:bg-green-700"
+                                >
+                                  <CheckCircle className="h-4 w-4 mr-1" />
+                                  Approuver
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => handleRejectOffer(selectedApplication.id, offre.id)}
+                                  disabled={loadingOffers[`${selectedApplication.id}-${offre.id}`]}
+                                >
+                                  <XCircle className="h-4 w-4 mr-1" />
+                                  Rejeter
+                                </Button>
+                    </div>
+                            )}
+                            {offre.status === 'accepted' && (
+                              <Badge className="bg-green-100 text-green-800">
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                                Approuvée
+                              </Badge>
+                            )}
+                            {offre.status === 'rejected' && (
+                              <Badge className="bg-red-100 text-red-800">
+                                <XCircle className="h-3 w-3 mr-1" />
+                                Rejetée
+                      </Badge>
+                            )}
+                    </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Interview Requests */}
+              {selectedApplication.interview_requests && selectedApplication.interview_requests.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Demandes d'entretien
+                  </h3>
+                  <div className="space-y-3">
+                    {selectedApplication.interview_requests.map((request) => (
+                      <div key={request.id} className="border rounded-lg p-4">
+                        <div className="flex items-start justify-between">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Tuteur:</span>
+                              <span>{request.tuteur.name}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-medium">Filiale:</span>
+                              <span>{request.filiale.name}</span>
+                            </div>
+                            <div className="flex items-center gap-4 text-sm text-gray-600">
+                              <span className="flex items-center gap-1">
+                                <Calendar className="h-4 w-4" />
+                                {request.proposed_date} à {request.proposed_time}
+                              </span>
+                              <span className="flex items-center gap-1">
+                                <MapPin className="h-4 w-4" />
+                                {request.location}
+                              </span>
+                            </div>
+                            {request.suggested_date && request.suggested_time && (
+                              <div className="text-sm text-blue-600">
+                                <span className="font-medium">Nouvelle proposition:</span> {request.suggested_date} à {request.suggested_time}
+                              </div>
+                            )}
+                            {request.tuteur_comment && (
+                              <div className="text-sm text-gray-600">
+                                <span className="font-medium">Commentaire:</span> {request.tuteur_comment}
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex flex-col items-end gap-2">
+                            {getInterviewStatusBadge(request.status)}
+                            {request.status === 'REVISION_REQUESTED' && (
+                              <Button
+                                size="sm"
+                                onClick={() => handleProposalResponse(request)}
+                              >
+                                Répondre
+                              </Button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Documents */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold flex items-center gap-2">
+                  <FileText className="h-5 w-5" />
+                  Documents du candidat principal
+                </h3>
+                <div className="space-y-2">
                 <FilePreviewCard label="CV" url={selectedApplication.cv} />
                 <FilePreviewCard label="Lettre de motivation" url={selectedApplication.lettre_motivation} />
                 <FilePreviewCard label="Demande de stage" url={selectedApplication.demande_stage} />
               </div>
-
-              {selectedApplication.stage_binome && (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-red-50 to-red-100 rounded-2xl border border-red-200">
-                    <div className="w-2 h-8 bg-gradient-to-b from-red-600 to-red-700 rounded-full"></div>
-                    <div>
-                      <h3 className="text-2xl font-bold text-red-900">Documents du binôme</h3>
-                      <p className="text-red-600 text-sm">Documents soumis par le partenaire de stage</p>
+                {selectedApplication.cv_binome && (
+                  <>
+                    <h4 className="text-md font-semibold mt-4">Documents du binôme</h4>
+                    <div className="space-y-2">
+                      <FilePreviewCard label="CV Binôme" url={selectedApplication.cv_binome} />
+                      <FilePreviewCard label="Lettre de motivation Binôme" url={selectedApplication.lettre_motivation_binome} />
+                      <FilePreviewCard label="Demande de stage Binôme" url={selectedApplication.demande_stage_binome} />
                     </div>
+                  </>
+                )}
                   </div>
-                  <FilePreviewCard label="CV binôme" url={selectedApplication.cv_binome} />
-                  <FilePreviewCard label="Lettre de motivation binôme" url={selectedApplication.lettre_motivation_binome} />
-                  <FilePreviewCard label="Demande de stage binôme" url={selectedApplication.demande_stage_binome} />
+
+              {/* Status */}
+              <div className="flex items-center justify-between pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  <span className="font-medium">Statut:</span>
+                  {getStatusBadge(selectedApplication.status)}
                 </div>
-              )}
+                <div className="flex gap-2">
+                  {selectedApplication.status === 'pending' && (
+                    <>
+                      <Button onClick={() => handleScheduleInterview(selectedApplication)}>
+                        <Calendar className="h-4 w-4 mr-2" />
+                        Proposer un entretien
+                      </Button>
+                      <Button 
+                        variant="destructive" 
+                        onClick={() => handleDirectReject(selectedApplication)}
+                      >
+                        <XCircle className="h-4 w-4 mr-2" />
+                        Rejeter la candidature
+                      </Button>
+                    </>
+                  )}
+                  
+                  {(selectedApplication.status === 'interview_completed' || selectedApplication.status === 'interview_validated') && (
+                    <Button 
+                      onClick={() => handleAcceptCandidate(selectedApplication)}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Accepter candidat → Stagiaire
+                    </Button>
+                  )}
+                  <Button variant="outline" onClick={() => setDetailsOpen(false)}>
+                    Fermer
+                  </Button>
+                </div>
+              </div>
             </div>
           )}
         </DialogContent>
       </Dialog>
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Demandes de stage</h1>
-            <p className="text-gray-600 mt-1">Gérez les nouvelles candidatures reçues</p>
-          </div>
-          <div className="flex gap-3">
-            <Button variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Exporter
-            </Button>
-            <Button className="bg-red-600 hover:bg-red-700">
-              <FileText className="mr-2 h-4 w-4" />
-              Traitement en lot
-            </Button>
-          </div>
-        </div>
 
-        {/* Statistiques */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total demandes</CardTitle>
-              <FileText className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total}</div>
-              <p className="text-xs text-gray-600">Ce mois</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">En attente</CardTitle>
-              <Clock className="h-4 w-4 text-blue-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.pending}</div>
-              <p className="text-xs text-blue-600">À traiter</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Acceptées</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.approved}</div>
-              <p className="text-xs text-green-600">{stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0}% du total</p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Taux d'acceptation</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.total > 0 ? Math.round((stats.approved / stats.total) * 100) : 0}%</div>
-              <p className="text-xs text-gray-600">Moyenne mensuelle</p>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Filtres et recherche */}
+            {/* Statistics */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Filtres et recherche</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Total demandes</CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="flex gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input placeholder="Rechercher par nom, email, institut..." className="pl-10" />
-                </div>
-              </div>
-              <Button variant="outline">
-                <Filter className="mr-2 h-4 w-4" />
-                Filtrer par statut
-              </Button>
-              <Button variant="outline">
-                <Building className="mr-2 h-4 w-4" />
-                Filtrer par institut
-              </Button>
-              <Button variant="outline">
-                <Calendar className="mr-2 h-4 w-4" />
-                Filtrer par période
-              </Button>
-            </div>
+            <div className="text-2xl font-bold">{stats.total}</div>
           </CardContent>
         </Card>
-
-        {/* Table des demandes */}
         <Card>
-          <CardHeader>
-            <CardTitle>Liste des demandes</CardTitle>
-            <CardDescription>Gérez les candidatures reçues</CardDescription>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">En attente</CardTitle>
+            <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Candidat</TableHead>
-                  <TableHead>Institut</TableHead>
-                  <TableHead>Spécialité</TableHead>
-                  <TableHead>Type de stage</TableHead>
-                  <TableHead>Période</TableHead>
-                  <TableHead>Offres sélectionnées</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Documents</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {applications.map((application) => (
-                  <TableRow key={application.id}>
-                    <TableCell className="font-medium">
-                      <div>
-                        <div className="font-semibold">
-                          {application.prenom || ''} {application.nom || ''}
-                        </div>
-                        <div className="text-sm text-gray-600">{application.email}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Building className="h-4 w-4 text-gray-400" />
-                        {application.institut || ''}
-                      </div>
-                    </TableCell>
-                    <TableCell>{application.specialite || ''}</TableCell>
-                    <TableCell>{application.type_stage || ''}</TableCell>
-                    <TableCell>
-                      <div className="text-sm">
-                        <div>{new Date(application.date_debut).toLocaleDateString()}</div>
-                        <div className="text-gray-500">au {new Date(application.date_fin).toLocaleDateString()}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {Array.isArray(application.offres) && application.offres.length > 0 ? (
-                        <ul className="list-disc ml-4">
-                          {application.offres.map((offre: any) => (
-                            <li key={offre.id} className="text-xs text-gray-800 flex items-center gap-2">
-                              {offre.title} <span className="text-gray-400">({offre.reference})</span>
-                              {/* Status badge */}
-                              <span className={
-                                offre.status === 'accepted' ? 'bg-green-100 text-green-700 px-2 py-0.5 rounded' :
-                                offre.status === 'rejected' ? 'bg-red-100 text-red-700 px-2 py-0.5 rounded' :
-                                'bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded'
-                              }>
-                                {offre.status === 'accepted' ? 'Acceptée' : offre.status === 'rejected' ? 'Rejetée' : 'En attente'}
-                              </span>
-                              {/* Per-offer actions */}
-                              {offre.status === 'pending' && <>
-                                <Button size="sm" className="bg-green-600 hover:bg-green-700 text-white border-0" onClick={() => handleApproveOffer(application.id, offre.id)} disabled={loadingOffers[`${application.id}-${offre.id}`]}>
-                                  {loadingOffers[`${application.id}-${offre.id}`] ? '...' : 'Accepter'}
-                                </Button>
-                                <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-0" onClick={() => handleRejectOffer(application.id, offre.id)} disabled={loadingOffers[`${application.id}-${offre.id}`]}>
-                                  {loadingOffers[`${application.id}-${offre.id}`] ? '...' : 'Rejeter'}
-                                </Button>
-                              </>}
-                            </li>
-                          ))}
-                        </ul>
-                      ) : application.pfe_reference ? (
-                        <div className="text-xs text-gray-800 flex items-center gap-2">
-                          <Briefcase className="h-3 w-3 text-blue-500" />
-                          <span className="font-medium">PFE: {application.pfe_reference}</span>
-                          <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
-                            Référence PFE
-                          </Badge>
-                        </div>
-                      ) : (
-                        <span className="text-xs text-gray-400">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {getStatusIcon(application.status)}
-                        <Badge className={getStatusBadge(application.status)}>
-                          {application.status === 'pending' ? 'En attente' :
-                           application.status === 'approved' ? 'Acceptée' :
-                           application.status === 'rejected' ? 'Rejetée' : application.status}
-                        </Badge>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        {application.cv && <Badge variant="outline" className="text-xs">CV</Badge>}
-                        {application.lettre_motivation && <Badge variant="outline" className="text-xs">LM</Badge>}
-                        {application.demande_stage && <Badge variant="outline" className="text-xs">DS</Badge>}
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleShowDetails(application)}>
-                            <Eye className="mr-2 h-4 w-4" />
-                            Voir détails
-                          </DropdownMenuItem>
-                          {application.status === 'pending' && (
-                            <>
-                              <DropdownMenuItem onClick={() => handleScheduleInterview(application)} className="text-blue-700 hover:text-blue-800 hover:bg-blue-50">
-                                <Calendar className="mr-2 h-4 w-4" />
-                                Planifier un entretien
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleApprove(application.id)} className="text-green-700 hover:text-green-800 hover:bg-green-50">
-                                <CheckCircle className="mr-2 h-4 w-4" />
-                                Accepter
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleReject(application.id)} className="text-red-700 hover:text-red-800 hover:bg-red-50">
-                                <AlertCircle className="mr-2 h-4 w-4" />
-                                Rejeter
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                          <DropdownMenuItem onClick={() => handleDownloadDocuments(application)} className="text-red-700 hover:text-red-800 hover:bg-red-50">
-                            <Download className="mr-2 h-4 w-4" />
-                            Télécharger documents
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+            <div className="text-2xl font-bold">{stats.pending}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Approuvées</CardTitle>
+            <CheckCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.approved}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">Rejetées</CardTitle>
+            <AlertCircle className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{stats.rejected}</div>
           </CardContent>
         </Card>
       </div>
+
+            {/* Applications List */}
+      <Card className="border-0 shadow-lg">
+        <CardHeader className="bg-gradient-to-r from-gray-50 to-gray-100 border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="text-2xl font-bold text-gray-900">Demandes de stage</CardTitle>
+              <CardDescription className="text-gray-600 mt-1">
+                Gérez les candidatures reçues et prenez les décisions
+              </CardDescription>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <FileText className="h-6 w-6 text-blue-600" />
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+          <CardContent>
+          {applications.length === 0 ? (
+            <div className="text-center py-8">
+              <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <p className="text-gray-500">Aucune demande de stage</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+                              {applications.map((application) => (
+                <div key={application.id} className="border border-gray-200 rounded-xl p-6 bg-white hover:shadow-lg transition-all duration-300">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-4">
+                        <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                          {application.prenom?.[0]}{application.nom?.[0]}
+                        </div>
+                        <div>
+                          <h4 className="font-bold text-xl text-gray-900">
+                            {application.prenom} {application.nom}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-1">
+                            {getStatusBadge(application.status)}
+                            <span className="text-sm text-gray-500">•</span>
+                            <span className="text-sm text-gray-500">
+                              {new Date(application.created_at).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                          <Mail className="h-4 w-4 text-blue-600" />
+                          <span className="text-sm font-medium">{application.email}</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                          <Building className="h-4 w-4 text-green-600" />
+                          <span className="text-sm font-medium">{application.institut}</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                          <GraduationCap className="h-4 w-4 text-purple-600" />
+                          <span className="text-sm font-medium">{application.specialite}</span>
+                        </div>
+                        <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                          <Calendar className="h-4 w-4 text-orange-600" />
+                          <span className="text-sm font-medium">
+                            {new Date(application.date_debut).toLocaleDateString()} - {new Date(application.date_fin).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* Selected Offers Summary */}
+                      {application.offres && application.offres.length > 0 ? (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="flex items-center gap-2 mb-3">
+                            <MapPinIcon className="h-4 w-4 text-blue-600" />
+                            <span className="font-semibold text-sm text-blue-900">
+                              Offres sélectionnées ({application.offres.length})
+                            </span>
+                          </div>
+                          <div className="space-y-2">
+                            {application.offres.slice(0, 3).map((offre) => (
+                              <div key={offre.id} className="flex items-center justify-between text-sm p-2 bg-white rounded border">
+                                <div className="flex items-center gap-2">
+                                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-gray-900">{offre.titre}</span>
+                                    <span className="text-xs text-gray-500">Ref: {offre.id}</span>
+                                  </div>
+                                  <span className="text-gray-400">•</span>
+                                  <span className="text-blue-700 font-medium">{offre.entreprise.nom}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  {getStatusBadge(offre.status)}
+                                </div>
+                              </div>
+                            ))}
+                            {application.offres.length > 3 && (
+                              <div className="text-xs text-blue-600 font-medium text-center py-1">
+                                +{application.offres.length - 3} autre(s) offre(s)
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                          <div className="flex items-center gap-2">
+                            <MapPinIcon className="h-4 w-4 text-gray-400" />
+                            <span className="text-sm text-gray-500">Aucune offre sélectionnée</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Interview Requests Summary */}
+                      {application.interview_requests && application.interview_requests.length > 0 && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Calendar className="h-4 w-4 text-blue-600" />
+                            <span className="font-medium text-sm">Demandes d'entretien</span>
+                          </div>
+                          <div className="space-y-1">
+                            {application.interview_requests.map((request) => (
+                              <div key={request.id} className="flex items-center justify-between text-sm">
+                                <span>{request.tuteur.name} - {request.filiale.name}</span>
+                                {getInterviewStatusBadge(request.status)}
+                              </div>
+                            ))}
+                          </div>
+                      </div>
+                      )}
+                      </div>
+                                        <div className="flex flex-col gap-3 ml-6">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setSelectedApplication(application);
+                          setDetailsOpen(true);
+                        }}
+                        className="w-full bg-white hover:bg-gray-50 border-gray-300"
+                      >
+                        <Eye className="h-4 w-4 mr-2" />
+                        Voir détails
+                      </Button>
+                      
+                      {application.status === 'pending' && (
+                        <>
+                          <Button
+                            size="sm"
+                            onClick={() => handleScheduleInterview(application)}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            <Calendar className="h-4 w-4 mr-2" />
+                            Proposer entretien
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDirectReject(application)}
+                            className="w-full"
+                          >
+                            <XCircle className="h-4 w-4 mr-2" />
+                            Rejeter
+                          </Button>
+                        </>
+                      )}
+                      
+                      {/* Accept candidate after successful interview */}
+                      {(application.status === 'interview_completed' || application.status === 'interview_validated') && (
+                        <Button
+                          size="sm"
+                          onClick={() => handleAcceptCandidate(application)}
+                          className="w-full bg-green-600 hover:bg-green-700 text-white"
+                        >
+                          <CheckCircle className="h-4 w-4 mr-2" />
+                          Accepter candidat → Stagiaire
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          </CardContent>
+        </Card>
     </DashboardLayout>
   )
 }

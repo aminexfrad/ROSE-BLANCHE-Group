@@ -1,0 +1,18 @@
+Bonjour,
+
+Le tuteur {{ tuteur_name }} propose un nouveau créneau pour l'entretien avec {{ candidate_name }}.
+
+Détails de la proposition:
+- Créneau original: {{ original_date }} à {{ original_time }}
+- Nouvelle proposition: {{ suggested_date }} à {{ suggested_time }}
+- Lieu: {{ location }}
+- Filiale: {{ filiale_name }}
+
+{% if comment %}
+Commentaire du tuteur: {{ comment }}
+{% endif %}
+
+Veuillez vous connecter à votre tableau de bord RH pour accepter ou modifier cette proposition.
+
+Cordialement,
+L'équipe StageBloom

@@ -30,6 +30,7 @@ class DemandeSerializer(serializers.ModelSerializer):
         help_text="IDs des offres sélectionnées (max 4 pour PFE)"
     )
     offres = serializers.SerializerMethodField(read_only=True)
+    interview_requests = serializers.SerializerMethodField(read_only=True)
     entreprise = EntrepriseListSerializer(read_only=True)
 
     class Meta:
@@ -43,9 +44,9 @@ class DemandeSerializer(serializers.ModelSerializer):
             'cv', 'lettre_motivation', 'demande_stage',
             'cv_binome', 'lettre_motivation_binome', 'demande_stage_binome',
             'status', 'raison_refus', 'entreprise', 'created_at', 'updated_at',
-            'offer_ids', 'offres'
+            'offer_ids', 'offres', 'interview_requests'
         ]
-        read_only_fields = ['id', 'status', 'raison_refus', 'created_at', 'updated_at', 'offres']
+        read_only_fields = ['id', 'status', 'raison_refus', 'created_at', 'updated_at', 'offres', 'interview_requests']
     
     def get_offres(self, obj):
         # Return offers with per-offer status
@@ -53,10 +54,41 @@ class DemandeSerializer(serializers.ModelSerializer):
             {
                 'id': do.offre.id,
                 'reference': do.offre.reference,
+                'titre': do.offre.title,  # Keep both title and titre for compatibility
                 'title': do.offre.title,
+                'entreprise': {
+                    'id': do.offre.entreprise.id if do.offre.entreprise else None,
+                    'nom': do.offre.entreprise.nom if do.offre.entreprise else 'N/A'
+                },
                 'status': do.status
             }
-            for do in obj.demande_offres.select_related('offre').all()
+            for do in obj.demande_offres.select_related('offre', 'offre__entreprise').all()
+        ]
+    
+    def get_interview_requests(self, obj):
+        """Return interview requests for this demande"""
+        return [
+            {
+                'id': ir.id,
+                'status': ir.status,
+                'proposed_date': ir.proposed_date.strftime('%Y-%m-%d'),
+                'proposed_time': ir.proposed_time.strftime('%H:%M'),
+                'suggested_date': ir.suggested_date.strftime('%Y-%m-%d') if ir.suggested_date else None,
+                'suggested_time': ir.suggested_time.strftime('%H:%M') if ir.suggested_time else None,
+                'location': ir.location,
+                'tuteur': {
+                    'id': ir.tuteur.id,
+                    'name': ir.tuteur.get_full_name(),
+                    'email': ir.tuteur.email,
+                },
+                'filiale': {
+                    'id': ir.filiale.id if ir.filiale else None,
+                    'name': ir.filiale.nom if ir.filiale else 'N/A',
+                },
+                'tuteur_comment': ir.tuteur_comment,
+                'created_at': ir.created_at.isoformat(),
+            }
+            for ir in obj.interview_requests.select_related('tuteur', 'filiale').all()
         ]
 
     def validate_nom(self, value):
@@ -249,6 +281,7 @@ class DemandeListSerializer(DemandeSerializer):
     duree_stage = serializers.IntegerField(read_only=True)
     is_pfe_stage = serializers.BooleanField(read_only=True)
     offres = serializers.SerializerMethodField(read_only=True)
+    interview_requests = serializers.SerializerMethodField(read_only=True)
     
     class Meta(DemandeSerializer.Meta):
         fields = [
@@ -258,7 +291,7 @@ class DemandeListSerializer(DemandeSerializer):
             'is_pfe_stage', 'status', 'entreprise', 'created_at',
             'cv', 'lettre_motivation', 'demande_stage',
             'cv_binome', 'lettre_motivation_binome', 'demande_stage_binome',
-            'offres'
+            'offres', 'interview_requests'
         ]
 
 
@@ -270,10 +303,11 @@ class DemandeDetailSerializer(DemandeSerializer):
     duree_stage = serializers.IntegerField(read_only=True)
     is_pfe_stage = serializers.BooleanField(read_only=True)
     offres = serializers.SerializerMethodField(read_only=True)
+    interview_requests = serializers.SerializerMethodField(read_only=True)
     
     class Meta(DemandeSerializer.Meta):
         fields = DemandeSerializer.Meta.fields + [
-            'nom_complet', 'nom_complet_binome', 'duree_stage', 'is_pfe_stage', 'offres'
+            'nom_complet', 'nom_complet_binome', 'duree_stage', 'is_pfe_stage'
         ]
 
 

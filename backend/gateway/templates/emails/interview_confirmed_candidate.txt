@@ -1,0 +1,31 @@
+Bonjour {{ candidate_name }},
+
+Votre entretien a été confirmé !
+
+DÉTAILS DE L'ENTRETIEN
+======================
+
+Filiale : {{ filiale_name }}
+Date : {{ interview_date }}
+Heure : {{ interview_time }}
+Lieu : {{ interview_location }}
+Tuteur : {{ tuteur_name }}
+
+PRÉPARATION RECOMMANDÉE
+=======================
+
+- Préparez votre CV et lettre de motivation
+- Révisez les détails du stage et de la filiale
+- Préparez des questions sur le poste et la filiale
+- Arrivez 10 minutes avant l'heure prévue
+
+EN CAS DE QUESTION
+==================
+
+N'hésitez pas à nous contacter si vous avez des questions concernant cet entretien.
+
+Nous vous souhaitons bonne chance pour votre entretien !
+
+---
+Cet email a été envoyé automatiquement par StageBloom
+© 2025 StageBloom. Tous droits réservés.

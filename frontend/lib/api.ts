@@ -168,7 +168,17 @@ export interface Application {
   entreprise?: Entreprise
   created_at: string
   updated_at: string
-  offres?: { id: number; reference: string; title: string }[]
+  offres?: Array<{
+    id: number
+    reference: string
+    titre: string
+    title: string
+    entreprise: {
+      id: number
+      nom: string
+    }
+    status: string
+  }>
 }
 
 export interface Stage {
@@ -806,6 +816,12 @@ class ApiClient {
     return this.request<User>('/auth/profile/', {}, { ttl: 2 * 60 * 1000 }) // Cache for 2 minutes
   }
 
+  getCurrentUser(): User | null {
+    if (typeof window === 'undefined') return null
+    const userStr = localStorage.getItem('user')
+    return userStr ? JSON.parse(userStr) : null
+  }
+
   async updateProfile(data: Partial<User>): Promise<User> {
     const response = await this.request<User>('/auth/profile/', {
       method: 'PUT',
@@ -910,11 +926,15 @@ class ApiClient {
     return this.request<any>(`/demandes/${demandeId}/interview-requests/`)
   }
 
-  async proposeInterview(demandeId: number, data: { date: string; time: string; location: string }): Promise<{ message: string; request: { id: number; status: string } }> {
+  async proposeInterview(demandeId: number, data: { date: string; time: string; location: string; tuteur_id: number }): Promise<{ message: string; request: { id: number; status: string } }> {
     return this.request<any>(`/demandes/${demandeId}/propose-interview/`, {
       method: 'POST',
       body: JSON.stringify(data),
     })
+  }
+
+  async getAvailableTuteursForDemande(demandeId: number): Promise<{ results: any[]; count: number }> {
+    return this.request<{ results: any[]; count: number }>(`/demandes/${demandeId}/available-tuteurs/`)
   }
 
   async scheduleInterview(demandeId: number, interviewData: {
@@ -971,8 +991,24 @@ class ApiClient {
     return this.request<any>('/tuteur/interviews/requests/pending/')
   }
 
-  async respondToInterviewRequest(requestId: number, payload: { action: 'accept' | 'reject' | 'reschedule'; comment?: string; alternative_date?: string; alternative_time?: string }): Promise<any> {
+  async respondToInterviewRequest(requestId: number, payload: { action: 'accept' | 'propose_new_time'; comment?: string; suggested_date?: string; suggested_time?: string }): Promise<any> {
     return this.request<any>(`/tuteur/interviews/requests/${requestId}/respond/`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  async tuteurRespondToInterview(requestId: number, action: 'accept' | 'propose_new_time', data?: { suggested_date?: string; suggested_time?: string; comment?: string }): Promise<any> {
+    const payload = { action, ...data }
+    return this.request<any>(`/tuteur/interviews/requests/${requestId}/respond/`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
+  }
+
+  // RH: respond to tuteur's interview proposal
+  async rhRespondToProposal(requestId: number, payload: { action: 'accept' | 'modify'; comment?: string; new_date?: string; new_time?: string }): Promise<any> {
+    return this.request<any>(`/demandes/interview-requests/${requestId}/respond/`, {
       method: 'POST',
       body: JSON.stringify(payload),
     })

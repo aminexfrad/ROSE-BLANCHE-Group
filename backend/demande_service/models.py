@@ -401,16 +401,18 @@ class InterviewRequest(models.Model):
     """
     class Status(models.TextChoices):
         PENDING_TUTEUR = 'PENDING_TUTEUR', _('En attente du tuteur')
-        ACCEPTED = 'ACCEPTED', _('Accepté par le tuteur')
-        REJECTED = 'REJECTED', _('Refusé par le tuteur')
-        RESCHEDULE_REQUESTED = 'RESCHEDULE_REQUESTED', _('Proposition d\'un autre créneau')
+        VALIDATED = 'VALIDATED', _('Validé')
+        REVISION_REQUESTED = 'REVISION_REQUESTED', _('Révision demandée')
 
     demande = models.ForeignKey(Demande, on_delete=models.CASCADE, related_name='interview_requests')
     rh = models.ForeignKey('auth_service.User', on_delete=models.SET_NULL, null=True, related_name='interview_requests_created')
+    filiale = models.ForeignKey('shared.Entreprise', on_delete=models.CASCADE, related_name='interview_requests', verbose_name=_('filiale'), null=True, blank=True)
     tuteur = models.ForeignKey('auth_service.User', on_delete=models.CASCADE, related_name='interview_requests_assigned')
 
     proposed_date = models.DateField(_('date proposée'))
     proposed_time = models.TimeField(_('heure proposée'))
+    suggested_date = models.DateField(_('date suggérée'), null=True, blank=True)
+    suggested_time = models.TimeField(_('heure suggérée'), null=True, blank=True)
     location = models.CharField(_('lieu proposé'), max_length=500)
 
     status = models.CharField(
@@ -422,8 +424,6 @@ class InterviewRequest(models.Model):
 
     # Optional fields for tuteur feedback or alternative proposal
     tuteur_comment = models.TextField(_('commentaire du tuteur'), blank=True)
-    alternative_date = models.DateField(_('autre date proposée'), null=True, blank=True)
-    alternative_time = models.TimeField(_('autre heure proposée'), null=True, blank=True)
 
     # Timestamps
     created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
@@ -436,4 +436,38 @@ class InterviewRequest(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"InterviewRequest #{self.id} - {self.demande.nom_complet} ({self.get_status_display()})"
+        return f"InterviewRequest #{self.id} - {self.demande.nom_complet} - {self.status}"
+
+    @property
+    def candidate_name(self):
+        return self.demande.nom_complet
+
+    @property
+    def rh_name(self):
+        return self.rh.get_full_name() if self.rh else 'N/A'
+
+    @property
+    def tuteur_name(self):
+        return self.tuteur.get_full_name()
+
+    @property
+    def filiale_name(self):
+        return self.filiale.nom
+
+    @property
+    def proposed_datetime(self):
+        """Return combined proposed date and time"""
+        from django.utils import timezone
+        return timezone.make_aware(
+            timezone.datetime.combine(self.proposed_date, self.proposed_time)
+        )
+
+    @property
+    def suggested_datetime(self):
+        """Return combined suggested date and time if available"""
+        if self.suggested_date and self.suggested_time:
+            from django.utils import timezone
+            return timezone.make_aware(
+                timezone.datetime.combine(self.suggested_date, self.suggested_time)
+            )
+        return None

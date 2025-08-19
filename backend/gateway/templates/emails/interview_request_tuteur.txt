@@ -1,14 +1,18 @@
 Bonjour {{ tuteur_name }},
 
-Un entretien est proposé avec le candidat {{ candidate_name }}.
+Une proposition d'entretien a été faite pour un candidat de votre filiale.
 
-Détails proposés:
-- Date: {{ proposed_date }}
-- Heure: {{ proposed_time }}
-- Lieu: {{ location }}
-- Entreprise: {{ company_name }}
+**Détails de l'entretien :**
+- Candidat : {{ candidate_name }}
+- Date : {{ proposed_date }}
+- Heure : {{ proposed_time }}
+- Lieu : {{ location }}
+- Entreprise : {{ company_name }}
 
-Veuillez vous connecter à votre tableau de bord Tuteur pour confirmer votre disponibilité ou proposer un autre créneau.
+**Action requise :**
+Veuillez vous connecter à votre tableau de bord pour confirmer votre disponibilité ou proposer un autre créneau.
+
+Vous pouvez accepter cette proposition ou suggérer une nouvelle date/heure si ce créneau ne vous convient pas.
 
 Cordialement,
 L'équipe StageBloom

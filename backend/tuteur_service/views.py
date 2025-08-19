@@ -392,7 +392,7 @@ class TuteurInterviewRequestsView(APIView):
 
 
 class TuteurInterviewRespondView(APIView):
-    """Tuteur responds to an interview request: accept/reject/reschedule"""
+    """Tuteur responds to an interview request: accept or propose new date/time"""
     permission_classes = [IsAuthenticated]
 
     def post(self, request, request_id):
@@ -401,16 +401,11 @@ class TuteurInterviewRespondView(APIView):
                 return Response({'error': 'Permission refusée'}, status=status.HTTP_403_FORBIDDEN)
 
             interview_request = get_object_or_404(InterviewRequest, id=request_id, tuteur=request.user)
-
-            action = request.data.get('action')  # 'accept' | 'reject' | 'reschedule'
+            action = request.data.get('action')
             comment = request.data.get('comment', '')
-            alt_date = request.data.get('alternative_date')
-            alt_time = request.data.get('alternative_time')
-
-            from shared.models import Notification
 
             if action == 'accept':
-                interview_request.status = InterviewRequest.Status.ACCEPTED
+                interview_request.status = InterviewRequest.Status.VALIDATED
                 interview_request.tuteur_comment = comment
                 interview_request.save(update_fields=['status', 'tuteur_comment', 'updated_at'])
 
@@ -418,80 +413,116 @@ class TuteurInterviewRespondView(APIView):
                 if interview_request.rh:
                     Notification.objects.create(
                         recipient=interview_request.rh,
-                        title="Disponibilité confirmée",
-                        message=f"Le tuteur a confirmé sa disponibilité pour l'entretien avec {interview_request.demande.nom_complet}.",
+                        title="Entretien validé par le Tuteur",
+                        message=f"Le tuteur a validé l'entretien avec {interview_request.demande.nom_complet}.",
                         notification_type='success'
                     )
+
                 # Email RH
                 from shared.utils import MailService
                 if interview_request.rh and interview_request.rh.email:
                     try:
                         MailService.send_email(
-                            subject="Confirmation du tuteur pour l'entretien",
+                            subject="Entretien validé par le Tuteur",
                             recipient_list=[interview_request.rh.email],
-                            template_name='emails/interview_tuteur_confirmed.txt',
+                            template_name='emails/interview_tuteur_validated.txt',
                             context={
                                 'candidate_name': interview_request.demande.nom_complet,
                                 'tuteur_name': request.user.get_full_name(),
                                 'proposed_date': interview_request.proposed_date.strftime('%d/%m/%Y'),
                                 'proposed_time': interview_request.proposed_time.strftime('%H:%M'),
                                 'location': interview_request.location,
+                                'filiale_name': interview_request.filiale.nom,
                             },
-                            html_template_name='emails/interview_tuteur_confirmed.html'
+                            html_template_name='emails/interview_tuteur_validated.html'
                         )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"Error sending email to RH: {e}")
 
-                return Response({'message': 'Disponibilité confirmée. Le RH peut maintenant valider l\'entretien.'})
+                # Notify Candidate (only when validated)
+                try:
+                    MailService.send_email(
+                        subject="Entretien confirmé",
+                        recipient_list=[interview_request.demande.email],
+                        template_name='emails/interview_confirmed_candidate.txt',
+                        context={
+                            'candidate_name': interview_request.demande.nom_complet,
+                            'interview_date': interview_request.proposed_date.strftime('%d/%m/%Y'),
+                            'interview_time': interview_request.proposed_time.strftime('%H:%M'),
+                            'interview_location': interview_request.location,
+                            'filiale_name': interview_request.filiale.nom,
+                            'tuteur_name': request.user.get_full_name(),
+                        },
+                        html_template_name='emails/interview_confirmed_candidate.html'
+                    )
+                except Exception as e:
+                    print(f"Error sending email to candidate: {e}")
 
-            elif action == 'reject' or action == 'reschedule':
-                if action == 'reject':
-                    interview_request.status = InterviewRequest.Status.REJECTED
-                else:
-                    interview_request.status = InterviewRequest.Status.RESCHEDULE_REQUESTED
-                    # Validate alt slots
-                    if not alt_date or not alt_time:
-                        return Response({'error': 'Veuillez proposer une autre date et heure.'}, status=status.HTTP_400_BAD_REQUEST)
-                    try:
-                        interview_request.alternative_date = datetime.strptime(alt_date, '%Y-%m-%d').date()
-                        interview_request.alternative_time = datetime.strptime(alt_time, '%H:%M').time()
-                    except Exception:
-                        return Response({'error': 'Format de date/heure invalide. Utilisez YYYY-MM-DD et HH:MM.'}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({'message': 'Entretien validé. Le candidat a été notifié.'})
+
+            elif action == 'propose_new_time':
+                suggested_date = request.data.get('suggested_date')
+                suggested_time = request.data.get('suggested_time')
+                
+                if not suggested_date or not suggested_time:
+                    return Response({'error': 'Date et heure suggérées requises'}, status=status.HTTP_400_BAD_REQUEST)
+
+                from datetime import datetime
+                from django.utils import timezone
+                
+                try:
+                    suggested_date_obj = datetime.strptime(suggested_date, '%Y-%m-%d').date()
+                    suggested_time_obj = datetime.strptime(suggested_time, '%H:%M').time()
+                    
+                    # Ensure future datetime
+                    dt_naive = datetime.combine(suggested_date_obj, suggested_time_obj)
+                    dt = timezone.make_aware(dt_naive, timezone.get_current_timezone()) if timezone.is_naive(dt_naive) else dt_naive
+                    if dt <= timezone.now():
+                        return Response({'error': "La date/heure suggérée doit être dans le futur"}, status=status.HTTP_400_BAD_REQUEST)
+                        
+                except ValueError:
+                    return Response({'error': 'Format de date/heure invalide'}, status=status.HTTP_400_BAD_REQUEST)
+
+                interview_request.status = InterviewRequest.Status.REVISION_REQUESTED
+                interview_request.suggested_date = suggested_date_obj
+                interview_request.suggested_time = suggested_time_obj
                 interview_request.tuteur_comment = comment
-                interview_request.save(update_fields=['status', 'tuteur_comment', 'alternative_date', 'alternative_time', 'updated_at'])
+                interview_request.save(update_fields=['status', 'suggested_date', 'suggested_time', 'tuteur_comment', 'updated_at'])
 
                 # Notify RH
                 if interview_request.rh:
                     Notification.objects.create(
                         recipient=interview_request.rh,
-                        title='Indisponibilité du tuteur',
-                        message=(
-                            f"Le tuteur a refusé ou proposé un autre créneau pour l'entretien avec {interview_request.demande.nom_complet}. "
-                            f"Commentaire: {comment}"
-                        ),
-                        notification_type='warning'
+                        title="Nouvelle proposition d'entretien",
+                        message=f"Le tuteur propose un nouveau créneau pour l'entretien avec {interview_request.demande.nom_complet}.",
+                        notification_type='info'
                     )
+
                 # Email RH
                 from shared.utils import MailService
                 if interview_request.rh and interview_request.rh.email:
                     try:
                         MailService.send_email(
-                            subject='Réponse du tuteur à la demande d\'entretien',
+                            subject="Nouvelle proposition d'entretien",
                             recipient_list=[interview_request.rh.email],
-                            template_name='emails/interview_tuteur_refused.txt',
+                            template_name='emails/interview_tuteur_proposal.txt',
                             context={
                                 'candidate_name': interview_request.demande.nom_complet,
                                 'tuteur_name': request.user.get_full_name(),
+                                'original_date': interview_request.proposed_date.strftime('%d/%m/%Y'),
+                                'original_time': interview_request.proposed_time.strftime('%H:%M'),
+                                'suggested_date': suggested_date_obj.strftime('%d/%m/%Y'),
+                                'suggested_time': suggested_time_obj.strftime('%H:%M'),
+                                'location': interview_request.location,
                                 'comment': comment,
-                                'alternative_date': alt_date,
-                                'alternative_time': alt_time,
+                                'filiale_name': interview_request.filiale.nom,
                             },
-                            html_template_name='emails/interview_tuteur_refused.html'
+                            html_template_name='emails/interview_tuteur_proposal.html'
                         )
-                    except Exception:
-                        pass
+                    except Exception as e:
+                        print(f"Error sending email to RH: {e}")
 
-                return Response({'message': 'Réponse envoyée au RH.'})
+                return Response({'message': 'Nouvelle proposition envoyée au RH.'})
 
             else:
                 return Response({'error': 'Action invalide'}, status=status.HTTP_400_BAD_REQUEST)

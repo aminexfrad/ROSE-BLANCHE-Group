@@ -1,0 +1,18 @@
+<html>
+  <body>
+    <p>Bonjour,</p>
+    <p>Le tuteur <strong>{{ tuteur_name }}</strong> propose un nouveau créneau pour l'entretien avec <strong>{{ candidate_name }}</strong>.</p>
+    <p>
+      <strong>Détails de la proposition:</strong><br/>
+      - Créneau original: {{ original_date }} à {{ original_time }}<br/>
+      - Nouvelle proposition: {{ suggested_date }} à {{ suggested_time }}<br/>
+      - Lieu: {{ location }}<br/>
+      - Filiale: {{ filiale_name }}
+    </p>
+    {% if comment %}
+    <p><strong>Commentaire du tuteur:</strong> {{ comment }}</p>
+    {% endif %}
+    <p>Veuillez vous connecter à votre tableau de bord RH pour accepter ou modifier cette proposition.</p>
+    <p>Cordialement,<br/>L'équipe StageBloom</p>
+  </body>
+</html>

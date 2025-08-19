@@ -72,6 +72,7 @@ const menuItems: Record<string, MenuGroup[]> = {
       items: [
         { title: "Tableau de bord", url: "/tuteur", icon: Home },
         { title: "Mes Stagiaires", url: "/tuteur/stagiaires", icon: Users },
+        { title: "Entretiens", url: "/tuteur/entretiens", icon: Calendar },
         { title: "Rapports PFE", url: "/tuteur/pfe-reports", icon: FileText },
         { title: "Évaluations", url: "/tuteur/evaluations", icon: CheckCircle },
         { title: "Statistiques", url: "/tuteur/statistiques", icon: BarChart3 },
@@ -91,6 +92,7 @@ const menuItems: Record<string, MenuGroup[]> = {
       items: [
         { title: "Témoignages", url: "/rh/temoignages", icon: MessageSquare },
         { title: "Demandes de stage", url: "/rh/demandes", icon: FileText },
+        { title: "Entretiens", url: "/rh/entretiens", icon: Calendar },
         { title: "PFE Digital Hub", url: "/rh/pfe-digital-hub", icon: FileText },
         { title: "Assignation Tuteurs", url: "/rh/assignation-tuteurs", icon: UserPlus },
       ],

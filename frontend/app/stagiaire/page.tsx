@@ -129,7 +129,8 @@ export default function StagiaireDashboard() {
     stagiaire: { label: "Stagiaire", color: "bg-gradient-to-r from-blue-500 to-cyan-600 text-white" },
     tuteur: { label: "Tuteur", color: "bg-gradient-to-r from-green-500 to-emerald-600 text-white" },
     admin: { label: "Administrateur", color: "bg-gradient-to-r from-purple-500 to-pink-600 text-white" },
-  }[user?.role || "stagiaire"]
+    candidat: { label: "Candidat", color: "bg-gradient-to-r from-gray-500 to-slate-600 text-white" },
+  }[user?.role || "stagiaire"] || { label: "Stagiaire", color: "bg-gradient-to-r from-blue-500 to-cyan-600 text-white" }
 
   if (loading) {
     return (

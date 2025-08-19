@@ -30,6 +30,7 @@ const roleColors = {
   tuteur: "from-green-500 to-green-600", 
   rh: "from-purple-500 to-purple-600",
   admin: "from-red-500 to-red-600",
+  candidat: "from-gray-500 to-gray-600",
 }
 
 export function UserProfileNavbar() {

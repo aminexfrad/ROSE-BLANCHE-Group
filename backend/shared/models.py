@@ -60,6 +60,17 @@ class Entreprise(models.Model):
             entreprise=self
         ).count()
 
+    def get_default_tuteur(self):
+        """Get the default tuteur for this filiale"""
+        from auth_service.models import User
+        # Get the first available tuteur for this filiale
+        tuteur = User.objects.filter(
+            role='tuteur',
+            entreprise=self,
+            is_active=True
+        ).first()
+        return tuteur
+
 class Stage(models.Model):
     """
     Stage/Internship model that represents an approved internship

@@ -1,18 +1,83 @@
+<!DOCTYPE html>
 <html>
-  <body>
-    <p>Bonjour {{ tuteur_name }},</p>
-    <p>Un entretien est proposé avec le candidat <strong>{{ candidate_name }}</strong>.</p>
-    <p>
-      <strong>Détails proposés:</strong><br/>
-      - Date: {{ proposed_date }}<br/>
-      - Heure: {{ proposed_time }}<br/>
-      - Lieu: {{ location }}<br/>
-      - Entreprise: {{ company_name }}
-    </p>
-    <p>
-      Veuillez vous connecter à votre tableau de bord Tuteur pour confirmer votre disponibilité ou proposer un autre créneau.
-    </p>
-    <p>Cordialement,<br/>L'équipe StageBloom</p>
-  </body>
-  </html>
+<head>
+    <meta charset="utf-8">
+    <title>Proposition d'entretien</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .content {
+            background-color: #ffffff;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+        }
+        .details {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .action {
+            background-color: #007bff;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #dee2e6;
+            font-size: 14px;
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>Proposition d'entretien</h2>
+    </div>
+    
+    <div class="content">
+        <p>Bonjour <strong>{{ tuteur_name }}</strong>,</p>
+        
+        <p>Une proposition d'entretien a été faite pour un candidat de votre filiale.</p>
+        
+        <div class="details">
+            <h3>Détails de l'entretien :</h3>
+            <ul>
+                <li><strong>Candidat :</strong> {{ candidate_name }}</li>
+                <li><strong>Date :</strong> {{ proposed_date }}</li>
+                <li><strong>Heure :</strong> {{ proposed_time }}</li>
+                <li><strong>Lieu :</strong> {{ location }}</li>
+                <li><strong>Entreprise :</strong> {{ company_name }}</li>
+            </ul>
+        </div>
+        
+        <div class="action">
+            <h3>Action requise :</h3>
+            <p>Veuillez vous connecter à votre tableau de bord pour confirmer votre disponibilité ou proposer un autre créneau.</p>
+            <p>Vous pouvez accepter cette proposition ou suggérer une nouvelle date/heure si ce créneau ne vous convient pas.</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>Cordialement,<br>
+        L'équipe StageBloom</p>
+    </div>
+</body>
+</html>
 

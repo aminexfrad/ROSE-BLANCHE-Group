@@ -54,7 +54,7 @@ export function UserManagementModal({
         email: user.email || "",
         nom: user.nom || "",
         prenom: user.prenom || "",
-        role: user.role || "stagiaire",
+        role: (user.role === "candidat" ? "stagiaire" : user.role) || "stagiaire",
         telephone: user.telephone || "",
         departement: user.departement || "",
         institut: user.institut || "",
@@ -82,14 +82,36 @@ export function UserManagementModal({
 
     try {
       if (isEditing && user) {
-        const response = await apiClient.updateUser(user.id, formData)
+        const formDataObj = new FormData()
+        formDataObj.append('email', formData.email)
+        formDataObj.append('nom', formData.nom)
+        formDataObj.append('prenom', formData.prenom)
+        formDataObj.append('role', formData.role)
+        formDataObj.append('telephone', formData.telephone)
+        formDataObj.append('departement', formData.departement)
+        formDataObj.append('institut', formData.institut)
+        formDataObj.append('specialite', formData.specialite)
+        formDataObj.append('bio', formData.bio)
+        
+        const response = await apiClient.updateUser(user.id, formDataObj)
         toast({
           title: "Succès",
           description: "Utilisateur mis à jour avec succès",
         })
         onUserUpdated?.(response.user)
       } else {
-        const response = await apiClient.createUser(formData)
+        const formDataObj = new FormData()
+        formDataObj.append('email', formData.email)
+        formDataObj.append('nom', formData.nom)
+        formDataObj.append('prenom', formData.prenom)
+        formDataObj.append('role', formData.role)
+        formDataObj.append('telephone', formData.telephone)
+        formDataObj.append('departement', formData.departement)
+        formDataObj.append('institut', formData.institut)
+        formDataObj.append('specialite', formData.specialite)
+        formDataObj.append('bio', formData.bio)
+        
+        const response = await apiClient.createUser(formDataObj)
         
         let description = `Utilisateur créé avec succès. Mot de passe: ${response.password}`
         

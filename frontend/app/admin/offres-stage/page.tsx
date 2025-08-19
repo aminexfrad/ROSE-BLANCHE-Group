@@ -87,7 +87,13 @@ export default function OffresStageAdminPage() {
 
   const handleCreateOffre = async () => {
     try {
-      await apiClient.createOffreStage(formData)
+      const formDataObj = new FormData()
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formDataObj.append(key, value)
+        }
+      })
+      await apiClient.createOffreStage(formDataObj)
       toast({
         title: "Succès",
         description: "Offre de stage créée avec succès",
@@ -114,7 +120,13 @@ export default function OffresStageAdminPage() {
       return
     }
     try {
-      await apiClient.updateOffreStage(editingOffre.id, formData)
+      const formDataObj = new FormData()
+      Object.entries(formData).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formDataObj.append(key, value)
+        }
+      })
+      await apiClient.updateOffreStage(editingOffre.id, formDataObj)
       toast({
         title: "Succès",
         description: "Offre de stage mise à jour avec succès",
