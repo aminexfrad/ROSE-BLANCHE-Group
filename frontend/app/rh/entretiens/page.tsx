@@ -42,7 +42,7 @@ interface InterviewRequest {
     nom: string
     email: string
   }
-  status: 'PENDING_TUTEUR' | 'VALIDATED' | 'REVISION_REQUESTED'
+  status: 'PENDING_TUTEUR' | 'VALIDATED' | 'REVISION_REQUESTED' | 'INTERVIEW_COMPLETED'
   proposed_date: string
   proposed_time: string
   suggested_date?: string
@@ -162,9 +162,11 @@ export default function RHInterviewsPage() {
       case 'PENDING_TUTEUR':
         return <Badge className="bg-yellow-100 text-yellow-800">En attente du tuteur</Badge>
       case 'VALIDATED':
-        return <Badge className="bg-green-100 text-green-800">Validé</Badge>
+        return <Badge className="bg-green-100 text-green-800">Entretien validé</Badge>
       case 'REVISION_REQUESTED':
         return <Badge className="bg-blue-100 text-blue-800">Révision demandée</Badge>
+      case 'INTERVIEW_COMPLETED':
+        return <Badge className="bg-purple-100 text-purple-800">Entretien terminé</Badge>
       default:
         return <Badge variant="outline">{status}</Badge>
     }
@@ -178,6 +180,8 @@ export default function RHInterviewsPage() {
         return 'text-green-600'
       case 'REVISION_REQUESTED':
         return 'text-blue-600'
+      case 'INTERVIEW_COMPLETED':
+        return 'text-purple-600'
       default:
         return 'text-gray-600'
     }
@@ -190,6 +194,34 @@ export default function RHInterviewsPage() {
   const handleMakeDecision = (interview: InterviewRequest) => {
     setSelectedInterview(interview)
     setDecisionModalOpen(true)
+  }
+
+  const handleMarkAsCompleted = async (interview: InterviewRequest) => {
+    try {
+      await apiClient.markInterviewAsCompleted(interview.id)
+      
+      // Update local state
+      setInterviews(prev => prev.map(i => 
+        i.id === interview.id 
+          ? { ...i, status: 'INTERVIEW_COMPLETED' as const }
+          : i
+      ))
+
+      const { toast } = useToast()
+      toast({
+        title: 'Entretien marqué comme terminé',
+        description: `L'entretien avec ${interview.demande.candidat.prenom} ${interview.demande.candidat.nom} a été marqué comme terminé.`,
+        variant: 'default'
+      })
+    } catch (err: any) {
+      console.error('Error marking interview as completed:', err)
+      const { toast } = useToast()
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors du marquage de l\'entretien',
+        variant: 'destructive'
+      })
+    }
   }
 
   const submitDecision = async () => {
@@ -217,12 +249,21 @@ export default function RHInterviewsPage() {
       setDecisionComment("")
       
       // Show success message
-      // You can implement toast notification here
-      alert(`Candidat ${decision === "accepted" ? "accepté" : "rejeté"} avec succès!`)
+      const { toast } = useToast()
+      toast({
+        title: 'Décision enregistrée',
+        description: `Candidat ${decision === "accepted" ? "accepté comme stagiaire" : "rejeté"} avec succès!`,
+        variant: 'default'
+      })
       
     } catch (err: any) {
       console.error('Error submitting decision:', err)
-      alert('Erreur lors de la soumission de la décision')
+      const { toast } = useToast()
+      toast({
+        title: 'Erreur',
+        description: 'Erreur lors de la soumission de la décision',
+        variant: 'destructive'
+      })
     } finally {
       setSubmittingDecision(false)
     }
@@ -233,8 +274,9 @@ export default function RHInterviewsPage() {
     const pending = interviews.filter(i => i.status === 'PENDING_TUTEUR').length
     const validated = interviews.filter(i => i.status === 'VALIDATED').length
     const revision = interviews.filter(i => i.status === 'REVISION_REQUESTED').length
+    const completed = interviews.filter(i => i.status === 'INTERVIEW_COMPLETED').length
 
-    return { total, pending, validated, revision }
+    return { total, pending, validated, revision, completed }
   }
 
   const stats = getInterviewStats()
@@ -315,6 +357,17 @@ export default function RHInterviewsPage() {
               <p className="text-xs text-muted-foreground">Nouveaux créneaux</p>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Entretiens terminés</CardTitle>
+              <CheckCircle className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-purple-600">{stats.completed}</div>
+              <p className="text-xs text-muted-foreground">Prêts pour décision finale</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Filters */}
@@ -343,8 +396,9 @@ export default function RHInterviewsPage() {
                   <SelectContent>
                     <SelectItem value="all">Tous les statuts</SelectItem>
                     <SelectItem value="PENDING_TUTEUR">En attente tuteur</SelectItem>
-                    <SelectItem value="VALIDATED">Validés</SelectItem>
+                    <SelectItem value="VALIDATED">Entretiens validés</SelectItem>
                     <SelectItem value="REVISION_REQUESTED">Révision demandée</SelectItem>
+                    <SelectItem value="INTERVIEW_COMPLETED">Entretiens terminés</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -408,9 +462,19 @@ export default function RHInterviewsPage() {
                         {interview.status === 'VALIDATED' && (
                           <Button
                             size="sm"
-                            onClick={() => handleMakeDecision(interview)}
+                            variant="outline"
+                            onClick={() => handleMarkAsCompleted(interview)}
                           >
-                            Prendre décision
+                            Marquer comme terminé
+                          </Button>
+                        )}
+                        {(interview.status === 'VALIDATED' || interview.status === 'INTERVIEW_COMPLETED') && (
+                          <Button
+                            size="sm"
+                            onClick={() => handleMakeDecision(interview)}
+                            className={interview.status === 'INTERVIEW_COMPLETED' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                          >
+                            {interview.status === 'INTERVIEW_COMPLETED' ? 'Décision finale' : 'Prendre décision'}
                           </Button>
                         )}
                       </div>
@@ -454,9 +518,14 @@ export default function RHInterviewsPage() {
         <Dialog open={decisionModalOpen} onOpenChange={setDecisionModalOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle>Décision finale</DialogTitle>
+              <DialogTitle>
+                {selectedInterview?.status === 'INTERVIEW_COMPLETED' ? 'Décision finale' : 'Décision d\'entretien'}
+              </DialogTitle>
               <DialogDescription>
-                Prenez la décision finale pour {selectedInterview?.demande.candidat.prenom} {selectedInterview?.demande.candidat.nom}
+                {selectedInterview?.status === 'INTERVIEW_COMPLETED' 
+                  ? `Prenez la décision finale pour ${selectedInterview?.demande.candidat.prenom} ${selectedInterview?.demande.candidat.nom}. Cette décision déterminera s'il devient stagiaire dans votre filiale.`
+                  : `Prenez la décision pour ${selectedInterview?.demande.candidat.prenom} ${selectedInterview?.demande.candidat.nom}`
+                }
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
@@ -467,8 +536,18 @@ export default function RHInterviewsPage() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="accepted">Accepter le candidat</SelectItem>
-                    <SelectItem value="rejected">Rejeter le candidat</SelectItem>
+                    <SelectItem value="accepted">
+                      {selectedInterview?.status === 'INTERVIEW_COMPLETED' 
+                        ? 'Accepter comme stagiaire' 
+                        : 'Accepter le candidat'
+                      }
+                    </SelectItem>
+                    <SelectItem value="rejected">
+                      {selectedInterview?.status === 'INTERVIEW_COMPLETED' 
+                        ? 'Rejeter la candidature' 
+                        : 'Rejeter le candidat'
+                      }
+                    </SelectItem>
                   </SelectContent>
                 </Select>
               </div>

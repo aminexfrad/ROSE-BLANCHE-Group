@@ -1006,6 +1006,12 @@ class ApiClient {
     })
   }
 
+  async markInterviewAsCompleted(requestId: number): Promise<any> {
+    return this.request<any>(`/demandes/interview-requests/${requestId}/mark-completed/`, {
+      method: 'POST',
+    })
+  }
+
   // RH: respond to tuteur's interview proposal
   async rhRespondToProposal(requestId: number, payload: { action: 'accept' | 'modify'; comment?: string; new_date?: string; new_time?: string }): Promise<any> {
     return this.request<any>(`/demandes/interview-requests/${requestId}/respond/`, {
