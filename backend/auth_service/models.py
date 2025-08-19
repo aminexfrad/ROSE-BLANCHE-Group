@@ -77,7 +77,7 @@ class User(AbstractUser):
     bio = models.TextField(_('biographie'), blank=True)
     
     # Company association (for RH users)
-    entreprise = models.ForeignKey('shared.Entreprise', on_delete=models.SET_NULL, null=True, blank=True, related_name='users', verbose_name=_('entreprise'))
+    entreprise = models.ForeignKey('shared.Entreprise', on_delete=models.SET_NULL, null=True, blank=True, related_name='users', verbose_name=_('filiale'))
     
     # Application tracking (for candidates)
     max_applications = models.PositiveIntegerField(_('nombre maximum de candidatures'), default=3)

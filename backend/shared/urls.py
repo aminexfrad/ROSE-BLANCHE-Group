@@ -11,7 +11,12 @@ urlpatterns = [
     # Root API endpoint
     path('', views.APIRootView.as_view(), name='api-root'),
     
-    # Entreprises
+    # Filiales (keep old routes for backward compatibility)
+    path('filiales/', views.EntreprisesListView.as_view(), name='filiales-list'),
+    path('filiales/<int:pk>/', views.EntrepriseDetailView.as_view(), name='filiale-detail'),
+    path('filiales/<int:pk>/stages/', views.EntrepriseStagesView.as_view(), name='filiale-stages'),
+    path('filiales/<int:pk>/offres/', views.EntrepriseOffresView.as_view(), name='filiale-offres'),
+    # Legacy entreprise routes (temporary aliases)
     path('entreprises/', views.EntreprisesListView.as_view(), name='entreprises-list'),
     path('entreprises/<int:pk>/', views.EntrepriseDetailView.as_view(), name='entreprise-detail'),
     path('entreprises/<int:pk>/stages/', views.EntrepriseStagesView.as_view(), name='entreprise-stages'),

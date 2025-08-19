@@ -1455,21 +1455,22 @@ class ApiClient {
     return response.json()
   }
 
-  // Entreprise methods
+  // Filiale (Entreprise) methods
   async getEntreprises(): Promise<Entreprise[]> {
-    return this.request<Entreprise[]>('/entreprises/')
+    // Prefer new filiales route; legacy route kept for compatibility
+    try { return await this.request<Entreprise[]>('/filiales/') } catch { return this.request<Entreprise[]>('/entreprises/') }
   }
 
   async getEntreprise(id: number): Promise<Entreprise> {
-    return this.request<Entreprise>(`/entreprises/${id}/`)
+    try { return await this.request<Entreprise>(`/filiales/${id}/`) } catch { return this.request<Entreprise>(`/entreprises/${id}/`) }
   }
 
   async getEntrepriseStages(id: number): Promise<Stage[]> {
-    return this.request<Stage[]>(`/entreprises/${id}/stages/`)
+    try { return await this.request<Stage[]>(`/filiales/${id}/stages/`) } catch { return this.request<Stage[]>(`/entreprises/${id}/stages/`) }
   }
 
   async getEntrepriseOffres(id: number): Promise<OffreStage[]> {
-    return this.request<OffreStage[]>(`/entreprises/${id}/offres/`)
+    try { return await this.request<OffreStage[]>(`/filiales/${id}/offres/`) } catch { return this.request<OffreStage[]>(`/entreprises/${id}/offres/`) }
   }
 
   // Company-specific demandes

@@ -2,7 +2,7 @@ Réponse à votre demande de stage
 
 Bonjour {{ demande.prenom }} {{ demande.nom }},
 
-Nous vous remercions pour l'intérêt que vous portez à notre entreprise et pour le temps que vous avez consacré à préparer votre candidature.
+Nous vous remercions pour l'intérêt que vous portez à notre filiale et pour le temps que vous avez consacré à préparer votre candidature.
 
 Après avoir examiné attentivement votre demande de stage, nous regrettons de vous informer que nous ne sommes pas en mesure de vous proposer un stage à ce moment.
 

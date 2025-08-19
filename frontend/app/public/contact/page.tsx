@@ -254,7 +254,7 @@ export default function ContactPage() {
                   {
                     icon: Users,
                     title: "Partenariats",
-                    description: "Vous représentez un institut ou une entreprise ?",
+                    description: "Vous représentez un institut ou une filiale ?",
                     email: "partenariats@stagebloom.com",
                     response: "+33 1 23 45 67 90",
                   },
@@ -306,7 +306,7 @@ export default function ContactPage() {
               {
                 question: "Comment accéder à mon compte ?",
                 answer:
-                  "Utilisez le lien 'Connexion' dans la navigation. Vos identifiants vous seront fournis par votre institut ou votre entreprise.",
+                  "Utilisez le lien 'Connexion' dans la navigation. Vos identifiants vous seront fournis par votre institut ou votre filiale.",
               },
               {
                 question: "Problème technique ?",

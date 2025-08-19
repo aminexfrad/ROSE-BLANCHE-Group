@@ -33,8 +33,8 @@ class Entreprise(models.Model):
     updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
     
     class Meta:
-        verbose_name = _('entreprise')
-        verbose_name_plural = _('entreprises')
+        verbose_name = _('filiale')
+        verbose_name_plural = _('filiales')
         db_table = 'entreprise'
         ordering = ['nom']
     
@@ -78,8 +78,8 @@ class Stage(models.Model):
     # Stage details
     title = models.CharField(_('titre'), max_length=200)
     description = models.TextField(_('description'), blank=True)
-    company_entreprise = models.ForeignKey(Entreprise, on_delete=models.SET_NULL, null=True, blank=True, related_name='stages', verbose_name=_('entreprise'))
-    company_name = models.CharField(_('nom entreprise'), max_length=200, blank=True)  # Keep for backward compatibility
+    company_entreprise = models.ForeignKey(Entreprise, on_delete=models.SET_NULL, null=True, blank=True, related_name='stages', verbose_name=_('filiale'))
+    company_name = models.CharField(_('nom filiale'), max_length=200, blank=True)  # Keep for backward compatibility
     location = models.CharField(_('localisation'), max_length=200)
     
     # Dates
@@ -106,7 +106,7 @@ class Stage(models.Model):
         ordering = ['-created_at']
     
     def __str__(self):
-        company_name = self.company_entreprise.nom if self.company_entreprise else self.company_name or 'Aucune entreprise'
+        company_name = self.company_entreprise.nom if self.company_entreprise else self.company_name or 'Aucune filiale'
         return f"Stage: {self.title} - {self.stagiaire.get_full_name()} - {company_name}"
     
     @property
@@ -916,7 +916,7 @@ class OffreStage(models.Model):
     specialite = models.CharField(_('spécialité'), max_length=100, default='Inconnu')
     nombre_postes = models.PositiveIntegerField(_('nombre de postes'), default=1)
     ville = models.CharField(_('ville'), max_length=100, default='Inconnu')
-    entreprise = models.ForeignKey(Entreprise, on_delete=models.SET_NULL, null=True, blank=True, related_name='offres_stage', verbose_name=_('entreprise'))
+    entreprise = models.ForeignKey(Entreprise, on_delete=models.SET_NULL, null=True, blank=True, related_name='offres_stage', verbose_name=_('filiale'))
     STATUS_CHOICES = [
         ('open', 'Ouverte'),
         ('closed', 'Fermée'),
@@ -939,7 +939,7 @@ class OffreStage(models.Model):
         ordering = ['-id']
 
     def __str__(self):
-        return f"{self.reference} - {self.title} - {self.entreprise.nom if self.entreprise else 'Sans entreprise'}"
+        return f"{self.reference} - {self.title} - {self.entreprise.nom if self.entreprise else 'Sans filiale'}"
     
     def delete(self, *args, **kwargs):
         """Override delete to handle relations properly"""

@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     template: "%s | StageBloom"
   },
   description: "Plateforme moderne de gestion des stages et stages PFE. Simplifiez la gestion de vos stages avec StageBloom.",
-  keywords: ["stage", "PFE", "gestion", "étudiant", "entreprise", "tuteur", "RH"],
+  keywords: ["stage", "PFE", "gestion", "étudiant", "filiale", "tuteur", "RH"],
   authors: [{ name: "StageBloom Team" }],
   creator: "StageBloom",
   publisher: "StageBloom",

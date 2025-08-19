@@ -1763,9 +1763,9 @@ class KPIReportGenerationView(APIView):
         }
 
 
-# Entreprise Views
+# Filiale (Entreprise) Views
 class EntreprisesListView(APIView):
-    """List all entreprises"""
+    """List all filiales"""
     permission_classes = [IsAuthenticated]
     
     def get(self, request):
@@ -1781,7 +1781,7 @@ class EntreprisesListView(APIView):
 
 
 class EntrepriseDetailView(APIView):
-    """Get details of a specific entreprise"""
+    """Get details of a specific filiale"""
     permission_classes = [IsAuthenticated]
     
     def get(self, request, pk):
@@ -1797,7 +1797,7 @@ class EntrepriseDetailView(APIView):
 
 
 class EntrepriseStagesView(APIView):
-    """Get all stages for a specific entreprise"""
+    """Get all stages for a specific filiale"""
     permission_classes = [IsAuthenticated]
     
     def get(self, request, pk):
@@ -1814,7 +1814,7 @@ class EntrepriseStagesView(APIView):
 
 
 class EntrepriseOffresView(APIView):
-    """Get all offres for a specific entreprise"""
+    """Get all offres for a specific filiale"""
     permission_classes = [IsAuthenticated]
     
     def get(self, request, pk):

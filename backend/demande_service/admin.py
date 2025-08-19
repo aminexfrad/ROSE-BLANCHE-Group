@@ -101,7 +101,7 @@ class InterviewAdmin(admin.ModelAdmin):
     
     def demande_entreprise(self, obj):
         return obj.demande.entreprise.nom if obj.demande.entreprise else '-'
-    demande_entreprise.short_description = _('Entreprise')
+    demande_entreprise.short_description = _('Filiale')
     demande_entreprise.admin_order_field = 'demande__entreprise__nom'
     
     def interview_datetime(self, obj):

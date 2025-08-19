@@ -8,7 +8,7 @@ Nous avons le plaisir de vous informer que votre candidature pour le stage "{{ i
 DÉTAILS DE L'ENTRETIEN
 ======================
 
-Entreprise : {{ company_name }}
+Filiale : {{ company_name }}
 Stage : {{ internship_title }}
 Date : {{ interview_date }}
 Heure : {{ interview_time }}
@@ -18,8 +18,8 @@ PRÉPARATION RECOMMANDÉE
 =======================
 
 - Préparez votre CV et lettre de motivation
-- Révisez les détails du stage et de l'entreprise
-- Préparez des questions sur le poste et l'entreprise
+- Révisez les détails du stage et de la filiale
+- Préparez des questions sur le poste et la filiale
 - Arrivez 10 minutes avant l'heure prévue
 
 {% if interview_notes %}

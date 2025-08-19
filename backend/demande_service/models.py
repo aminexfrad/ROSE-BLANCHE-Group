@@ -91,7 +91,7 @@ class Demande(models.Model):
         null=True,
         blank=True,
         related_name='demandes',
-        verbose_name=_('entreprise')
+        verbose_name=_('filiale')
     )
     
     # Timestamps
@@ -247,7 +247,7 @@ class DemandeOffre(models.Model):
         null=True,
         blank=True,
         related_name='demande_offres',
-        verbose_name=_('entreprise')
+        verbose_name=_('filiale')
     )
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
     updated_at = models.DateTimeField(auto_now=True)

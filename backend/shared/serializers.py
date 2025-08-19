@@ -11,7 +11,7 @@ from auth_service.models import User
 from auth_service.serializers import UserSerializer
 
 class EntrepriseSerializer(serializers.ModelSerializer):
-    """Serializer for Entreprise model"""
+    """Serializer for Entreprise model (Filiale)"""
     nombre_stagiaires = serializers.ReadOnlyField()
     nombre_rh = serializers.ReadOnlyField()
     
@@ -20,7 +20,7 @@ class EntrepriseSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class EntrepriseListSerializer(serializers.ModelSerializer):
-    """List serializer for Entreprise model"""
+    """List serializer for Entreprise model (Filiale)"""
     nombre_stagiaires = serializers.ReadOnlyField()
     nombre_rh = serializers.ReadOnlyField()
     
