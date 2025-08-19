@@ -1,0 +1,12 @@
+Bonjour {{ tuteur_name }},
+
+L'entretien avec {{ candidate_name }} a été confirmé.
+
+Détails:
+- Date: {{ interview_date }}
+- Heure: {{ interview_time }}
+- Lieu: {{ interview_location }}
+
+Cordialement,
+L'équipe StageBloom
+

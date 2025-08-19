@@ -18,6 +18,10 @@ urlpatterns = [
     # Statistics
     path('statistiques/', views.TuteurStatisticsView.as_view(), name='tuteur-statistics'),
     
+    # Interview requests
+    path('interviews/requests/pending/', views.TuteurInterviewRequestsView.as_view(), name='tuteur-interview-requests'),
+    path('interviews/requests/<int:request_id>/respond/', views.TuteurInterviewRespondView.as_view(), name='tuteur-interview-respond'),
+    
     # Existing views (if any)
     # path('stages/', views.TuteurStagesView.as_view(), name='tuteur-stages'),
     # path('stages/<int:stage_id>/', views.TuteurStageDetailView.as_view(), name='tuteur-stage-detail'),

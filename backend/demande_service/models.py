@@ -392,3 +392,48 @@ class Interview(models.Model):
     def formatted_datetime(self):
         """Return formatted date and time for display"""
         return f"{self.date.strftime('%d/%m/%Y')} à {self.time.strftime('%H:%M')}"
+
+
+class InterviewRequest(models.Model):
+    """
+    InterviewRequest model representing a pre-scheduling request sent by RH to the assigned Tuteur
+    to confirm availability before officially scheduling the interview.
+    """
+    class Status(models.TextChoices):
+        PENDING_TUTEUR = 'PENDING_TUTEUR', _('En attente du tuteur')
+        ACCEPTED = 'ACCEPTED', _('Accepté par le tuteur')
+        REJECTED = 'REJECTED', _('Refusé par le tuteur')
+        RESCHEDULE_REQUESTED = 'RESCHEDULE_REQUESTED', _('Proposition d\'un autre créneau')
+
+    demande = models.ForeignKey(Demande, on_delete=models.CASCADE, related_name='interview_requests')
+    rh = models.ForeignKey('auth_service.User', on_delete=models.SET_NULL, null=True, related_name='interview_requests_created')
+    tuteur = models.ForeignKey('auth_service.User', on_delete=models.CASCADE, related_name='interview_requests_assigned')
+
+    proposed_date = models.DateField(_('date proposée'))
+    proposed_time = models.TimeField(_('heure proposée'))
+    location = models.CharField(_('lieu proposé'), max_length=500)
+
+    status = models.CharField(
+        _('statut'),
+        max_length=30,
+        choices=Status.choices,
+        default=Status.PENDING_TUTEUR
+    )
+
+    # Optional fields for tuteur feedback or alternative proposal
+    tuteur_comment = models.TextField(_('commentaire du tuteur'), blank=True)
+    alternative_date = models.DateField(_('autre date proposée'), null=True, blank=True)
+    alternative_time = models.TimeField(_('autre heure proposée'), null=True, blank=True)
+
+    # Timestamps
+    created_at = models.DateTimeField(_('date de création'), auto_now_add=True)
+    updated_at = models.DateTimeField(_('date de modification'), auto_now=True)
+
+    class Meta:
+        verbose_name = _('demande d\'entretien')
+        verbose_name_plural = _('demandes d\'entretien')
+        db_table = 'interview_request'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"InterviewRequest #{self.id} - {self.demande.nom_complet} ({self.get_status_display()})"

@@ -11,11 +11,12 @@ from rest_framework import status
 from django.shortcuts import get_object_or_404
 from django.db.models import Count, Avg, Q
 from django.utils import timezone
-from datetime import timedelta
+from datetime import timedelta, datetime
 
 from shared.models import Stage, Testimonial, Evaluation, Notification
 from auth_service.models import User
 from auth_service.serializers import UserSerializer
+from demande_service.models import InterviewRequest
 
 class TuteurStagiairesView(APIView):
     """
@@ -357,3 +358,143 @@ class TuteurStatisticsView(APIView):
                 {'error': f'Erreur lors de la récupération des statistiques: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class TuteurInterviewRequestsView(APIView):
+    """List pending interview requests for the logged-in tuteur"""
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            if request.user.role != 'tuteur':
+                return Response({'error': 'Permission refusée'}, status=status.HTTP_403_FORBIDDEN)
+
+            requests_qs = InterviewRequest.objects.filter(tuteur=request.user, status=InterviewRequest.Status.PENDING_TUTEUR)
+            results = []
+            for req in requests_qs.select_related('demande', 'rh'):
+                results.append({
+                    'id': req.id,
+                    'candidate_name': req.demande.nom_complet,
+                    'proposed_date': req.proposed_date.strftime('%Y-%m-%d'),
+                    'proposed_time': req.proposed_time.strftime('%H:%M'),
+                    'location': req.location,
+                    'status': req.status,
+                    'rh': {
+                        'id': req.rh.id if req.rh else None,
+                        'name': req.rh.get_full_name() if req.rh else None,
+                        'email': req.rh.email if req.rh else None,
+                    }
+                })
+
+            return Response({'results': results, 'count': len(results)})
+        except Exception as e:
+            return Response({'error': f'Erreur: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class TuteurInterviewRespondView(APIView):
+    """Tuteur responds to an interview request: accept/reject/reschedule"""
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, request_id):
+        try:
+            if request.user.role != 'tuteur':
+                return Response({'error': 'Permission refusée'}, status=status.HTTP_403_FORBIDDEN)
+
+            interview_request = get_object_or_404(InterviewRequest, id=request_id, tuteur=request.user)
+
+            action = request.data.get('action')  # 'accept' | 'reject' | 'reschedule'
+            comment = request.data.get('comment', '')
+            alt_date = request.data.get('alternative_date')
+            alt_time = request.data.get('alternative_time')
+
+            from shared.models import Notification
+
+            if action == 'accept':
+                interview_request.status = InterviewRequest.Status.ACCEPTED
+                interview_request.tuteur_comment = comment
+                interview_request.save(update_fields=['status', 'tuteur_comment', 'updated_at'])
+
+                # Notify RH
+                if interview_request.rh:
+                    Notification.objects.create(
+                        recipient=interview_request.rh,
+                        title="Disponibilité confirmée",
+                        message=f"Le tuteur a confirmé sa disponibilité pour l'entretien avec {interview_request.demande.nom_complet}.",
+                        notification_type='success'
+                    )
+                # Email RH
+                from shared.utils import MailService
+                if interview_request.rh and interview_request.rh.email:
+                    try:
+                        MailService.send_email(
+                            subject="Confirmation du tuteur pour l'entretien",
+                            recipient_list=[interview_request.rh.email],
+                            template_name='emails/interview_tuteur_confirmed.txt',
+                            context={
+                                'candidate_name': interview_request.demande.nom_complet,
+                                'tuteur_name': request.user.get_full_name(),
+                                'proposed_date': interview_request.proposed_date.strftime('%d/%m/%Y'),
+                                'proposed_time': interview_request.proposed_time.strftime('%H:%M'),
+                                'location': interview_request.location,
+                            },
+                            html_template_name='emails/interview_tuteur_confirmed.html'
+                        )
+                    except Exception:
+                        pass
+
+                return Response({'message': 'Disponibilité confirmée. Le RH peut maintenant valider l\'entretien.'})
+
+            elif action == 'reject' or action == 'reschedule':
+                if action == 'reject':
+                    interview_request.status = InterviewRequest.Status.REJECTED
+                else:
+                    interview_request.status = InterviewRequest.Status.RESCHEDULE_REQUESTED
+                    # Validate alt slots
+                    if not alt_date or not alt_time:
+                        return Response({'error': 'Veuillez proposer une autre date et heure.'}, status=status.HTTP_400_BAD_REQUEST)
+                    try:
+                        interview_request.alternative_date = datetime.strptime(alt_date, '%Y-%m-%d').date()
+                        interview_request.alternative_time = datetime.strptime(alt_time, '%H:%M').time()
+                    except Exception:
+                        return Response({'error': 'Format de date/heure invalide. Utilisez YYYY-MM-DD et HH:MM.'}, status=status.HTTP_400_BAD_REQUEST)
+                interview_request.tuteur_comment = comment
+                interview_request.save(update_fields=['status', 'tuteur_comment', 'alternative_date', 'alternative_time', 'updated_at'])
+
+                # Notify RH
+                if interview_request.rh:
+                    Notification.objects.create(
+                        recipient=interview_request.rh,
+                        title='Indisponibilité du tuteur',
+                        message=(
+                            f"Le tuteur a refusé ou proposé un autre créneau pour l'entretien avec {interview_request.demande.nom_complet}. "
+                            f"Commentaire: {comment}"
+                        ),
+                        notification_type='warning'
+                    )
+                # Email RH
+                from shared.utils import MailService
+                if interview_request.rh and interview_request.rh.email:
+                    try:
+                        MailService.send_email(
+                            subject='Réponse du tuteur à la demande d\'entretien',
+                            recipient_list=[interview_request.rh.email],
+                            template_name='emails/interview_tuteur_refused.txt',
+                            context={
+                                'candidate_name': interview_request.demande.nom_complet,
+                                'tuteur_name': request.user.get_full_name(),
+                                'comment': comment,
+                                'alternative_date': alt_date,
+                                'alternative_time': alt_time,
+                            },
+                            html_template_name='emails/interview_tuteur_refused.html'
+                        )
+                    except Exception:
+                        pass
+
+                return Response({'message': 'Réponse envoyée au RH.'})
+
+            else:
+                return Response({'error': 'Action invalide'}, status=status.HTTP_400_BAD_REQUEST)
+
+        except Exception as e:
+            return Response({'error': f'Erreur: {str(e)}'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

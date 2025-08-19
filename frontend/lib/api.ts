@@ -906,6 +906,17 @@ class ApiClient {
   }
 
   // Interview methods
+  async getInterviewRequestsForDemande(demandeId: number): Promise<{ results: Array<{ id: number; status: string; proposed_date: string; proposed_time: string; location: string }>; count: number }> {
+    return this.request<any>(`/demandes/${demandeId}/interview-requests/`)
+  }
+
+  async proposeInterview(demandeId: number, data: { date: string; time: string; location: string }): Promise<{ message: string; request: { id: number; status: string } }> {
+    return this.request<any>(`/demandes/${demandeId}/propose-interview/`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    })
+  }
+
   async scheduleInterview(demandeId: number, interviewData: {
     date: string;
     time: string;
@@ -953,6 +964,18 @@ class ApiClient {
     };
   }> {
     return this.request<any>(`/demandes/${demandeId}/interview/`)
+  }
+
+  // Tuteur: interview requests
+  async getTuteurInterviewRequests(): Promise<{ results: any[]; count: number }> {
+    return this.request<any>('/tuteur/interviews/requests/pending/')
+  }
+
+  async respondToInterviewRequest(requestId: number, payload: { action: 'accept' | 'reject' | 'reschedule'; comment?: string; alternative_date?: string; alternative_time?: string }): Promise<any> {
+    return this.request<any>(`/tuteur/interviews/requests/${requestId}/respond/`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
   }
 
   // Dashboard stats

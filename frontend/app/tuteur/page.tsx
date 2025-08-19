@@ -47,6 +47,7 @@ export default function TuteurDashboard() {
   const { user } = useAuth()
   const [internships, setInternships] = useState<Stage[]>([])
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [interviewRequestsCount, setInterviewRequestsCount] = useState<number>(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -54,9 +55,10 @@ export default function TuteurDashboard() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const [internshipsResponse, statsResponse] = await Promise.all([
+        const [internshipsResponse, statsResponse, interviewReqs] = await Promise.all([
           apiClient.getTuteurStages(),
-          apiClient.getTuteurStatistics()
+          apiClient.getTuteurStatistics(),
+          apiClient.getTuteurInterviewRequests().catch(() => ({ count: 0 }))
         ])
         
         setInternships(internshipsResponse.results || [])
@@ -68,6 +70,7 @@ export default function TuteurDashboard() {
           pending_evaluations: statsResponse.pending_evaluations || 0,
           recent_activities: 0, // Not available in tuteur stats
         })
+        setInterviewRequestsCount(interviewReqs.count || 0)
       } catch (err: any) {
         console.error('Error fetching data:', err)
         setError(err.message || 'Failed to load dashboard data')
@@ -142,6 +145,13 @@ export default function TuteurDashboard() {
       icon: Users,
       href: "/tuteur/stagiaires",
       badge: internships.length.toString(),
+    },
+    {
+      title: "Demandes d'entretien",
+      description: "Confirmez votre disponibilité pour les entretiens",
+      icon: Calendar,
+      href: "/tuteur/evaluations", // Placeholder, dedicated page can be added
+      badge: interviewRequestsCount > 0 ? interviewRequestsCount.toString() : null,
     },
     {
       title: "Évaluations",

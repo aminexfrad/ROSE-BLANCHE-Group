@@ -16,6 +16,7 @@ interface ScheduleInterviewModalProps {
   demandeId: number
   candidateName: string
   onSuccess?: () => void
+  mode?: 'propose' | 'schedule'
 }
 
 export function ScheduleInterviewModal({
@@ -23,7 +24,8 @@ export function ScheduleInterviewModal({
   onClose,
   demandeId,
   candidateName,
-  onSuccess
+  onSuccess,
+  mode = 'propose'
 }: ScheduleInterviewModalProps) {
   const [loading, setLoading] = useState(false)
   const [formData, setFormData] = useState({
@@ -49,12 +51,18 @@ export function ScheduleInterviewModal({
     setLoading(true)
     
     try {
-      const response = await apiClient.scheduleInterview(demandeId, {
-        date: formData.date,
-        time: formData.time,
-        location: formData.location,
-        notes: formData.notes
-      })
+      const response = mode === 'schedule'
+        ? await apiClient.scheduleInterview(demandeId, {
+            date: formData.date,
+            time: formData.time,
+            location: formData.location,
+            notes: formData.notes
+          })
+        : await apiClient.proposeInterview(demandeId, {
+            date: formData.date,
+            time: formData.time,
+            location: formData.location
+          })
 
       toast({
         title: "Succès",
@@ -75,10 +83,10 @@ export function ScheduleInterviewModal({
         onSuccess()
       }
     } catch (error: any) {
-      console.error('Error scheduling interview:', error)
+      console.error(`Error ${mode === 'schedule' ? 'scheduling' : 'proposing'} interview:`, error)
       toast({
         title: "Erreur",
-        description: error.message || "Erreur lors de la planification de l'entretien",
+        description: error.message || (mode === 'schedule' ? "Erreur lors de la planification de l'entretien" : "Erreur lors de l'envoi de la proposition d'entretien"),
         variant: "destructive"
       })
     } finally {
@@ -99,10 +107,12 @@ export function ScheduleInterviewModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Calendar className="h-5 w-5 text-blue-600" />
-            Planifier un entretien
+            {mode === 'schedule' ? 'Planifier un entretien' : 'Proposer un entretien'}
           </DialogTitle>
           <DialogDescription>
-            Planifiez un entretien pour {candidateName}. Un email sera automatiquement envoyé au candidat.
+            {mode === 'schedule' 
+              ? `Planifiez un entretien pour ${candidateName}. Le candidat et le tuteur seront notifiés.` 
+              : `Proposez un entretien pour ${candidateName}. Le tuteur sera notifié pour confirmer sa disponibilité.`}
           </DialogDescription>
         </DialogHeader>
 
@@ -151,19 +161,21 @@ export function ScheduleInterviewModal({
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes" className="flex items-center gap-2">
-              <FileText className="h-4 w-4" />
-              Notes (optionnel)
-            </Label>
-            <Textarea
-              id="notes"
-              placeholder="Informations supplémentaires pour le candidat..."
-              value={formData.notes}
-              onChange={(e) => handleInputChange('notes', e.target.value)}
-              rows={3}
-            />
-          </div>
+          {mode === 'schedule' && (
+            <div className="space-y-2">
+              <Label htmlFor="notes" className="flex items-center gap-2">
+                <FileText className="h-4 w-4" />
+                Notes (optionnel)
+              </Label>
+              <Textarea
+                id="notes"
+                placeholder="Informations supplémentaires pour le candidat..."
+                value={formData.notes}
+                onChange={(e) => handleInputChange('notes', e.target.value)}
+                rows={3}
+              />
+            </div>
+          )}
 
           <div className="flex gap-3 pt-4">
             <Button
@@ -183,12 +195,12 @@ export function ScheduleInterviewModal({
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Planification...
+                  {mode === 'schedule' ? 'Planification...' : 'Envoi...'}
                 </>
               ) : (
                 <>
                   <Send className="h-4 w-4 mr-2" />
-                  Planifier
+                  {mode === 'schedule' ? 'Planifier' : 'Proposer'}
                 </>
               )}
             </Button>

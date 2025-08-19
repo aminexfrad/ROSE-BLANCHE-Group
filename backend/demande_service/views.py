@@ -15,6 +15,7 @@ import secrets
 import string
 
 from .models import Demande, DemandeOffre
+from .models import InterviewRequest
 from .serializers import (
     DemandeSerializer, DemandeListSerializer, DemandeDetailSerializer,
     DemandeApprovalSerializer, DemandeOffreStatusUpdateSerializer
@@ -487,6 +488,13 @@ def schedule_interview(request, pk):
             status=status.HTTP_400_BAD_REQUEST
         )
     
+    # Require at least one accepted interview request from tuteur before scheduling
+    if not InterviewRequest.objects.filter(demande=demande, status=InterviewRequest.Status.ACCEPTED).exists():
+        return Response(
+            {'error': "Le tuteur doit d'abord confirmer sa disponibilité avant de planifier l'entretien"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
     # Validate request data
     required_fields = ['date', 'time', 'location']
     for field in required_fields:
@@ -542,6 +550,49 @@ def schedule_interview(request, pk):
                 f"Failed to send interview notification for interview {interview.id}: {email_error}"
             )
             email_sent = False
+
+        # Also notify the tuteur and candidate via dashboard notifications
+        try:
+            from shared.models import Notification, Stage
+            stage = Stage.objects.filter(demande=demande).first()
+            # Candidate notification (if user exists)
+            candidate_user = User.objects.filter(email=demande.email).first()
+            if candidate_user:
+                Notification.objects.create(
+                    recipient=candidate_user,
+                    title="Entretien confirmé",
+                    message=f"Votre entretien est confirmé le {interview.date.strftime('%d/%m/%Y')} à {interview.time.strftime('%H:%M')} au lieu: {interview.location}.",
+                    notification_type='success',
+                    related_stage=stage
+                )
+            # Tuteur notification
+            if stage and stage.tuteur:
+                Notification.objects.create(
+                    recipient=stage.tuteur,
+                    title="Entretien confirmé",
+                    message=f"Entretien confirmé avec {demande.nom_complet} le {interview.date.strftime('%d/%m/%Y')} à {interview.time.strftime('%H:%M')}.",
+                    notification_type='success',
+                    related_stage=stage
+                )
+                # Email to tuteur
+                try:
+                    MailService.send_email(
+                        subject="Entretien confirmé",
+                        recipient_list=[stage.tuteur.email],
+                        template_name='emails/interview_confirmed_tuteur.txt',
+                        context={
+                            'tuteur_name': stage.tuteur.get_full_name(),
+                            'candidate_name': demande.nom_complet,
+                            'interview_date': interview.date.strftime('%d/%m/%Y'),
+                            'interview_time': interview.time.strftime('%H:%M'),
+                            'interview_location': interview.location,
+                        },
+                        html_template_name='emails/interview_confirmed_tuteur.html'
+                    )
+                except Exception:
+                    pass
+        except Exception:
+            pass
         
         return Response({
             'message': 'Entretien planifié avec succès',
@@ -628,6 +679,125 @@ def get_interview_details(request, pk):
             'email': demande.email
         }
     }, status=status.HTTP_200_OK)
+
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def propose_interview_request(request, pk):
+    """RH proposes an interview to tuteur for availability confirmation"""
+    if request.user.role not in ['rh', 'admin']:
+        return Response({'error': 'Permission refusée'}, status=status.HTTP_403_FORBIDDEN)
+
+    demande = get_object_or_404(Demande, pk=pk)
+
+    # Determine assigned tuteur from Stage if exists, else reject
+    from shared.models import Stage, Notification
+    stage = Stage.objects.filter(demande=demande).first()
+    if not stage or not stage.tuteur:
+        return Response({'error': "Aucun tuteur assigné à ce candidat"}, status=status.HTTP_400_BAD_REQUEST)
+
+    required_fields = ['date', 'time', 'location']
+    for field in required_fields:
+        if field not in request.data:
+            return Response({'error': f"Champ manquant: {field}"}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        from datetime import datetime
+        from django.utils import timezone
+
+        proposed_date = datetime.strptime(request.data['date'], '%Y-%m-%d').date()
+        proposed_time = datetime.strptime(request.data['time'], '%H:%M').time()
+
+        # Ensure future datetime
+        dt_naive = datetime.combine(proposed_date, proposed_time)
+        dt = timezone.make_aware(dt_naive, timezone.get_current_timezone()) if timezone.is_naive(dt_naive) else dt_naive
+        if dt <= timezone.now():
+            return Response({'error': "La date/heure doit être dans le futur"}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create InterviewRequest
+        interview_request = InterviewRequest.objects.create(
+            demande=demande,
+            rh=request.user,
+            tuteur=stage.tuteur,
+            proposed_date=proposed_date,
+            proposed_time=proposed_time,
+            location=request.data['location']
+        )
+
+        # Notify Tuteur: dashboard notification
+        Notification.objects.create(
+            recipient=stage.tuteur,
+            title='Proposition d\'entretien',
+            message=f"Un entretien est prévu avec {demande.nom_complet} le {proposed_date.strftime('%d/%m/%Y')} à {proposed_time.strftime('%H:%M')}. Confirmez votre disponibilité.",
+            notification_type='info',
+            related_stage=stage
+        )
+
+        # Email to tuteur
+        from shared.utils import MailService
+        try:
+            MailService.send_email(
+                subject='Proposition d\'entretien - Confirmation requise',
+                recipient_list=[stage.tuteur.email],
+                template_name='emails/interview_request_tuteur.txt',
+                context={
+                    'tuteur_name': stage.tuteur.get_full_name(),
+                    'candidate_name': demande.nom_complet,
+                    'proposed_date': proposed_date.strftime('%d/%m/%Y'),
+                    'proposed_time': proposed_time.strftime('%H:%M'),
+                    'location': request.data['location'],
+                    'company_name': demande.entreprise.nom if demande.entreprise else 'Notre entreprise'
+                },
+                html_template_name='emails/interview_request_tuteur.html'
+            )
+        except Exception:
+            pass
+
+        return Response({
+            'message': 'Demande d\'entretien envoyée au tuteur',
+            'request': {
+                'id': interview_request.id,
+                'status': interview_request.status,
+            }
+        }, status=status.HTTP_201_CREATED)
+
+    except ValueError as e:
+        return Response({'error': f'Format de date/heure invalide: {str(e)}'}, status=status.HTTP_400_BAD_REQUEST)
+    except Exception as e:
+        import traceback
+        print("ERROR in propose_interview_request:", e)
+        traceback.print_exc()
+        return Response({'error': "Erreur interne"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def list_interview_requests(request, pk):
+    """List interview requests for a demande (RH/Admin only)"""
+    if request.user.role not in ['rh', 'admin']:
+        return Response({'error': 'Permission refusée'}, status=status.HTTP_403_FORBIDDEN)
+
+    demande = get_object_or_404(Demande, pk=pk)
+    requests = InterviewRequest.objects.filter(demande=demande).select_related('tuteur', 'rh')
+    data = []
+    for r in requests:
+        data.append({
+            'id': r.id,
+            'status': r.status,
+            'proposed_date': r.proposed_date.strftime('%Y-%m-%d'),
+            'proposed_time': r.proposed_time.strftime('%H:%M'),
+            'location': r.location,
+            'tuteur': {
+                'id': r.tuteur.id,
+                'name': r.tuteur.get_full_name(),
+                'email': r.tuteur.email,
+            },
+            'tuteur_comment': r.tuteur_comment,
+            'alternative_date': r.alternative_date.strftime('%Y-%m-%d') if r.alternative_date else None,
+            'alternative_time': r.alternative_time.strftime('%H:%M') if r.alternative_time else None,
+            'created_at': r.created_at.isoformat(),
+        })
+    return Response({'results': data, 'count': len(data)})
 
 
 

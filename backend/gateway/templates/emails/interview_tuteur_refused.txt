@@ -1,0 +1,16 @@
+Bonjour,
+
+Le tuteur {{ tuteur_name }} a refusé ou demandé un autre créneau pour l'entretien avec {{ candidate_name }}.
+
+Commentaire du tuteur:
+{{ comment }}
+
+Proposition alternative (si fournie):
+- Date: {{ alternative_date }}
+- Heure: {{ alternative_time }}
+
+Veuillez re-planifier ou annuler l'entretien depuis votre tableau de bord RH.
+
+Cordialement,
+L'équipe StageBloom
+

@@ -1,0 +1,14 @@
+Bonjour,
+
+Le tuteur {{ tuteur_name }} a confirmé sa disponibilité pour l'entretien avec {{ candidate_name }}.
+
+Détails:
+- Date: {{ proposed_date }}
+- Heure: {{ proposed_time }}
+- Lieu: {{ location }}
+
+Vous pouvez maintenant valider officiellement l'entretien dans votre tableau de bord RH.
+
+Cordialement,
+L'équipe StageBloom
+

@@ -63,6 +63,7 @@ export default function TuteurEvaluationsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [selectedEvaluation, setSelectedEvaluation] = useState<any>(null)
+  const [interviewRequests, setInterviewRequests] = useState<any[]>([])
 
   const breadcrumbs = [{ label: "Tableau de bord", href: "/tuteur" }, { label: "Évaluations" }]
 
@@ -70,7 +71,10 @@ export default function TuteurEvaluationsPage() {
     const fetchData = async () => {
       try {
         setLoading(true)
-        const evaluationsResponse = await apiClient.getTuteurEvaluations()
+        const [evaluationsResponse, interviewRequestsResponse] = await Promise.all([
+          apiClient.getTuteurEvaluations(),
+          apiClient.getTuteurInterviewRequests().catch(() => ({ results: [] }))
+        ])
         
         // Transform evaluations data to match the expected format
         const evaluationsData = (evaluationsResponse.results || []).map((evaluation: Evaluation) => {
@@ -97,6 +101,7 @@ export default function TuteurEvaluationsPage() {
         })
         
         setEvaluations(evaluationsData)
+        setInterviewRequests(interviewRequestsResponse.results || [])
       } catch (err: any) {
         console.error('Error fetching evaluations:', err)
         setError(err.message || 'Failed to load evaluations')
@@ -172,6 +177,53 @@ export default function TuteurEvaluationsPage() {
   return (
     <DashboardLayout allowedRoles={["tuteur"]} breadcrumbs={breadcrumbs}>
       <div className="space-y-8">
+        {/* Pending Interview Requests */}
+        {interviewRequests.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Demandes d'entretien en attente</CardTitle>
+              <CardDescription>Confirmez ou proposez un autre créneau</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {interviewRequests.map((req) => (
+                  <div key={req.id} className="flex flex-col sm:flex-row sm:items-center sm:justify-between p-4 border rounded-lg">
+                    <div className="space-y-1">
+                      <div className="font-medium">{req.candidate_name}</div>
+                      <div className="text-sm text-gray-600">{req.proposed_date} à {req.proposed_time} • {req.location}</div>
+                    </div>
+                    <div className="flex flex-col sm:flex-row gap-2 mt-3 sm:mt-0">
+                      <div className="flex gap-2">
+                        <Button size="sm" onClick={async () => {
+                          await apiClient.respondToInterviewRequest(req.id, { action: 'accept' })
+                          const refreshed = await apiClient.getTuteurInterviewRequests().catch(() => ({ results: [] }))
+                          setInterviewRequests(refreshed.results || [])
+                        }}>Confirmer</Button>
+                        <Button size="sm" variant="outline" onClick={async () => {
+                          await apiClient.respondToInterviewRequest(req.id, { action: 'reject', comment: 'Indisponible' })
+                          const refreshed = await apiClient.getTuteurInterviewRequests().catch(() => ({ results: [] }))
+                          setInterviewRequests(refreshed.results || [])
+                        }}>Refuser</Button>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <input type="date" className="border rounded px-2 py-1 text-sm" id={`alt-date-${req.id}`} />
+                        <input type="time" className="border rounded px-2 py-1 text-sm" id={`alt-time-${req.id}`} />
+                        <Button size="sm" variant="secondary" onClick={async () => {
+                          const altDate = (document.getElementById(`alt-date-${req.id}`) as HTMLInputElement)?.value
+                          const altTime = (document.getElementById(`alt-time-${req.id}`) as HTMLInputElement)?.value
+                          if (!altDate || !altTime) return
+                          await apiClient.respondToInterviewRequest(req.id, { action: 'reschedule', comment: 'Proposition alternative', alternative_date: altDate, alternative_time: altTime })
+                          const refreshed = await apiClient.getTuteurInterviewRequests().catch(() => ({ results: [] }))
+                          setInterviewRequests(refreshed.results || [])
+                        }}>Proposer un autre créneau</Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
         {/* Header */}
         <div className="animate-in fade-in duration-1000">
           <div className="flex items-center justify-between">

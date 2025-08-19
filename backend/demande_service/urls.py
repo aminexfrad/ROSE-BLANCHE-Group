@@ -23,6 +23,10 @@ urlpatterns = [
     # Interview endpoints
     path('<int:pk>/schedule-interview/', views.schedule_interview, name='schedule_interview'),
     path('<int:pk>/interview/', views.get_interview_details, name='get_interview_details'),
+
+    # InterviewRequest endpoints
+    path('<int:pk>/propose-interview/', views.propose_interview_request, name='propose_interview_request'),
+    path('<int:pk>/interview-requests/', views.list_interview_requests, name='list_interview_requests'),
 ]
 
 urlpatterns += [

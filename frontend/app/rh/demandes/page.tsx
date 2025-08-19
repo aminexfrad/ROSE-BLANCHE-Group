@@ -416,6 +416,7 @@ export default function RHDemandesPage() {
           demandeId={selectedDemandeForInterview.id}
           candidateName={`${selectedDemandeForInterview.prenom} ${selectedDemandeForInterview.nom}`}
           onSuccess={handleInterviewScheduled}
+          mode="propose"
         />
       )}
 
