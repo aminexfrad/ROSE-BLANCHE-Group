@@ -504,8 +504,13 @@ def schedule_interview(request, pk):
         interview_date = datetime.strptime(request.data['date'], '%Y-%m-%d').date()
         interview_time = datetime.strptime(request.data['time'], '%H:%M').time()
         
-        # Validate that interview is in the future
-        interview_datetime = datetime.combine(interview_date, interview_time)
+        # Validate that interview is in the future (make datetime aware to avoid naive/aware comparison errors)
+        interview_datetime_naive = datetime.combine(interview_date, interview_time)
+        # Ensure timezone-aware datetime for reliable comparison
+        interview_datetime = timezone.make_aware(
+            interview_datetime_naive,
+            timezone.get_current_timezone()
+        ) if timezone.is_naive(interview_datetime_naive) else interview_datetime_naive
         if interview_datetime <= timezone.now():
             return Response(
                 {'error': 'L\'entretien doit être planifié dans le futur'}, 
@@ -527,9 +532,16 @@ def schedule_interview(request, pk):
         demande.status = Demande.Status.INTERVIEW_SCHEDULED
         demande.save(update_fields=['status'])
         
-        # Send email notification to candidate
+        # Send email notification to candidate (do not fail the schedule if email fails)
         from shared.utils import MailService
-        email_sent = MailService.send_interview_notification(interview)
+        try:
+            email_sent = MailService.send_interview_notification(interview)
+        except Exception as email_error:
+            import logging
+            logging.getLogger(__name__).error(
+                f"Failed to send interview notification for interview {interview.id}: {email_error}"
+            )
+            email_sent = False
         
         return Response({
             'message': 'Entretien planifié avec succès',

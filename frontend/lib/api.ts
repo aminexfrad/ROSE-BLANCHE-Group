@@ -634,7 +634,12 @@ class ApiClient {
         }
         
         if (response.status === 500) {
-          throw new Error('Erreur serveur. Veuillez réessayer plus tard.');
+          const serverMessage = errorData?.detail || errorData?.message || errorData?.error || text || 'Erreur serveur. Veuillez réessayer plus tard.'
+          // In development, surface the server's message to help debugging
+          if (!isProduction) {
+            throw new Error(serverMessage)
+          }
+          throw new Error('Erreur serveur. Veuillez réessayer plus tard.')
         }
         
         // Default error message
