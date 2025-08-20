@@ -47,7 +47,9 @@ interface Application {
   }
   offres?: Array<{
     id: number
+    reference: string
     titre: string
+    title: string
     entreprise: {
       id: number
       nom: string
@@ -83,11 +85,11 @@ interface FilePreviewCardProps {
 
 function FilePreviewCard({ label, url }: FilePreviewCardProps) {
   if (!url) {
-    return (
+  return (
       <div className="flex items-center gap-2 text-gray-500">
         <FileText className="h-4 w-4" />
         <span className="text-sm">{label} - Non fourni</span>
-      </div>
+          </div>
     )
   }
 
@@ -102,7 +104,7 @@ function FilePreviewCard({ label, url }: FilePreviewCardProps) {
       >
         {label}
       </a>
-    </div>
+              </div>
   )
 }
 
@@ -129,28 +131,28 @@ export default function RHDemandesPage() {
 
   const breadcrumbs = [{ label: "Responsable RH", href: "/rh" }, { label: "Demandes de stage" }]
 
-  const fetchData = async () => {
-    try {
-      setLoading(true)
-      const [applicationsResponse, statsResponse] = await Promise.all([
-        apiClient.getApplications(),
-        apiClient.getDashboardStats()
-      ])
-      
-      setApplications(applicationsResponse.results || [])
-      setStats({
-        total: applicationsResponse.count || 0,
-        pending: applicationsResponse.results?.filter(app => app.status === 'pending').length || 0,
-        approved: applicationsResponse.results?.filter(app => app.status === 'approved').length || 0,
-        rejected: applicationsResponse.results?.filter(app => app.status === 'rejected').length || 0
-      })
-    } catch (err: any) {
-      console.error('Error fetching applications:', err)
-      setError(err.message || 'Failed to load applications')
-    } finally {
-      setLoading(false)
+    const fetchData = async () => {
+      try {
+        setLoading(true)
+        const [applicationsResponse, statsResponse] = await Promise.all([
+          apiClient.getApplications(),
+          apiClient.getDashboardStats()
+        ])
+        
+        setApplications(applicationsResponse.results || [])
+        setStats({
+          total: applicationsResponse.count || 0,
+          pending: applicationsResponse.results?.filter(app => app.status === 'pending').length || 0,
+          approved: applicationsResponse.results?.filter(app => app.status === 'approved').length || 0,
+          rejected: applicationsResponse.results?.filter(app => app.status === 'rejected').length || 0
+        })
+      } catch (err: any) {
+        console.error('Error fetching applications:', err)
+        setError(err.message || 'Failed to load applications')
+      } finally {
+        setLoading(false)
+      }
     }
-  }
 
   useEffect(() => {
     if (user) {
@@ -308,14 +310,14 @@ export default function RHDemandesPage() {
 
   return (
     <DashboardLayout allowedRoles={["rh"]} breadcrumbs={breadcrumbs}>
-      <div className="space-y-6">
+              <div className="space-y-6">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
+                  <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Demandes de stage</h1>
             <p className="text-gray-600 mt-1">Gérez les candidatures et prenez les décisions</p>
-          </div>
-        </div>
+                  </div>
+              </div>
 
         {/* Filters */}
         <Card>
@@ -327,8 +329,8 @@ export default function RHDemandesPage() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                 />
-              </div>
-              <div>
+                    </div>
+          <div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
                   <SelectTrigger>
                     <SelectValue placeholder="Filtrer par statut" />
@@ -341,8 +343,8 @@ export default function RHDemandesPage() {
                     <SelectItem value="rejected">Rejetée</SelectItem>
                   </SelectContent>
                 </Select>
-              </div>
-            </div>
+          </div>
+          </div>
           </CardContent>
         </Card>
 
@@ -412,11 +414,11 @@ export default function RHDemandesPage() {
                 {filteredApplications.map((application) => (
                   <div key={application.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between">
-                      <div className="flex-1">
+              <div className="flex-1">
                         <div className="flex items-center gap-3 mb-2">
                           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
                             {application.prenom?.[0]}{application.nom?.[0]}
-                          </div>
+                </div>
                           <div>
                             <h4 className="font-semibold text-lg">
                               {application.prenom} {application.nom}
@@ -426,29 +428,29 @@ export default function RHDemandesPage() {
                               <span className="text-sm text-gray-500">
                                 {new Date(application.created_at).toLocaleDateString()}
                               </span>
-                            </div>
-                          </div>
+              </div>
+            </div>
                         </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600 mb-3">
                           <div className="flex items-center gap-2">
                             <Mail className="h-4 w-4 text-blue-600" />
                             <span>{application.email}</span>
-                          </div>
+                        </div>
                           <div className="flex items-center gap-2">
                             <Building className="h-4 w-4 text-green-600" />
                             <span>{application.institut}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
+                      </div>
+                      <div className="flex items-center gap-2">
                             <GraduationCap className="h-4 w-4 text-purple-600" />
                             <span>{application.specialite}</span>
-                          </div>
+                      </div>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-orange-600" />
                             <span>
                               {new Date(application.date_debut).toLocaleDateString()} - {new Date(application.date_fin).toLocaleDateString()}
                             </span>
-                          </div>
+                      </div>
                         </div>
 
                         {/* Selected Offers Summary */}
@@ -466,8 +468,8 @@ export default function RHDemandesPage() {
                                   <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
                                     <div className="flex flex-col">
-                                      <span className="font-bold text-gray-900">{offre.titre}</span>
-                                      <span className="text-xs text-gray-500">Ref: {offre.id}</span>
+                                      <span className="font-bold text-gray-900">{offre.titre || offre.title}</span>
+                                      <span className="text-xs text-gray-500">Réf: {offre.reference}</span>
                                     </div>
                                     <span className="text-gray-400">•</span>
                                     <span className="text-blue-700 font-medium">{offre.entreprise.nom}</span>
@@ -480,17 +482,17 @@ export default function RHDemandesPage() {
                               {application.offres.length > 3 && (
                                 <div className="text-xs text-blue-600 font-medium text-center py-1">
                                   +{application.offres.length - 3} autre(s) offre(s)
-                                </div>
+                        </div>
                               )}
                             </div>
                           </div>
                         ) : (
                           <div className="mt-3 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                            <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2">
                               <MapPinIcon className="h-4 w-4 text-gray-400" />
                               <span className="text-sm text-gray-500">Aucune offre sélectionnée</span>
-                            </div>
-                          </div>
+                      </div>
+                      </div>
                         )}
 
                         {/* Interview Status */}
@@ -547,11 +549,11 @@ export default function RHDemandesPage() {
                           className="w-full bg-white hover:bg-gray-50 border-gray-300"
                         >
                           <Eye className="h-4 w-4 mr-2" />
-                          Voir détails
+                            Voir détails
                         </Button>
                         
-                        {application.status === 'pending' && (
-                          <>
+                          {application.status === 'pending' && (
+                            <>
                             <Button
                               size="sm"
                               onClick={() => {
@@ -575,10 +577,10 @@ export default function RHDemandesPage() {
                               className="w-full"
                             >
                               <XCircle className="h-4 w-4 mr-2" />
-                              Rejeter
+                                Rejeter
                             </Button>
-                          </>
-                        )}
+                            </>
+                          )}
                         
                         {/* Final Decision - Accept candidate after validated interview */}
                         {canMakeFinalDecision(application) && (
@@ -804,8 +806,8 @@ export default function RHDemandesPage() {
                       <div key={offre.id} className="border rounded-lg p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
-                            <h4 className="font-bold text-lg text-blue-900">{offre.titre}</h4>
-                            <div className="text-xs text-gray-500 mb-1">Référence: {offre.id}</div>
+                            <h4 className="font-bold text-lg text-blue-900">{offre.titre || offre.title}</h4>
+                            <div className="text-xs text-gray-500 mb-1">Référence: {offre.reference}</div>
                             <div className="flex items-center gap-2 mt-1">
                               <Building className="h-4 w-4 text-gray-500" />
                               <span className="text-sm font-medium text-gray-700">{offre.entreprise.nom}</span>

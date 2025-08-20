@@ -279,6 +279,8 @@ def approve_demande(request, pk):
             user.institut = demande.institut
             user.specialite = demande.specialite
             user.role = 'stagiaire'
+            # Assign to the filiale where they applied
+            user.entreprise = demande.entreprise
             user.save()
         else:
             # Create new user account
@@ -290,7 +292,8 @@ def approve_demande(request, pk):
                 telephone=demande.telephone,
                 institut=demande.institut,
                 specialite=demande.specialite,
-                role='stagiaire'
+                role='stagiaire',
+                entreprise=demande.entreprise  # Assign to the filiale where they applied
             )
         
         # Approve demande
