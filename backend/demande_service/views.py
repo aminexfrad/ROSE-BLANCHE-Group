@@ -488,8 +488,8 @@ def schedule_interview(request, pk):
             status=status.HTTP_400_BAD_REQUEST
         )
     
-    # Require at least one accepted interview request from tuteur before scheduling
-    if not InterviewRequest.objects.filter(demande=demande, status=InterviewRequest.Status.ACCEPTED).exists():
+    # Require at least one validated interview request from tuteur before scheduling
+    if not InterviewRequest.objects.filter(demande=demande, status=InterviewRequest.Status.VALIDATED).exists():
         return Response(
             {'error': "Le tuteur doit d'abord confirmer sa disponibilité avant de planifier l'entretien"},
             status=status.HTTP_400_BAD_REQUEST
@@ -746,6 +746,10 @@ def propose_interview_request(request, pk):
     if not demande.entreprise:
         return Response({'error': "Cette demande n'a pas de filiale assignée"}, status=status.HTTP_400_BAD_REQUEST)
 
+    # Enforce only one interview per candidate/demande (no multiple interview requests)
+    if InterviewRequest.objects.filter(demande=demande).exists():
+        return Response({'error': "Un seul entretien est autorisé par candidature. Un entretien a déjà été proposé pour cette demande."}, status=status.HTTP_400_BAD_REQUEST)
+
     # Get tuteur_id from request data
     tuteur_id = request.data.get('tuteur_id')
     if not tuteur_id:
@@ -793,6 +797,7 @@ def propose_interview_request(request, pk):
         )
 
         # Notify Tuteur: dashboard notification
+        from shared.models import Notification
         Notification.objects.create(
             recipient=tuteur,
             title='Proposition d\'entretien',

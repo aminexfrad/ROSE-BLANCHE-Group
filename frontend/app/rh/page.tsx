@@ -91,13 +91,6 @@ export default function RHDashboard() {
       href: "/rh/demandes",
       badge: applications.filter(app => app.status === 'pending').length.toString(),
     },
-    {
-      title: "Entretiens",
-      description: "Gérer les entretiens et décisions",
-      icon: Calendar,
-      href: "/rh/entretiens",
-      badge: "0", // Will be updated with actual count
-    },
   ]
 
   useEffect(() => {
@@ -313,41 +306,7 @@ export default function RHDashboard() {
           ))}
         </div>
 
-        {/* Interview Management */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="h-5 w-5" />
-              Gestion des entretiens
-            </CardTitle>
-            <CardDescription>Entretiens en attente et décisions à prendre</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 border rounded-lg bg-blue-50">
-                  <div className="text-2xl font-bold text-blue-600">0</div>
-                  <div className="text-sm text-blue-800">Entretiens planifiés</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg bg-yellow-50">
-                  <div className="text-2xl font-bold text-yellow-600">0</div>
-                  <div className="text-sm text-yellow-800">En attente de tuteur</div>
-                </div>
-                <div className="text-center p-4 border rounded-lg bg-green-50">
-                  <div className="text-2xl font-bold text-green-600">0</div>
-                  <div className="text-sm text-green-800">Décisions à prendre</div>
-                </div>
-              </div>
-              <div className="text-center pt-2">
-                <Link href="/rh/entretiens">
-                  <Button variant="outline" size="sm">
-                    Gérer tous les entretiens
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* Interview Management moved into Demandes page as requested */}
 
         {/* Recent Applications */}
         <Card>

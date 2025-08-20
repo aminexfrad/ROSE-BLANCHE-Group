@@ -13,6 +13,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { useToast } from "@/hooks/use-toast"
 import { AlertCircle, Calendar, Clock, MapPin, User, FileText, CheckCircle, Eye, Mail, Phone, Building, GraduationCap, MapPin as MapPinIcon, XCircle } from "lucide-react"
 import { apiClient } from "@/lib/api"
@@ -122,6 +124,8 @@ export default function RHDemandesPage() {
   const [selectedInterviewRequest, setSelectedInterviewRequest] = useState<any>(null)
   const [proposalResponseModalOpen, setProposalResponseModalOpen] = useState(false)
   const { toast } = useToast()
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
 
   const breadcrumbs = [{ label: "Responsable RH", href: "/rh" }, { label: "Demandes de stage" }]
 
@@ -167,6 +171,42 @@ export default function RHDemandesPage() {
       default:
         return <Badge variant="outline">{status}</Badge>
     }
+  }
+
+  const getInterviewStatusBadge = (status: string) => {
+    switch (status) {
+      case 'PENDING_TUTEUR':
+        return <Badge className="bg-yellow-100 text-yellow-800">En attente du tuteur</Badge>
+      case 'VALIDATED':
+        return <Badge className="bg-green-100 text-green-800">Entretien validé</Badge>
+      case 'REVISION_REQUESTED':
+        return <Badge className="bg-blue-100 text-blue-800">Révision demandée</Badge>
+      default:
+        return <Badge variant="outline">{status}</Badge>
+    }
+  }
+
+  const getInterviewStatusInfo = (application: Application) => {
+    if (!application.interview_requests || application.interview_requests.length === 0) {
+      return null
+    }
+    
+    const latestRequest = application.interview_requests[0] // Most recent
+    return {
+      status: latestRequest.status,
+      tuteur: latestRequest.tuteur.name,
+      date: latestRequest.proposed_date,
+      time: latestRequest.proposed_time,
+      location: latestRequest.location,
+      suggestedDate: latestRequest.suggested_date,
+      suggestedTime: latestRequest.suggested_time,
+      comment: latestRequest.tuteur_comment
+    }
+  }
+
+  const canMakeFinalDecision = (application: Application) => {
+    const interviewInfo = getInterviewStatusInfo(application)
+    return interviewInfo && interviewInfo.status === 'VALIDATED'
   }
 
   const handleDirectReject = async (application: Application) => {
@@ -222,6 +262,26 @@ export default function RHDemandesPage() {
     fetchData();
   }
 
+  const matchesFilters = (app: Application) => {
+    const q = search.trim().toLowerCase()
+    const matchesSearch = q === "" ||
+      app.nom.toLowerCase().includes(q) ||
+      app.prenom.toLowerCase().includes(q) ||
+      app.email.toLowerCase().includes(q) ||
+      app.institut.toLowerCase().includes(q) ||
+      app.specialite.toLowerCase().includes(q)
+    const matchesStatus = statusFilter === "all" || app.status === statusFilter
+    return matchesSearch && matchesStatus
+  }
+
+  const filteredApplications = applications.filter(matchesFilters)
+
+  const hasExistingInterview = (app: Application) => {
+    const hasRequest = (app.interview_requests && app.interview_requests.length > 0)
+    const scheduled = app.status === 'interview_scheduled'
+    return hasRequest || scheduled
+  }
+
   if (loading) {
     return (
       <DashboardLayout allowedRoles={["rh"]} breadcrumbs={breadcrumbs}>
@@ -256,6 +316,35 @@ export default function RHDemandesPage() {
             <p className="text-gray-600 mt-1">Gérez les candidatures et prenez les décisions</p>
           </div>
         </div>
+
+        {/* Filters */}
+        <Card>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <div className="col-span-1 md:col-span-2">
+                <Input
+                  placeholder="Rechercher par nom, email, institut ou spécialité"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+              </div>
+              <div>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filtrer par statut" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tous les statuts</SelectItem>
+                    <SelectItem value="pending">En attente</SelectItem>
+                    <SelectItem value="interview_scheduled">Entretien planifié</SelectItem>
+                    <SelectItem value="approved">Approuvée</SelectItem>
+                    <SelectItem value="rejected">Rejetée</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Statistics */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
@@ -309,18 +398,18 @@ export default function RHDemandesPage() {
           <CardHeader>
             <CardTitle>Liste des candidatures</CardTitle>
             <CardDescription>
-              {applications.length} candidature(s) trouvée(s)
+              {filteredApplications.length} candidature(s) trouvée(s)
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {applications.length === 0 ? (
+            {filteredApplications.length === 0 ? (
               <div className="text-center py-8">
                 <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                 <p className="text-gray-500">Aucune demande de stage</p>
               </div>
             ) : (
               <div className="space-y-4">
-                {applications.map((application) => (
+                {filteredApplications.map((application) => (
                   <div key={application.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
@@ -403,6 +492,48 @@ export default function RHDemandesPage() {
                             </div>
                           </div>
                         )}
+
+                        {/* Interview Status */}
+                        {getInterviewStatusInfo(application) && (
+                          <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
+                            <div className="flex items-center gap-2 mb-3">
+                              <Calendar className="h-4 w-4 text-orange-600" />
+                              <span className="font-semibold text-sm text-orange-900">
+                                Statut de l'entretien
+                              </span>
+                            </div>
+                            <div className="space-y-2">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium">Tuteur:</span>
+                                <span>{getInterviewStatusInfo(application)?.tuteur}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium">Date proposée:</span>
+                                <span>{getInterviewStatusInfo(application)?.date} à {getInterviewStatusInfo(application)?.time}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium">Lieu:</span>
+                                <span>{getInterviewStatusInfo(application)?.location}</span>
+                              </div>
+                              {getInterviewStatusInfo(application)?.suggestedDate && (
+                                <div className="flex items-center justify-between text-sm">
+                                  <span className="font-medium">Nouvelle proposition:</span>
+                                  <span>{getInterviewStatusInfo(application)?.suggestedDate} à {getInterviewStatusInfo(application)?.suggestedTime}</span>
+                                </div>
+                              )}
+                              {getInterviewStatusInfo(application)?.comment && (
+                                <div className="text-sm">
+                                  <span className="font-medium">Commentaire:</span>
+                                  <span className="ml-2 text-gray-600">{getInterviewStatusInfo(application)?.comment}</span>
+                                </div>
+                              )}
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="font-medium">Statut:</span>
+                                {getInterviewStatusBadge(getInterviewStatusInfo(application)?.status || '')}
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
 
                       <div className="flex flex-col gap-3 ml-6">
@@ -423,8 +554,16 @@ export default function RHDemandesPage() {
                           <>
                             <Button
                               size="sm"
-                              onClick={() => handleScheduleInterview(application)}
+                              onClick={() => {
+                                if (hasExistingInterview(application)) {
+                                  toast({ title: 'Info', description: 'Un entretien existe déjà pour cette candidature.', variant: 'default' })
+                                  return
+                                }
+                                handleScheduleInterview(application)
+                              }}
+                              disabled={hasExistingInterview(application)}
                               className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                              title={hasExistingInterview(application) ? 'Entretien déjà proposé' : undefined}
                             >
                               <Calendar className="h-4 w-4 mr-2" />
                               Proposer entretien
@@ -441,15 +580,30 @@ export default function RHDemandesPage() {
                           </>
                         )}
                         
-                        {/* Accept candidate after successful interview */}
-                        {(application.status === 'interview_completed' || application.status === 'interview_validated') && (
+                        {/* Final Decision - Accept candidate after validated interview */}
+                        {canMakeFinalDecision(application) && (
                           <Button
                             size="sm"
                             onClick={() => handleAcceptCandidate(application)}
                             className="w-full bg-green-600 hover:bg-green-700 text-white"
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />
-                            Accepter candidat → Stagiaire
+                            Décision finale: Accepter candidat
+                          </Button>
+                        )}
+
+                        {/* Respond to tuteur proposal if revision requested */}
+                        {getInterviewStatusInfo(application)?.status === 'REVISION_REQUESTED' && (
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setSelectedInterviewRequest(application.interview_requests?.[0]);
+                              setProposalResponseModalOpen(true);
+                            }}
+                            className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                          >
+                            <Calendar className="h-4 w-4 mr-2" />
+                            Répondre au tuteur
                           </Button>
                         )}
                       </div>
@@ -574,6 +728,57 @@ export default function RHDemandesPage() {
                 </div>
               </div>
 
+              {/* Interview Information */}
+              {getInterviewStatusInfo(selectedApplication) && (
+                <div className="space-y-4">
+                  <h3 className="text-lg font-semibold flex items-center gap-2">
+                    <Calendar className="h-5 w-5" />
+                    Informations de l'entretien
+                  </h3>
+                  <div className="p-4 bg-orange-50 rounded-lg border border-orange-200">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Tuteur assigné:</span>
+                        <span>{getInterviewStatusInfo(selectedApplication)?.tuteur}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Statut:</span>
+                        {getInterviewStatusBadge(getInterviewStatusInfo(selectedApplication)?.status || '')}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Date proposée:</span>
+                        <span>{getInterviewStatusInfo(selectedApplication)?.date} à {getInterviewStatusInfo(selectedApplication)?.time}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">Lieu:</span>
+                        <span>{getInterviewStatusInfo(selectedApplication)?.location}</span>
+                      </div>
+                    </div>
+                    {getInterviewStatusInfo(selectedApplication)?.suggestedDate && (
+                      <div className="mt-3 p-3 bg-blue-50 rounded border border-blue-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-medium text-blue-900">Nouvelle proposition du tuteur:</span>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">Date:</span>
+                            <span>{getInterviewStatusInfo(selectedApplication)?.suggestedDate} à {getInterviewStatusInfo(selectedApplication)?.suggestedTime}</span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {getInterviewStatusInfo(selectedApplication)?.comment && (
+                      <div className="mt-3 p-3 bg-gray-50 rounded border border-gray-200">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="font-medium text-gray-900">Commentaire du tuteur:</span>
+                        </div>
+                        <p className="text-sm text-gray-700">{getInterviewStatusInfo(selectedApplication)?.comment}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Documents */}
               <div className="space-y-4">
                 <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -637,13 +842,29 @@ export default function RHDemandesPage() {
                   </>
                 )}
                 
-                {(selectedApplication.status === 'interview_completed' || selectedApplication.status === 'interview_validated') && (
+                {/* Final Decision - Accept candidate after validated interview */}
+                {canMakeFinalDecision(selectedApplication) && (
                   <Button
                     onClick={() => handleAcceptCandidate(selectedApplication)}
                     className="bg-green-600 hover:bg-green-700"
                   >
                     <CheckCircle className="h-4 w-4 mr-2" />
-                    Accepter candidat → Stagiaire
+                    Décision finale: Accepter candidat
+                  </Button>
+                )}
+
+                {/* Respond to tuteur proposal if revision requested */}
+                {getInterviewStatusInfo(selectedApplication)?.status === 'REVISION_REQUESTED' && (
+                  <Button
+                    onClick={() => {
+                      setSelectedInterviewRequest(selectedApplication.interview_requests?.[0]);
+                      setProposalResponseModalOpen(true);
+                      setDetailsOpen(false); // Close details modal
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Calendar className="h-4 w-4 mr-2" />
+                    Répondre au tuteur
                   </Button>
                 )}
               </div>

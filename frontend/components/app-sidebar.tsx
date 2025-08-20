@@ -92,7 +92,6 @@ const menuItems: Record<string, MenuGroup[]> = {
       items: [
         { title: "Témoignages", url: "/rh/temoignages", icon: MessageSquare },
         { title: "Demandes de stage", url: "/rh/demandes", icon: FileText },
-        { title: "Entretiens", url: "/rh/entretiens", icon: Calendar },
         { title: "PFE Digital Hub", url: "/rh/pfe-digital-hub", icon: FileText },
         { title: "Assignation Tuteurs", url: "/rh/assignation-tuteurs", icon: UserPlus },
       ],
