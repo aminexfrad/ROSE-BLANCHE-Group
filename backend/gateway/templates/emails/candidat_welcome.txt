@@ -1,0 +1,14 @@
+Bienvenue sur StageBloom, {{ full_name }} !
+
+Votre compte a été créé avec succès.
+
+Identifiants de connexion:
+- Adresse e-mail: {{ email }}
+- Mot de passe: {{ password }}
+
+Vous pouvez vous connecter ici: {{ site_url }}/login
+
+Pour votre sécurité, nous vous recommandons de changer votre mot de passe après votre première connexion.
+
+Cordialement,
+L'équipe StageBloom

@@ -13,12 +13,14 @@ from django.contrib.auth import authenticate
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Q
+from django.conf import settings
 
 from .serializers import (
     CandidatSerializer, CandidatCreateSerializer, CandidatDashboardSerializer
 )
 from shared.models import Candidat, OffreStage, Demande, Candidature
 from shared.serializers import OffreStageSerializer, CandidatureSerializer, CandidatureCreateSerializer
+from shared.utils import MailService
 
 
 class CandidatRegistrationView(generics.CreateAPIView):
@@ -31,10 +33,31 @@ class CandidatRegistrationView(generics.CreateAPIView):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         
+        # Keep plaintext password for the welcome email before saving
+        raw_password = request.data.get('password')
         candidat = serializer.save()
         
         # Generate tokens
         refresh = RefreshToken.for_user(candidat.user)
+
+        try:
+            # Send welcome email with credentials
+            MailService.send_email(
+                subject='Bienvenue sur StageBloom – Vos identifiants',
+                recipient_list=[candidat.user.email],
+                template_name='emails/candidat_welcome.txt',
+                html_template_name='emails/candidat_welcome.html',
+                context={
+                    'full_name': f"{candidat.user.prenom} {candidat.user.nom}",
+                    'email': candidat.user.email,
+                    'password': raw_password,
+                    'site_url': getattr(settings, 'SITE_URL', 'http://localhost:3000')
+                },
+                fail_silently=True
+            )
+        except Exception:
+            # Do not block registration if email fails
+            pass
         
         return Response({
             'message': 'Compte candidat créé avec succès',
