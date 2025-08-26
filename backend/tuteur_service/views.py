@@ -369,16 +369,42 @@ class TuteurInterviewRequestsView(APIView):
             if request.user.role != 'tuteur':
                 return Response({'error': 'Permission refusée'}, status=status.HTTP_403_FORBIDDEN)
 
-            requests_qs = InterviewRequest.objects.filter(tuteur=request.user, status=InterviewRequest.Status.PENDING_TUTEUR)
+            requests_qs = InterviewRequest.objects.filter(tuteur=request.user)
             results = []
-            for req in requests_qs.select_related('demande', 'rh'):
+            for req in requests_qs.select_related('demande', 'rh', 'filiale'):
+                demande = req.demande
                 results.append({
                     'id': req.id,
-                    'candidate_name': req.demande.nom_complet,
+                    'demande': {
+                        'id': demande.id,
+                        'candidat': {
+                            'id': demande.id,  # no separate candidat model, reuse demande id
+                            'prenom': demande.prenom,
+                            'nom': demande.nom,
+                            'email': demande.email,
+                            'telephone': demande.telephone,
+                            'institut': demande.institut,
+                            'specialite': demande.specialite,
+                        }
+                    },
+                    'tuteur': {
+                        'id': request.user.id,
+                        'name': request.user.get_full_name(),
+                        'email': request.user.email,
+                    },
+                    'filiale': {
+                        'id': req.filiale.id if req.filiale else None,
+                        'name': req.filiale.nom if req.filiale else None,
+                    },
                     'proposed_date': req.proposed_date.strftime('%Y-%m-%d'),
                     'proposed_time': req.proposed_time.strftime('%H:%M'),
                     'location': req.location,
+                    'mode': getattr(req, 'mode', 'in_person'),
+                    'meeting_link': getattr(req, 'meeting_link', ''),
                     'status': req.status,
+                    'suggested_date': req.suggested_date.strftime('%Y-%m-%d') if req.suggested_date else None,
+                    'suggested_time': req.suggested_time.strftime('%H:%M') if req.suggested_time else None,
+                    'created_at': req.created_at.isoformat(),
                     'rh': {
                         'id': req.rh.id if req.rh else None,
                         'name': req.rh.get_full_name() if req.rh else None,

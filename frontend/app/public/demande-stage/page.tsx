@@ -773,6 +773,7 @@ export default function DemandeStage() {
                         value={formData.dateDebut}
                         onChange={(e) => handleInputChange('dateDebut', e.target.value)}
                         className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                        min={new Date().toISOString().split('T')[0]}
                         readOnly={false}
                         disabled={false}
                       />
@@ -785,6 +786,7 @@ export default function DemandeStage() {
                         value={formData.dateFin}
                         onChange={(e) => handleInputChange('dateFin', e.target.value)}
                         className="border-gray-300 focus:border-red-500 focus:ring-red-500"
+                        min={formData.dateDebut || new Date().toISOString().split('T')[0]}
                         readOnly={false}
                         disabled={false}
                       />

@@ -7,6 +7,7 @@ Intellectual Property – Protected by international copyright law.
 from rest_framework import serializers
 from django.core.exceptions import ValidationError
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 from shared.security import SecurityValidator
 from shared.utils import FileUploadValidator
 from .models import Demande, DemandeOffre
@@ -76,6 +77,8 @@ class DemandeSerializer(serializers.ModelSerializer):
                 'suggested_date': ir.suggested_date.strftime('%Y-%m-%d') if ir.suggested_date else None,
                 'suggested_time': ir.suggested_time.strftime('%H:%M') if ir.suggested_time else None,
                 'location': ir.location,
+                'mode': getattr(ir, 'mode', 'in_person'),
+                'meeting_link': getattr(ir, 'meeting_link', ''),
                 'tuteur': {
                     'id': ir.tuteur.id,
                     'name': ir.tuteur.get_full_name(),
@@ -231,6 +234,16 @@ class DemandeSerializer(serializers.ModelSerializer):
         data = super().validate(data)
         offer_ids = data.get('offer_ids', [])
         type_stage = data.get('type_stage')
+        # Validate dates: block past dates and ensure end >= start
+        date_debut = data.get('date_debut')
+        date_fin = data.get('date_fin')
+        today = timezone.now().date()
+        if date_debut and date_debut < today:
+            raise serializers.ValidationError('La date de début ne peut pas être dans le passé.')
+        if date_fin and date_fin < today:
+            raise serializers.ValidationError('La date de fin ne peut pas être dans le passé.')
+        if date_debut and date_fin and date_fin < date_debut:
+            raise serializers.ValidationError('La date de fin doit être postérieure ou égale à la date de début.')
         
         # Validate binôme fields when stage_binome is True
         stage_binome = data.get('stage_binome', False)
@@ -285,7 +298,7 @@ class DemandeListSerializer(DemandeSerializer):
     
     class Meta(DemandeSerializer.Meta):
         fields = [
-            'id', 'nom', 'prenom', 'nom_complet', 'email', 'institut', 'specialite',
+            'id', 'nom', 'prenom', 'nom_complet', 'email', 'telephone', 'institut', 'specialite',
             'type_stage', 'niveau', 'pfe_reference', 'date_debut', 'date_fin',
             'duree_stage', 'stage_binome', 'nom_complet_binome',
             'is_pfe_stage', 'status', 'entreprise', 'created_at',

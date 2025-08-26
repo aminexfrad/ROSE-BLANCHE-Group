@@ -42,10 +42,20 @@ export function ScheduleInterviewModal({
   mode = 'propose'
 }: ScheduleInterviewModalProps) {
   
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    date: string
+    time: string
+    location: string
+    mode: 'in_person' | 'online'
+    meeting_link: string
+    notes: string
+    tuteur_id: string
+  }>({
     date: '',
     time: '',
     location: '',
+    mode: 'in_person',
+    meeting_link: '',
     notes: '',
     tuteur_id: ''
   })
@@ -99,6 +109,15 @@ export function ScheduleInterviewModal({
       return
     }
 
+    if (formData.mode === 'online' && !formData.meeting_link) {
+      toast({
+        title: "Lien requis",
+        description: "Veuillez fournir un lien de réunion pour un entretien en ligne",
+        variant: "destructive"
+      })
+      return
+    }
+
     setLoading(true)
     
     try {
@@ -107,12 +126,16 @@ export function ScheduleInterviewModal({
             date: formData.date,
             time: formData.time,
             location: formData.location,
+            mode: formData.mode,
+            meeting_link: formData.meeting_link,
             notes: formData.notes
           })
         : await apiClient.proposeInterview(demandeId, {
             date: formData.date,
             time: formData.time,
             location: formData.location,
+            mode: formData.mode,
+            meeting_link: formData.meeting_link,
             tuteur_id: parseInt(formData.tuteur_id)
           })
 
@@ -126,6 +149,8 @@ export function ScheduleInterviewModal({
         date: '',
         time: '',
         location: '',
+        mode: 'in_person',
+        meeting_link: '',
         notes: '',
         tuteur_id: ''
       })
@@ -264,6 +289,34 @@ export function ScheduleInterviewModal({
                 disabled={loading}
               />
             </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <Label>Mode *</Label>
+              <Select value={formData.mode} onValueChange={(v) => handleInputChange('mode', v)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Choisir le mode" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="in_person">Présentiel</SelectItem>
+                  <SelectItem value="online">En ligne</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            {formData.mode === 'online' && (
+              <div>
+                <Label htmlFor="meeting_link">Lien de réunion *</Label>
+                <Input
+                  id="meeting_link"
+                  value={formData.meeting_link}
+                  onChange={(e) => handleInputChange('meeting_link', e.target.value)}
+                  placeholder="https://teams.microsoft.com/..."
+                  disabled={loading}
+                  required={formData.mode === 'online'}
+                />
+              </div>
+            )}
           </div>
 
           {mode === 'schedule' && (

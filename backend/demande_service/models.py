@@ -344,9 +344,15 @@ class Interview(models.Model):
     )
     
     # Interview details
+    class Mode(models.TextChoices):
+        IN_PERSON = 'in_person', _('Présentiel')
+        ONLINE = 'online', _('En ligne')
+
     date = models.DateField(_('date'))
     time = models.TimeField(_('heure'))
     location = models.CharField(_('lieu'), max_length=500)
+    mode = models.CharField(_('mode'), max_length=20, choices=Mode.choices, default=Mode.IN_PERSON)
+    meeting_link = models.CharField(_('lien de réunion'), max_length=500, blank=True)
     notes = models.TextField(_('notes'), blank=True)
     
     # Status
@@ -414,6 +420,8 @@ class InterviewRequest(models.Model):
     suggested_date = models.DateField(_('date suggérée'), null=True, blank=True)
     suggested_time = models.TimeField(_('heure suggérée'), null=True, blank=True)
     location = models.CharField(_('lieu proposé'), max_length=500)
+    mode = models.CharField(_('mode'), max_length=20, choices=Interview.Mode.choices, default=Interview.Mode.IN_PERSON)
+    meeting_link = models.CharField(_('lien de réunion'), max_length=500, blank=True)
 
     status = models.CharField(
         _('statut'),

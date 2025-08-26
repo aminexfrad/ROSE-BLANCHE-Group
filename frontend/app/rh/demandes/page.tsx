@@ -208,7 +208,10 @@ export default function RHDemandesPage() {
 
   const canMakeFinalDecision = (application: Application) => {
     const interviewInfo = getInterviewStatusInfo(application)
-    return interviewInfo && interviewInfo.status === 'VALIDATED'
+    // Show the final decision button only when interview is validated AND the application is still pending
+    return (
+      interviewInfo && interviewInfo.status === 'VALIDATED' && application.status === 'pending'
+    )
   }
 
   const handleDirectReject = async (application: Application) => {

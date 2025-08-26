@@ -86,6 +86,7 @@ export default function LoginPage() {
     if (!registerData.password) newErrors.password = "Le mot de passe est requis"
     if (registerData.password !== registerData.confirmPassword) newErrors.confirmPassword = "Les mots de passe ne correspondent pas"
     if (registerData.password.length < 8) newErrors.password = "Le mot de passe doit contenir au moins 8 caractères"
+    if (!registerData.telephone.trim()) newErrors.telephone = "Le numéro de téléphone est requis"
     if (!registerData.institut.trim()) newErrors.institut = "L'institut est requis"
     if (!registerData.specialite.trim()) newErrors.specialite = "La spécialité est requise"
     if (!registerData.niveau.trim()) newErrors.niveau = "Le niveau est requis"
@@ -537,7 +538,7 @@ export default function LoginPage() {
                   <div>
                     <Label htmlFor="telephone" className="text-sm font-medium text-white flex items-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">
                       <Phone className="h-4 w-4 text-red-400" />
-                      Téléphone (optionnel)
+                      Téléphone
                     </Label>
                     <Input
                       id="telephone"
@@ -545,8 +546,13 @@ export default function LoginPage() {
                       value={registerData.telephone}
                       onChange={(e) => setRegisterData({ ...registerData, telephone: e.target.value })}
                       placeholder="Votre numéro de téléphone"
-                      className="mt-2 h-14 border-gray-300 focus:border-red-500 focus:ring-red-500 text-lg transition-all duration-300"
+                      className={`mt-2 h-14 border-gray-300 focus:border-red-500 focus:ring-red-500 text-lg transition-all duration-300 ${
+                        errors.telephone ? 'border-red-500' : ''
+                      }`}
                     />
+                    {errors.telephone && (
+                      <p className="mt-1 text-sm text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">{errors.telephone}</p>
+                    )}
                   </div>
                   <div>
                     <Label htmlFor="institut" className="text-sm font-medium text-white flex items-center gap-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)]">

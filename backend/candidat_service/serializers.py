@@ -71,7 +71,7 @@ class CandidatCreateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8)
     nom = serializers.CharField(max_length=100)
     prenom = serializers.CharField(max_length=100)
-    telephone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    telephone = serializers.CharField(max_length=20, required=True, allow_blank=False)
     
     class Meta:
         model = Candidat
@@ -103,12 +103,12 @@ class CandidatCreateSerializer(serializers.ModelSerializer):
     
     def validate_telephone(self, value):
         """Validate and sanitize telephone field"""
-        if value:
-            try:
-                return SecurityValidator.validate_phone(value)
-            except ValidationError as e:
-                raise serializers.ValidationError(str(e))
-        return value
+        if not value:
+            raise serializers.ValidationError('Le numéro de téléphone est requis.')
+        try:
+            return SecurityValidator.validate_phone(value)
+        except ValidationError as e:
+            raise serializers.ValidationError(str(e))
     
     def create(self, validated_data):
         """Create User and Candidat"""
@@ -118,7 +118,7 @@ class CandidatCreateSerializer(serializers.ModelSerializer):
             'password': validated_data['password'],
             'nom': validated_data['nom'],
             'prenom': validated_data['prenom'],
-            'telephone': validated_data.get('telephone', ''),
+            'telephone': validated_data['telephone'],
             'role': 'candidat'
         }
         

@@ -536,6 +536,8 @@ def schedule_interview(request, pk):
             date=interview_date,
             time=interview_time,
             location=request.data['location'],
+            mode=request.data.get('mode', 'in_person'),
+            meeting_link=request.data.get('meeting_link', ''),
             notes=request.data.get('notes', '')
         )
         
@@ -604,6 +606,8 @@ def schedule_interview(request, pk):
                 'date': interview.date.strftime('%Y-%m-%d'),
                 'time': interview.time.strftime('%H:%M'),
                 'location': interview.location,
+                'mode': interview.mode,
+                'meeting_link': interview.meeting_link,
                 'notes': interview.notes,
                 'email_sent': email_sent
             },
@@ -796,7 +800,9 @@ def propose_interview_request(request, pk):
             tuteur=tuteur,
             proposed_date=proposed_date,
             proposed_time=proposed_time,
-            location=request.data['location']
+            location=request.data['location'],
+            mode=request.data.get('mode', 'in_person'),
+            meeting_link=request.data.get('meeting_link', '')
         )
 
         # Notify Tuteur: dashboard notification

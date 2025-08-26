@@ -926,7 +926,10 @@ class ApiClient {
     return this.request<any>(`/demandes/${demandeId}/interview-requests/`)
   }
 
-  async proposeInterview(demandeId: number, data: { date: string; time: string; location: string; tuteur_id: number }): Promise<{ message: string; request: { id: number; status: string } }> {
+  async proposeInterview(
+    demandeId: number,
+    data: { date: string; time: string; location: string; mode?: 'in_person' | 'online'; meeting_link?: string; tuteur_id: number }
+  ): Promise<{ message: string; request: { id: number; status: string } }> {
     return this.request<any>(`/demandes/${demandeId}/propose-interview/`, {
       method: 'POST',
       body: JSON.stringify(data),
@@ -941,6 +944,8 @@ class ApiClient {
     date: string;
     time: string;
     location: string;
+    mode?: 'in_person' | 'online';
+    meeting_link?: string;
     notes?: string;
   }): Promise<{
     message: string;
@@ -949,6 +954,8 @@ class ApiClient {
       date: string;
       time: string;
       location: string;
+      mode: string;
+      meeting_link: string;
       notes: string;
       email_sent: boolean;
     };
