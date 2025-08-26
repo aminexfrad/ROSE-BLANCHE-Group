@@ -117,7 +117,7 @@ class WebSocketConnection(models.Model):
     Track active WebSocket connections
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='websocket_connections')
-    connection_id = models.CharField(_('ID de connexion'), max_length=255, unique=True)
+    connection_id = models.CharField(_('ID de connexion'), max_length=191, unique=True)
     is_active = models.BooleanField(_('actif'), default=True)
     last_activity = models.DateTimeField(_('dernière activité'), auto_now=True)
     created_at = models.DateTimeField(_('date de création'), auto_now_add=True)

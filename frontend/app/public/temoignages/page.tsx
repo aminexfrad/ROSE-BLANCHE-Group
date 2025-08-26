@@ -205,17 +205,24 @@ export default function PublicTemoignagesPage() {
       <div className="min-h-screen bg-gradient-to-br from-red-50 via-pink-50 to-rose-100 pt-16">
         {/* Hero Section */}
         <div className="relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-r from-red-600/20 to-rose-600/20"></div>
-          <div className="container mx-auto px-4 py-16 relative">
+          <div className="absolute inset-0">
+            <div
+              className="w-full h-full"
+              style={{
+                backgroundImage: "url('/medium-shot-girl-with-video-camera.jpg')",
+                backgroundSize: 'cover',
+                backgroundPosition: 'center 30%',
+                backgroundRepeat: 'no-repeat',
+              }}
+            />
+          </div>
+          <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/30 to-transparent"></div>
+          <div className="container mx-auto px-4 py-24 md:py-28 lg:py-32 relative">
             <div className="text-center mb-16">
-              <div className="inline-flex items-center gap-2 bg-red-100 text-red-800 px-4 py-2 rounded-full text-sm font-medium mb-6">
-                <MessageSquare className="h-4 w-4" />
-                Expériences Authentiques
-              </div>
-              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold bg-gradient-to-r from-red-600 via-rose-600 to-pink-600 bg-clip-text text-transparent mb-6 leading-tight">
+              <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white mb-6 leading-tight drop-shadow">
                 Témoignages de nos Stagiaires
               </h1>
-              <p className="text-sm md:text-base text-gray-700 max-w-3xl mx-auto leading-relaxed">
+              <p className="text-sm md:text-base text-white/90 max-w-3xl mx-auto leading-relaxed">
                 Découvrez les expériences authentiques et inspirantes de nos stagiaires. 
                 Des histoires vraies qui témoignent de la qualité de nos programmes.
               </p>

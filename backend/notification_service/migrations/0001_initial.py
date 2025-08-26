@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
             name='WebSocketConnection',
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('connection_id', models.CharField(max_length=255, unique=True, verbose_name='ID de connexion')),
+                ('connection_id', models.CharField(max_length=191, unique=True, verbose_name='ID de connexion')),
                 ('is_active', models.BooleanField(default=True, verbose_name='actif')),
                 ('last_activity', models.DateTimeField(auto_now=True, verbose_name='dernière activité')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='date de création')),

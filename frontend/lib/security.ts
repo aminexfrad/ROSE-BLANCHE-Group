@@ -36,10 +36,10 @@ export const phoneSchema = z
   .string()
   .regex(/^[\+]?[0-9\s\-\(\)]{8,}$/, 'Numéro de téléphone invalide')
 
-// CIN validation (Moroccan national ID)
+// CIN validation (Tunsisian national ID)
 export const cinSchema = z
   .string()
-  .regex(/^[A-Z]{1,2}[0-9]{6}$/, 'CIN invalide')
+  .regex(/^[A-Z]{1,2}[0-8]{6}$/, 'CIN invalide')
 
 // File validation
 export const fileSchema = z.object({

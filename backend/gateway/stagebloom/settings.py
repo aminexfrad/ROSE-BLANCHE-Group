@@ -110,7 +110,7 @@ DATABASES = {
         'ENGINE': config('DB_ENGINE', default='django.db.backends.mysql'),
         'HOST': config('DB_HOST', default='localhost'),
         'PORT': config('DB_PORT', default='3306'),
-        'NAME': config('DB_NAME', default='stagebloom_db'),
+        'NAME': config('DB_NAME', default='roseblanche_db'),
         'USER': config('DB_USER', default='root'),
         'PASSWORD': config('DB_PASSWORD', default=''),
         'OPTIONS': {
