@@ -71,7 +71,7 @@ export function useProfile() {
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
-    mutationFn: (data: Partial<User>) => apiClient.updateProfile(data),
+    mutationFn: (data: Partial<User> | FormData) => apiClient.updateProfile(data),
     onSuccess: (updatedUser) => {
       queryClient.setQueryData(['profile'], updatedUser)
       toast({

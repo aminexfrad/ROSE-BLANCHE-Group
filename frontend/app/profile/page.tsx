@@ -132,21 +132,22 @@ export default function ProfilePage() {
 
   // Upload profile picture mutation
   const uploadProfilePictureMutation = useMutation({
-    mutationFn: (file: File) => {
-      // TODO: Implement profile picture upload API endpoint
-      return Promise.resolve({ avatar_url: URL.createObjectURL(file) })
+    mutationFn: async (file: File) => {
+      const form = new FormData()
+      form.append('avatar', file)
+      return apiClient.updateProfile(form)
     },
-    onSuccess: (data) => {
-      updateProfile({ avatar: data.avatar_url })
+    onSuccess: () => {
+      refetch()
       toast({
         title: "Photo de profil mise à jour",
         description: "Votre photo de profil a été mise à jour avec succès.",
       })
     },
-    onError: () => {
+    onError: (err: any) => {
       toast({
         title: "Erreur",
-        description: "Impossible de mettre à jour la photo de profil.",
+        description: err?.message || "Impossible de mettre à jour la photo de profil.",
         variant: "destructive",
       })
     },

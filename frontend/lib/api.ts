@@ -822,10 +822,11 @@ class ApiClient {
     return userStr ? JSON.parse(userStr) : null
   }
 
-  async updateProfile(data: Partial<User>): Promise<User> {
+  async updateProfile(data: Partial<User> | FormData): Promise<User> {
+    const isFormData = typeof FormData !== 'undefined' && data instanceof FormData
     const response = await this.request<User>('/auth/profile/', {
-      method: 'PUT',
-      body: JSON.stringify(data),
+      method: 'PATCH',
+      body: isFormData ? (data as FormData) : JSON.stringify(data),
     }, { skipCache: true })
     
     // Invalidate profile cache

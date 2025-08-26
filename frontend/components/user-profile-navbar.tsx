@@ -9,7 +9,7 @@
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu"
 import { useAuth } from "@/contexts/auth-context"
 import Link from "next/link"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -52,6 +52,9 @@ export function UserProfileNavbar() {
           >
             <div className="relative flex-shrink-0">
               <Avatar className="h-8 w-8 ring-2 ring-gray-200 transition-all duration-300 group-hover:ring-red-300">
+                {user.avatar && (
+                  <AvatarImage src={user.avatar} alt={`${user.prenom} ${user.nom}`} />
+                )}
                 <AvatarFallback
                   className={`bg-gradient-to-br ${roleColors[user.role]} text-white text-sm font-bold`}
                 >

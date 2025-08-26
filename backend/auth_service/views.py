@@ -64,6 +64,13 @@ class ProfileView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         return self.request.user
 
+    def get_serializer_class(self):
+        # Use a relaxed serializer for updates so email is not required when uploading avatar
+        if self.request and self.request.method in ['PUT', 'PATCH']:
+            from .serializers import UserUpdateSerializer
+            return UserUpdateSerializer
+        return super().get_serializer_class()
+
 
 class ChangePasswordView(generics.UpdateAPIView):
     """Change user password"""
