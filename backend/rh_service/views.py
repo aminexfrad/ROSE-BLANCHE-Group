@@ -880,7 +880,7 @@ class RHAssignerTuteurView(APIView):
                 'stage': {
                     'id': stage_actif.id,
                     'title': stage_actif.title,
-                    'company': stage_actif.company
+                    'company': (stage_actif.company_entreprise.nom if stage_actif.company_entreprise else stage_actif.company_name)
                 }
             }, status=status.HTTP_200_OK)
             

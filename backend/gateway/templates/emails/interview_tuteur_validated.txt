@@ -6,6 +6,10 @@ Détails de l'entretien validé:
 - Date: {{ proposed_date }}
 - Heure: {{ proposed_time }}
 - Lieu: {{ location }}
+{% if mode == 'online' %}
+- Mode : En ligne
+- Lien de réunion : {{ meeting_link }}
+{% endif %}
 - Filiale: {{ filiale_name }}
 
 L'entretien est maintenant confirmé et le candidat a été notifié.

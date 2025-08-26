@@ -827,6 +827,8 @@ def propose_interview_request(request, pk):
                     'proposed_date': proposed_date.strftime('%d/%m/%Y'),
                     'proposed_time': proposed_time.strftime('%H:%M'),
                     'location': request.data['location'],
+                    'mode': request.data.get('mode', 'in_person'),
+                    'meeting_link': request.data.get('meeting_link', ''),
                     'company_name': demande.entreprise.nom,
                 },
                 html_template_name='emails/interview_request_tuteur.html'

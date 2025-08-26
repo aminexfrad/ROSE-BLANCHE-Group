@@ -53,6 +53,8 @@ interface InterviewRequest {
   proposed_date: string
   proposed_time: string
   location: string
+  mode?: 'in_person' | 'online'
+  meeting_link?: string
   status: 'PENDING_TUTEUR' | 'VALIDATED' | 'REVISION_REQUESTED'
   suggested_date?: string
   suggested_time?: string
@@ -111,6 +113,8 @@ export default function TuteurEntretiensPage() {
             proposed_date: request.proposed_date,
             proposed_time: request.proposed_time,
             location: request.location,
+            mode: request.mode,
+            meeting_link: request.meeting_link,
             status: request.status,
             suggested_date: request.suggested_date,
             suggested_time: request.suggested_time,
@@ -157,6 +161,8 @@ export default function TuteurEntretiensPage() {
                 proposed_date: request.proposed_date,
                 proposed_time: request.proposed_time,
                 location: request.location,
+                mode: request.mode,
+                meeting_link: request.meeting_link,
                 status: request.status,
                 suggested_date: request.suggested_date,
                 suggested_time: request.suggested_time,
@@ -301,7 +307,7 @@ export default function TuteurEntretiensPage() {
   const stats = getInterviewStats()
 
   return (
-    <DashboardLayout>
+    <DashboardLayout allowedRoles={["tuteur"]}>
       <div className="space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -501,7 +507,13 @@ export default function TuteurEntretiensPage() {
               <h4 className="font-medium text-sm mb-2">Entretien actuel:</h4>
               <div className="text-sm text-gray-600 space-y-1">
                 <div>Date: {responseInterview.proposed_date} à {responseInterview.proposed_time}</div>
-                <div>Lieu: {responseInterview.location}</div>
+                <div>
+                  {responseInterview.mode === 'online' ? (
+                    <>Mode: En ligne • Lien: <a className="text-blue-600 underline" href={responseInterview.meeting_link} target="_blank" rel="noreferrer">{responseInterview.meeting_link}</a></>
+                  ) : (
+                    <>Lieu: {responseInterview.location}</>
+                  )}
+                </div>
               </div>
             </div>
           )}
@@ -599,7 +611,11 @@ export default function TuteurEntretiensPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <MapPin className="h-4 w-4" />
-                    <span>Lieu: {selectedInterview.location}</span>
+                    {selectedInterview.mode === 'online' ? (
+                      <span>Mode: En ligne • Lien: <a className="text-blue-600 underline" href={selectedInterview.meeting_link} target="_blank" rel="noreferrer">{selectedInterview.meeting_link}</a></span>
+                    ) : (
+                      <span>Lieu: {selectedInterview.location}</span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span>Statut: {getStatusBadge(selectedInterview.status)}</span>

@@ -456,17 +456,15 @@ export default function RHDemandesPage() {
                       </div>
                         </div>
 
-                        {/* Selected Offers Summary */}
-                        {application.offres && application.offres.length > 0 ? (
+                        {/* Selected Offer Summary (shown only in details) */}
+                        {false && application.offres && application.offres.length > 0 ? (
                           <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                             <div className="flex items-center gap-2 mb-3">
                               <MapPinIcon className="h-4 w-4 text-blue-600" />
-                              <span className="font-semibold text-sm text-blue-900">
-                                Offres sélectionnées ({application.offres.length})
-                              </span>
+                              <span className="font-semibold text-sm text-blue-900">Offre sélectionnée</span>
                             </div>
                             <div className="space-y-2">
-                              {application.offres.slice(0, 3).map((offre) => (
+                              {application.offres.slice(0, 1).map((offre) => (
                                 <div key={offre.id} className="flex items-center justify-between text-sm p-2 bg-white rounded border">
                                   <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
@@ -474,19 +472,9 @@ export default function RHDemandesPage() {
                                       <span className="font-bold text-gray-900">{offre.titre || offre.title}</span>
                                       <span className="text-xs text-gray-500">Réf: {offre.reference}</span>
                                     </div>
-                                    <span className="text-gray-400">•</span>
-                                    <span className="text-blue-700 font-medium">{offre.entreprise.nom}</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    {getStatusBadge(offre.status)}
                                   </div>
                                 </div>
                               ))}
-                              {application.offres.length > 3 && (
-                                <div className="text-xs text-blue-600 font-medium text-center py-1">
-                                  +{application.offres.length - 3} autre(s) offre(s)
-                        </div>
-                              )}
                             </div>
                           </div>
                         ) : (
@@ -498,8 +486,8 @@ export default function RHDemandesPage() {
                       </div>
                         )}
 
-                        {/* Interview Status */}
-                        {getInterviewStatusInfo(application) && (
+                        {/* Interview Status (shown only in details) */}
+                        {false && getInterviewStatusInfo(application) && (
                           <div className="mt-3 p-3 bg-orange-50 rounded-lg border border-orange-200">
                             <div className="flex items-center gap-2 mb-3">
                               <Calendar className="h-4 w-4 text-orange-600" />
@@ -797,27 +785,20 @@ export default function RHDemandesPage() {
                 </div>
               </div>
 
-              {/* Selected Offers */}
+              {/* Selected Offer */}
               {selectedApplication.offres && selectedApplication.offres.length > 0 && (
                 <div className="space-y-4">
                   <h3 className="text-lg font-semibold flex items-center gap-2">
                     <MapPinIcon className="h-5 w-5" />
-                    Offres sélectionnées
+                    Offre sélectionnée
                   </h3>
                   <div className="space-y-3">
-                    {selectedApplication.offres.map((offre) => (
+                    {selectedApplication.offres.slice(0, 1).map((offre) => (
                       <div key={offre.id} className="border rounded-lg p-4">
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <h4 className="font-bold text-lg text-blue-900">{offre.titre || offre.title}</h4>
                             <div className="text-xs text-gray-500 mb-1">Référence: {offre.reference}</div>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Building className="h-4 w-4 text-gray-500" />
-                              <span className="text-sm font-medium text-gray-700">{offre.entreprise.nom}</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {getStatusBadge(offre.status)}
                           </div>
                         </div>
                       </div>

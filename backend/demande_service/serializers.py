@@ -51,7 +51,7 @@ class DemandeSerializer(serializers.ModelSerializer):
     
     def get_offres(self, obj):
         # Return offers with per-offer status
-        return [
+        offres_list = [
             {
                 'id': do.offre.id,
                 'reference': do.offre.reference,
@@ -65,6 +65,26 @@ class DemandeSerializer(serializers.ModelSerializer):
             }
             for do in obj.demande_offres.select_related('offre', 'offre__entreprise').all()
         ]
+        # If no M2M records but a PFE reference was provided, try to resolve it to an offer for display
+        if not offres_list and getattr(obj, 'pfe_reference', None):
+            try:
+                from shared.models import OffreStage
+                offre = OffreStage.objects.select_related('entreprise').filter(reference=obj.pfe_reference).first()
+                if offre:
+                    offres_list.append({
+                        'id': offre.id,
+                        'reference': offre.reference,
+                        'titre': offre.title,
+                        'title': offre.title,
+                        'entreprise': {
+                            'id': offre.entreprise.id if offre.entreprise else None,
+                            'nom': offre.entreprise.nom if offre.entreprise else 'N/A'
+                        },
+                        'status': 'pending'
+                    })
+            except Exception:
+                pass
+        return offres_list
     
     def get_interview_requests(self, obj):
         """Return interview requests for this demande"""

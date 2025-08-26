@@ -7,6 +7,10 @@ Une proposition d'entretien a été faite pour un candidat de votre filiale.
 - Date : {{ proposed_date }}
 - Heure : {{ proposed_time }}
 - Lieu : {{ location }}
+{% if mode == 'online' %}
+- Mode : En ligne
+- Lien de réunion : {{ meeting_link }}
+{% endif %}
 - Entreprise : {{ company_name }}
 
 **Action requise :**

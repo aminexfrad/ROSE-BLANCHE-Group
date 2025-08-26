@@ -8,7 +8,12 @@ DÉTAILS DE L'ENTRETIEN
 Filiale : {{ filiale_name }}
 Date : {{ interview_date }}
 Heure : {{ interview_time }}
+{% if interview_mode == 'online' %}
+Mode : En ligne
+Lien de réunion : {{ meeting_link }}
+{% else %}
 Lieu : {{ interview_location }}
+{% endif %}
 Tuteur : {{ tuteur_name }}
 
 PRÉPARATION RECOMMANDÉE

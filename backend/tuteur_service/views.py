@@ -458,6 +458,8 @@ class TuteurInterviewRespondView(APIView):
                                 'proposed_date': interview_request.proposed_date.strftime('%d/%m/%Y'),
                                 'proposed_time': interview_request.proposed_time.strftime('%H:%M'),
                                 'location': interview_request.location,
+                                'mode': getattr(interview_request, 'mode', 'in_person'),
+                                'meeting_link': getattr(interview_request, 'meeting_link', ''),
                                 'filiale_name': interview_request.filiale.nom,
                             },
                             html_template_name='emails/interview_tuteur_validated.html'
@@ -476,6 +478,8 @@ class TuteurInterviewRespondView(APIView):
                             'interview_date': interview_request.proposed_date.strftime('%d/%m/%Y'),
                             'interview_time': interview_request.proposed_time.strftime('%H:%M'),
                             'interview_location': interview_request.location,
+                            'interview_mode': getattr(interview_request, 'mode', 'in_person'),
+                            'meeting_link': getattr(interview_request, 'meeting_link', ''),
                             'filiale_name': interview_request.filiale.nom,
                             'tuteur_name': request.user.get_full_name(),
                         },
