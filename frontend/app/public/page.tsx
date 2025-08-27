@@ -10,6 +10,7 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import Link from "next/link"
 import { useEffect, useRef, useState, useCallback } from "react"
 import { 
@@ -53,6 +54,7 @@ export default function PublicHomePage() {
   const [activeSection, setActiveSection] = useState(0)
   const [isPlaying, setIsPlaying] = useState(true)
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 })
+  const [expandedTestimonials, setExpandedTestimonials] = useState<Set<number>>(new Set())
   
   const heroRef = useRef<HTMLDivElement>(null)
   const statsRef = useRef<HTMLDivElement>(null)
@@ -73,6 +75,18 @@ export default function PublicHomePage() {
 
   const [testimonials, setTestimonials] = useState<Testimonial[]>([])
   const [loadingTestimonials, setLoadingTestimonials] = useState(true)
+
+  const toggleTestimonialExpansion = (testimonialId: number) => {
+    setExpandedTestimonials(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(testimonialId)) {
+        newSet.delete(testimonialId)
+      } else {
+        newSet.add(testimonialId)
+      }
+      return newSet
+    })
+  }
 
   // Suppress hydration warnings caused by browser extensions
   useHydrationSuppression()
@@ -311,11 +325,33 @@ export default function PublicHomePage() {
                       <Star key={i} className="h-5 w-5 text-yellow-500 fill-current" />
                     ))}
                   </div>
-                  <p className="text-gray-700 mb-4 italic leading-relaxed text-sm">"{testimonial.content.substring(0, 150)}..."</p>
+                  <div className="mb-4">
+                    <p className="text-gray-700 italic leading-relaxed text-sm">
+                      "{expandedTestimonials.has(testimonial.id) 
+                        ? testimonial.content 
+                        : testimonial.content.length > 150 
+                          ? testimonial.content.substring(0, 150) + "..." 
+                          : testimonial.content
+                      }"
+                    </p>
+                    {testimonial.content.length > 150 && (
+                      <Button
+                        variant="link"
+                        size="sm"
+                        className="text-red-600 hover:text-red-800 p-0 h-auto text-xs mt-2"
+                        onClick={() => toggleTestimonialExpansion(testimonial.id)}
+                      >
+                        {expandedTestimonials.has(testimonial.id) ? "Voir moins" : "Voir plus"}
+                      </Button>
+                    )}
+                  </div>
                   <div className="text-center border-t pt-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-700 rounded-full flex items-center justify-center mx-auto mb-3 text-white font-bold text-sm group-hover:scale-110 transition-transform duration-300 shadow-sm">
-                      {testimonial.author.prenom.charAt(0)}{testimonial.author.nom.charAt(0)}
-                    </div>
+                    <Avatar className="w-12 h-12 mx-auto mb-3 group-hover:scale-110 transition-transform duration-300 shadow-sm ring-2 ring-gray-200">
+                      <AvatarImage src={testimonial.author.avatar || undefined} alt={`${testimonial.author.prenom} ${testimonial.author.nom}`} />
+                      <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white font-bold text-sm">
+                        {testimonial.author.prenom.charAt(0)}{testimonial.author.nom.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="font-bold text-gray-900 mb-1 text-base">
                       {testimonial.author.prenom} {testimonial.author.nom}
                     </div>

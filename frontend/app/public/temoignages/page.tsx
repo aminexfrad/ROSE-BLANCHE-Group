@@ -10,6 +10,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
@@ -47,6 +48,7 @@ export default function PublicTemoignagesPage() {
   const [showVideoModal, setShowVideoModal] = useState(false)
   const [videoPreviewModal, setVideoPreviewModal] = useState(false)
   const [previewTestimonial, setPreviewTestimonial] = useState<Testimonial | null>(null)
+  const [expandedTestimonials, setExpandedTestimonials] = useState<Set<number>>(new Set())
 
   useEffect(() => {
     const fetchTestimonials = async () => {
@@ -89,6 +91,18 @@ export default function PublicTemoignagesPage() {
   const openVideoPreview = (testimonial: Testimonial) => {
     setPreviewTestimonial(testimonial)
     setVideoPreviewModal(true)
+  }
+
+  const toggleTestimonialExpansion = (testimonialId: number) => {
+    setExpandedTestimonials(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(testimonialId)) {
+        newSet.delete(testimonialId)
+      } else {
+        newSet.add(testimonialId)
+      }
+      return newSet
+    })
   }
 
   const renderStars = () => {
@@ -165,9 +179,17 @@ export default function PublicTemoignagesPage() {
                 <div className="space-y-3">
                   <div>
                     <h3 className="font-semibold text-lg">{previewTestimonial.title}</h3>
-                    <p className="text-sm text-gray-600">
-                      Par {previewTestimonial.author.prenom} {previewTestimonial.author.nom}
-                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={previewTestimonial.author.avatar || undefined} alt={`${previewTestimonial.author.prenom} ${previewTestimonial.author.nom}`} />
+                        <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white text-xs font-bold">
+                          {previewTestimonial.author.prenom.charAt(0)}{previewTestimonial.author.nom.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="text-sm text-gray-600">
+                        Par {previewTestimonial.author.prenom} {previewTestimonial.author.nom}
+                      </p>
+                    </div>
                   </div>
                   
                   <div className="bg-gray-50 p-4 rounded-lg">
@@ -361,6 +383,8 @@ export default function PublicTemoignagesPage() {
                       testimonial={testimonial}
                       onVideoClick={handleVideoClick}
                       onPreviewClick={openVideoPreview}
+                      isExpanded={expandedTestimonials.has(testimonial.id)}
+                      onToggleExpansion={toggleTestimonialExpansion}
                     />
                   ))}
                 </div>
@@ -374,6 +398,8 @@ export default function PublicTemoignagesPage() {
                       testimonial={testimonial}
                       onVideoClick={handleVideoClick}
                       onPreviewClick={openVideoPreview}
+                      isExpanded={expandedTestimonials.has(testimonial.id)}
+                      onToggleExpansion={toggleTestimonialExpansion}
                     />
                   ))}
                 </div>
@@ -387,6 +413,8 @@ export default function PublicTemoignagesPage() {
                       testimonial={testimonial}
                       onVideoClick={handleVideoClick}
                       onPreviewClick={openVideoPreview}
+                      isExpanded={expandedTestimonials.has(testimonial.id)}
+                      onToggleExpansion={toggleTestimonialExpansion}
                     />
                   ))}
                 </div>
@@ -437,8 +465,13 @@ export default function PublicTemoignagesPage() {
 
                 <div className="space-y-4">
                   <div className="flex items-center gap-4 text-xs text-gray-600">
-                    <div className="flex items-center gap-1">
-                      <User className="h-4 w-4" />
+                    <div className="flex items-center gap-2">
+                      <Avatar className="w-6 h-6">
+                        <AvatarImage src={selectedTestimonial.author.avatar || undefined} alt={`${selectedTestimonial.author.prenom} ${selectedTestimonial.author.nom}`} />
+                        <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white text-xs font-bold">
+                          {selectedTestimonial.author.prenom.charAt(0)}{selectedTestimonial.author.nom.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
                       <span>
                         {selectedTestimonial.author.prenom} {selectedTestimonial.author.nom}
                       </span>
@@ -483,10 +516,14 @@ function TestimonialCard({
   testimonial,
   onVideoClick,
   onPreviewClick,
+  isExpanded,
+  onToggleExpansion,
 }: {
   testimonial: Testimonial
   onVideoClick: (testimonial: Testimonial) => void
   onPreviewClick: (testimonial: Testimonial) => void
+  isExpanded: boolean
+  onToggleExpansion: (testimonialId: number) => void
 }) {
   return (
     <Card className="hover:shadow-lg transition-all duration-300 hover:scale-105 cursor-pointer group">
@@ -495,11 +532,16 @@ function TestimonialCard({
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               {getTypeIcon(testimonial.testimonial_type)}
-              <CardTitle className="text-base line-clamp-2">{testimonial.title}</CardTitle>
+              <CardTitle className="text-base">{testimonial.title}</CardTitle>
             </div>
             <div className="flex items-center gap-4 text-xs text-gray-600">
-              <div className="flex items-center gap-1">
-                <User className="h-4 w-4" />
+              <div className="flex items-center gap-2">
+                <Avatar className="w-6 h-6">
+                  <AvatarImage src={testimonial.author.avatar || undefined} alt={`${testimonial.author.prenom} ${testimonial.author.nom}`} />
+                  <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white text-xs font-bold">
+                    {testimonial.author.prenom.charAt(0)}{testimonial.author.nom.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
                 <span>
                   {testimonial.author.prenom} {testimonial.author.nom}
                 </span>
@@ -521,9 +563,24 @@ function TestimonialCard({
         <div className="space-y-4">
           {/* Aperçu du contenu */}
           <div className="bg-gray-50 p-4 rounded-lg">
-            <p className="text-gray-700 text-xs line-clamp-4 leading-relaxed">
-              {testimonial.content}
+            <p className="text-gray-700 text-xs leading-relaxed">
+              {isExpanded 
+                ? testimonial.content 
+                : testimonial.content.length > 200 
+                  ? testimonial.content.substring(0, 200) + "..." 
+                  : testimonial.content
+              }
             </p>
+            {testimonial.content.length > 200 && (
+              <Button
+                variant="link"
+                size="sm"
+                className="text-red-600 hover:text-red-800 p-0 h-auto text-xs mt-2"
+                onClick={() => onToggleExpansion(testimonial.id)}
+              >
+                {isExpanded ? "Voir moins" : "Voir plus"}
+              </Button>
+            )}
           </div>
 
           {/* Aperçu vidéo si disponible */}

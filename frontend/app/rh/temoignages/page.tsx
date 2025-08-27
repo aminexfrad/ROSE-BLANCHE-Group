@@ -10,6 +10,7 @@ import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Textarea } from "@/components/ui/textarea"
 import { Input } from "@/components/ui/input"
@@ -335,8 +336,13 @@ export default function RHTemoignagesPage() {
                       </div>
                       
                       <div className="flex items-center gap-4 text-sm text-gray-600 mb-2">
-                        <div className="flex items-center gap-1">
-                          <User className="h-4 w-4" />
+                        <div className="flex items-center gap-2">
+                          <Avatar className="w-6 h-6">
+                            <AvatarImage src={testimonial.author.avatar || undefined} alt={`${testimonial.author.prenom} ${testimonial.author.nom}`} />
+                            <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white text-xs font-bold">
+                              {testimonial.author.prenom.charAt(0)}{testimonial.author.nom.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
                           <span>{testimonial.author.prenom} {testimonial.author.nom}</span>
                         </div>
                         <span>•</span>
@@ -509,7 +515,7 @@ export default function RHTemoignagesPage() {
               {selectedTestimonial && (
                 <div className="bg-gray-50 p-4 rounded-lg">
                   <h4 className="font-medium mb-2">{selectedTestimonial.title}</h4>
-                  <p className="text-sm text-gray-600">{selectedTestimonial.content.substring(0, 200)}...</p>
+                  <p className="text-sm text-gray-600">{selectedTestimonial.content}</p>
                 </div>
               )}
               
@@ -600,9 +606,17 @@ export default function RHTemoignagesPage() {
                 <div className="space-y-3">
                   <div>
                     <h3 className="font-semibold text-lg">{previewTestimonial.title}</h3>
-                    <p className="text-sm text-gray-600">
-                      Par {previewTestimonial.author.prenom} {previewTestimonial.author.nom}
-                    </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Avatar className="w-8 h-8">
+                        <AvatarImage src={previewTestimonial.author.avatar || undefined} alt={`${previewTestimonial.author.prenom} ${previewTestimonial.author.nom}`} />
+                        <AvatarFallback className="bg-gradient-to-br from-red-500 to-red-700 text-white text-xs font-bold">
+                          {previewTestimonial.author.prenom.charAt(0)}{previewTestimonial.author.nom.charAt(0)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <p className="text-sm text-gray-600">
+                        Par {previewTestimonial.author.prenom} {previewTestimonial.author.nom}
+                      </p>
+                    </div>
                   </div>
                   
                   <div className="bg-gray-50 p-4 rounded-lg">
