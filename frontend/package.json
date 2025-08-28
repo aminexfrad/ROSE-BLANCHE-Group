@@ -92,8 +92,8 @@
     "zod": "^3.24.1"
   },
   "devDependencies": {
-    "@testing-library/jest-dom": "^6.0.0",
-    "@testing-library/react": "^14.0.0",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^14.3.1",
     "@types/node": "^22",
     "@types/react": "^18",
     "@types/react-dom": "^18",

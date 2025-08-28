@@ -1488,3 +1488,424 @@ class RHSurveyAnalysisView(APIView):
                 {'error': f'Error fetching survey analysis: {str(e)}'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+# ============================================================================
+# VUES POUR LES ÉVALUATIONS KPI DES STAGIAIRES
+# ============================================================================
+
+from rest_framework import viewsets, permissions
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.decorators import action
+from .models import InternKpiEvaluation
+from .serializers import (
+    InternKpiEvaluationSerializer,
+    InternKpiEvaluationCreateSerializer,
+    InternKpiEvaluationUpdateSerializer,
+    InternKpiEvaluationListSerializer,
+    InternKpiEvaluationDetailSerializer
+)
+from .permissions import IsRHUser
+
+class InternKpiEvaluationViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet pour la gestion des évaluations KPI des stagiaires
+    """
+    queryset = InternKpiEvaluation.objects.all()
+    permission_classes = [permissions.IsAuthenticated, IsRHUser]
+    parser_classes = [MultiPartParser, FormParser]
+    
+    def get_serializer_class(self):
+        """Retourner le serializer approprié selon l'action"""
+        if self.action == 'create':
+            return InternKpiEvaluationCreateSerializer
+        elif self.action in ['update', 'partial_update']:
+            return InternKpiEvaluationUpdateSerializer
+        elif self.action == 'list':
+            return InternKpiEvaluationListSerializer
+        elif self.action == 'retrieve':
+            return InternKpiEvaluationDetailSerializer
+        return InternKpiEvaluationSerializer
+    
+    def get_queryset(self):
+        """Filtrer les évaluations selon les permissions et paramètres"""
+        queryset = super().get_queryset()
+        
+        # Filtrer par stagiaire si spécifié
+        intern_id = self.request.query_params.get('intern_id')
+        if intern_id:
+            queryset = queryset.filter(intern_id=intern_id)
+        
+        # Filtrer par stage si spécifié
+        stage_id = self.request.query_params.get('stage_id')
+        if stage_id:
+            queryset = queryset.filter(stage_id=stage_id)
+        
+        # Filtrer par date d'évaluation
+        start_date = self.request.query_params.get('start_date')
+        end_date = self.request.query_params.get('end_date')
+        if start_date:
+            queryset = queryset.filter(evaluation_date__gte=start_date)
+        if end_date:
+            queryset = queryset.filter(evaluation_date__lte=end_date)
+        
+        # Filtrer par catégorie de potentiel
+        interpretation = self.request.query_params.get('interpretation')
+        if interpretation:
+            queryset = queryset.filter(interpretation=interpretation)
+        
+        # Filtrer par score total
+        min_score = self.request.query_params.get('min_score')
+        max_score = self.request.query_params.get('max_score')
+        if min_score:
+            queryset = queryset.filter(total_score__gte=min_score)
+        if max_score:
+            queryset = queryset.filter(total_score__lte=max_score)
+        
+        return queryset.select_related('intern', 'evaluator', 'stage')
+    
+    def perform_create(self, serializer):
+        """Créer l'évaluation avec l'évaluateur automatiquement"""
+        serializer.save(evaluator=self.request.user)
+    
+    @action(detail=False, methods=['get'])
+    def intern_evaluations(self, request):
+        """Récupérer toutes les évaluations d'un stagiaire spécifique"""
+        intern_id = request.query_params.get('intern_id')
+        if not intern_id:
+            return Response(
+                {'error': 'Le paramètre intern_id est requis'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        evaluations = self.get_queryset().filter(intern_id=intern_id)
+        serializer = InternKpiEvaluationListSerializer(evaluations, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def stage_evaluations(self, request):
+        """Récupérer toutes les évaluations d'un stage spécifique"""
+        stage_id = request.query_params.get('stage_id')
+        if not stage_id:
+            return Response(
+                {'error': 'Le paramètre stage_id est requis'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        evaluations = self.get_queryset().filter(stage_id=stage_id)
+        serializer = InternKpiEvaluationListSerializer(evaluations, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def statistics(self, request):
+        """Récupérer les statistiques des évaluations KPI"""
+        queryset = self.get_queryset()
+        
+        # Statistiques générales
+        total_evaluations = queryset.count()
+        if total_evaluations == 0:
+            return Response({
+                'total_evaluations': 0,
+                'average_score': 0,
+                'interpretation_distribution': {},
+                'recent_evaluations': 0
+            })
+        
+        # Score moyen
+        average_score = queryset.aggregate(
+            avg_score=models.Avg('total_score')
+        )['avg_score']
+        
+        # Distribution des interprétations
+        interpretation_distribution = {}
+        for choice in InternKpiEvaluation.PotentialCategory.choices:
+            count = queryset.filter(interpretation=choice[0]).count()
+            interpretation_distribution[choice[1]] = count
+        
+        # Évaluations récentes (30 derniers jours)
+        thirty_days_ago = timezone.now().date() - timezone.timedelta(days=30)
+        recent_evaluations = queryset.filter(
+            evaluation_date__gte=thirty_days_ago
+        ).count()
+        
+        # Top 5 des meilleurs scores
+        top_scores = queryset.order_by('-total_score')[:5].values(
+            'intern__nom', 'intern__prenom', 'total_score', 'interpretation'
+        )
+        
+        return Response({
+            'total_evaluations': total_evaluations,
+            'average_score': round(average_score, 2),
+            'interpretation_distribution': interpretation_distribution,
+            'recent_evaluations': recent_evaluations,
+            'top_scores': top_scores
+        })
+    
+    @action(detail=False, methods=['get'])
+    def export_excel(self, request):
+        """Exporter les évaluations au format Excel"""
+        queryset = self.get_queryset()
+        
+        # Créer un nouveau classeur Excel
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Évaluations KPI Stagiaires"
+        
+        # Styles
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+        
+        # En-têtes
+        headers = [
+            "KPI", "Définition", "Méthode de Mesure", "Poids", 
+            "Note (sur 5)", "Score Calculé"
+        ]
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+        
+        # Définitions des KPIs
+        kpi_definitions = [
+            {
+                "name": "Taux de Satisfaction des Livrables",
+                "definition": "% des livrables validés sans corrections majeures",
+                "measurement": "Suivi sur la qualité des travaux",
+                "weight": "25%"
+            },
+            {
+                "name": "Respect des Délais",
+                "definition": "% des tâches terminées dans les délais prévus",
+                "measurement": "Suivi des livrables et des délais",
+                "weight": "20%"
+            },
+            {
+                "name": "Capacité d'Apprentissage",
+                "definition": "Temps nécessaire pour maîtriser de nouvelles compétences ou outils",
+                "measurement": "Temps moyen pour acquérir une nouvelle compétence ou utiliser un nouvel outil",
+                "weight": "15%"
+            },
+            {
+                "name": "Prise d'Initiatives",
+                "definition": "Nombre d'initiatives ou propositions d'amélioration soumises par le stagiaire",
+                "measurement": "Compte des suggestions ou actions prises par le stagiaire pour améliorer le travail ou résoudre un problème",
+                "weight": "10%"
+            },
+            {
+                "name": "Comportement en Entreprise et Conduite",
+                "definition": "Respect des normes professionnelles, éthique, communication",
+                "measurement": "Observation directe sur la capacité du stagiaire à respecter les règles, maintenir une éthique professionnelle et communiquer efficacement avec les autres",
+                "weight": "15%"
+            },
+            {
+                "name": "Adaptabilité au Changement",
+                "definition": "Capacité à s'adapter aux changements de tâches ou de priorités",
+                "measurement": "Observation et feedbacks des managers sur la flexibilité du stagiaire",
+                "weight": "15%"
+            }
+        ]
+        
+        # Remplir les données des KPIs
+        for row, kpi in enumerate(kpi_definitions, 2):
+            ws.cell(row=row, column=1, value=kpi["name"])
+            ws.cell(row=row, column=2, value=kpi["definition"])
+            ws.cell(row=row, column=3, value=kpi["measurement"])
+            ws.cell(row=row, column=4, value=kpi["weight"])
+            ws.cell(row=row, column=5, value="")  # Note à remplir
+            ws.cell(row=row, column=6, value="0")  # Score calculé
+        
+        # Ligne du total
+        total_row = len(kpi_definitions) + 2
+        ws.cell(row=total_row, column=1, value="Total des points (sur 100)")
+        ws.cell(row=total_row, column=2, value="")
+        ws.cell(row=total_row, column=3, value="")
+        ws.cell(row=total_row, column=4, value="100%")
+        ws.cell(row=total_row, column=5, value="")
+        ws.cell(row=total_row, column=6, value="0/5")
+        
+        # Tableau d'interprétation
+        interpretation_row = total_row + 2
+        ws.cell(row=interpretation_row, column=1, value="3")
+        ws.cell(row=interpretation_row, column=2, value="Catégorie")
+        
+        interpretation_data = [
+            ["Potentiel élevé", "De 4,5 à 5"],
+            ["Bon potentiel", "De 3,5 à 4,4"],
+            ["Potentiel moyen", "De 2,5 à 3,4"],
+            ["Potentiel à renforcer", "En dessous de 2,5"]
+        ]
+        
+        for i, (category, range_desc) in enumerate(interpretation_data):
+            ws.cell(row=interpretation_row + i + 1, column=1, value="")
+            ws.cell(row=interpretation_row + i + 1, column=2, value=category)
+            ws.cell(row=interpretation_row + i + 1, column=3, value=range_desc)
+        
+        # Ajuster la largeur des colonnes
+        for col in range(1, 7):
+            ws.column_dimensions[get_column_letter(col)].width = 25
+        
+        # Créer la réponse HTTP
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="evaluations_kpi_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx"'
+        
+        # Sauvegarder dans le buffer
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        response.write(buffer.getvalue())
+        
+        return response
+    
+    @action(detail=True, methods=['get'])
+    def export_intern_evaluation(self, request, pk=None):
+        """Exporter une évaluation spécifique au format Excel"""
+        try:
+            evaluation = self.get_object()
+        except InternKpiEvaluation.DoesNotExist:
+            return Response(
+                {'error': 'Évaluation non trouvée'}, 
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        # Créer un nouveau classeur Excel
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = f"Évaluation KPI - {evaluation.intern.get_full_name()}"
+        
+        # Styles
+        header_font = Font(bold=True, color="FFFFFF")
+        header_fill = PatternFill(start_color="366092", end_color="366092", fill_type="solid")
+        header_alignment = Alignment(horizontal="center", vertical="center")
+        
+        # En-têtes
+        headers = [
+            "KPI", "Définition", "Méthode de Mesure", "Poids", 
+            "Note (sur 5)", "Score Calculé"
+        ]
+        
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = header_alignment
+        
+        # Données de l'évaluation
+        evaluation_data = [
+            {
+                "name": "Taux de Satisfaction des Livrables",
+                "definition": "% des livrables validés sans corrections majeures",
+                "measurement": "Suivi sur la qualité des travaux",
+                "weight": "25%",
+                "score": evaluation.delivery_satisfaction_rate,
+                "calculated_score": evaluation.delivery_satisfaction_rate * 0.25
+            },
+            {
+                "name": "Respect des Délais",
+                "definition": "% des tâches terminées dans les délais prévus",
+                "measurement": "Suivi des livrables et des délais",
+                "weight": "20%",
+                "score": evaluation.deadline_respect_rate,
+                "calculated_score": evaluation.deadline_respect_rate * 0.20
+            },
+            {
+                "name": "Capacité d'Apprentissage",
+                "definition": "Temps nécessaire pour maîtriser de nouvelles compétences ou outils",
+                "measurement": "Temps moyen pour acquérir une nouvelle compétence ou utiliser un nouvel outil",
+                "weight": "15%",
+                "score": evaluation.learning_capacity,
+                "calculated_score": evaluation.learning_capacity * 0.15
+            },
+            {
+                "name": "Prise d'Initiatives",
+                "definition": "Nombre d'initiatives ou propositions d'amélioration soumises par le stagiaire",
+                "measurement": "Compte des suggestions ou actions prises par le stagiaire pour améliorer le travail ou résoudre un problème",
+                "weight": "10%",
+                "score": evaluation.initiative_taking,
+                "calculated_score": evaluation.initiative_taking * 0.10
+            },
+            {
+                "name": "Comportement en Entreprise et Conduite",
+                "definition": "Respect des normes professionnelles, éthique, communication",
+                "measurement": "Observation directe sur la capacité du stagiaire à respecter les règles, maintenir une éthique professionnelle et communiquer efficacement avec les autres",
+                "weight": "15%",
+                "score": evaluation.professional_behavior,
+                "calculated_score": evaluation.professional_behavior * 0.15
+            },
+            {
+                "name": "Adaptabilité au Changement",
+                "definition": "Capacité à s'adapter aux changements de tâches ou de priorités",
+                "measurement": "Observation et feedbacks des managers sur la flexibilité du stagiaire",
+                "weight": "15%",
+                "score": evaluation.adaptability,
+                "calculated_score": evaluation.adaptability * 0.15
+            }
+        ]
+        
+        # Remplir les données
+        for row, data in enumerate(evaluation_data, 2):
+            ws.cell(row=row, column=1, value=data["name"])
+            ws.cell(row=row, column=2, value=data["definition"])
+            ws.cell(row=row, column=3, value=data["measurement"])
+            ws.cell(row=row, column=4, value=data["weight"])
+            ws.cell(row=row, column=5, value=data["score"])
+            ws.cell(row=row, column=6, value=round(data["calculated_score"], 2))
+        
+        # Ligne du total
+        total_row = len(evaluation_data) + 2
+        ws.cell(row=total_row, column=1, value="Total des points (sur 100)")
+        ws.cell(row=total_row, column=2, value="")
+        ws.cell(row=total_row, column=3, value="")
+        ws.cell(row=total_row, column=4, value="100%")
+        ws.cell(row=total_row, column=5, value="")
+        ws.cell(row=total_row, column=6, value=f"{evaluation.total_score}/5")
+        
+        # Informations de l'évaluation
+        info_row = total_row + 2
+        ws.cell(row=info_row, column=1, value="Informations de l'évaluation")
+        ws.cell(row=info_row, column=2, value="")
+        ws.cell(row=info_row, column=3, value="")
+        ws.cell(row=info_row, column=4, value="")
+        ws.cell(row=info_row, column=5, value="")
+        ws.cell(row=info_row, column=6, value="")
+        
+        ws.cell(row=info_row + 1, column=1, value="Stagiaire:")
+        ws.cell(row=info_row + 1, column=2, value=evaluation.intern.get_full_name())
+        
+        ws.cell(row=info_row + 2, column=1, value="Évaluateur:")
+        ws.cell(row=info_row + 2, column=2, value=evaluation.evaluator.get_full_name())
+        
+        ws.cell(row=info_row + 3, column=1, value="Date d'évaluation:")
+        ws.cell(row=info_row + 3, column=2, value=evaluation.evaluation_date.strftime("%d/%m/%Y"))
+        
+        ws.cell(row=info_row + 4, column=1, value="Score total:")
+        ws.cell(row=info_row + 4, column=2, value=f"{evaluation.total_score}/5")
+        
+        ws.cell(row=info_row + 5, column=1, value="Interprétation:")
+        ws.cell(row=info_row + 5, column=2, value=evaluation.get_interpretation_display())
+        
+        if evaluation.comments:
+            ws.cell(row=info_row + 6, column=1, value="Commentaires:")
+            ws.cell(row=info_row + 6, column=2, value=evaluation.comments)
+        
+        # Ajuster la largeur des colonnes
+        for col in range(1, 7):
+            ws.column_dimensions[get_column_letter(col)].width = 25
+        
+        # Créer la réponse HTTP
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        response['Content-Disposition'] = f'attachment; filename="evaluation_kpi_{evaluation.intern.get_full_name().replace(" ", "_")}_{evaluation.evaluation_date.strftime("%Y%m%d")}.xlsx"'
+        
+        # Sauvegarder dans le buffer
+        buffer = BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+        response.write(buffer.getvalue())
+        
+        return response

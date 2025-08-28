@@ -75,6 +75,14 @@ export default function RHDashboard() {
     },
 
     {
+      title: "Évaluations KPI",
+      description: "Évaluez le potentiel des stagiaires",
+      icon: BarChart3,
+      href: "/rh/kpi-evaluations",
+      badge: "Nouveau",
+    },
+
+    {
       title: "Témoignages",
       description: "Validez et modérez les témoignages",
       icon: MessageSquare,

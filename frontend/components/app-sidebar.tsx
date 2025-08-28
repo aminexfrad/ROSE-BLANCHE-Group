@@ -85,6 +85,7 @@ const menuItems: Record<string, MenuGroup[]> = {
       items: [
         { title: "Tableau de bord", url: "/rh", icon: Home },
         { title: "Tous les Stagiaires", url: "/rh/stagiaires", icon: Users },
+        { title: "Évaluations KPI", url: "/rh/kpi-evaluations", icon: BarChart3 },
       ],
     },
     {
