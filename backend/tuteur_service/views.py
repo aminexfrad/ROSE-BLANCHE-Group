@@ -190,50 +190,27 @@ class TuteurStagiaireDetailView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             ) 
 
-# --- MISSING VIEWS STUBS ---
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from rest_framework.response import Response
-
-class TuteurStageStudentsView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request, pk):
-        return Response({'detail': 'TuteurStageStudentsView not implemented'}, status=501)
-
-class StepValidationView(APIView):
-    permission_classes = [IsAuthenticated]
-    def post(self, request, pk):
-        return Response({'detail': 'StepValidationView not implemented'}, status=501)
-
-class StepRejectionView(APIView):
-    permission_classes = [IsAuthenticated]
-    def post(self, request, pk):
-        return Response({'detail': 'StepRejectionView not implemented'}, status=501)
-
-class DocumentApprovalView(APIView):
-    permission_classes = [IsAuthenticated]
-    def post(self, request, pk):
-        return Response({'detail': 'DocumentApprovalView not implemented'}, status=501)
-
-class DocumentRejectionView(APIView):
-    permission_classes = [IsAuthenticated]
-    def post(self, request, pk):
-        return Response({'detail': 'DocumentRejectionView not implemented'}, status=501)
-
-class TuteurEvaluationDetailView(APIView):
-    permission_classes = [IsAuthenticated]
-    def get(self, request, pk):
-        return Response({'detail': 'TuteurEvaluationDetailView not implemented'}, status=501)
-
-class TuteurNotificationReadView(APIView):
-    permission_classes = [IsAuthenticated]
-    def post(self, request, pk):
-        return Response({'detail': 'TuteurNotificationReadView not implemented'}, status=501)
 
 
 
 
-# --- END MISSING VIEWS STUBS ---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class TuteurEvaluationsView(APIView):
     """
