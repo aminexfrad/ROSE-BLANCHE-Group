@@ -66,6 +66,17 @@ export interface User {
   date_joined: string
 }
 
+export interface UserCreateResponse extends User {
+  password: string
+  stage_created?: boolean
+  stage_id?: number
+  stage_error?: string
+}
+
+export interface UserUpdateResponse extends User {
+  // Additional properties if any
+}
+
 export interface Candidat {
   id: number
   user: {
@@ -311,9 +322,9 @@ export interface PFEReport {
   speciality: string;
   year: number;
   status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'archived';
-  submitted_at: string | null;
-  reviewed_at: string | null;
-  approved_at: string | null;
+  submitted_at: string | null | undefined;
+  reviewed_at: string | null | undefined;
+  approved_at: string | null | undefined;
   version: number;
   download_count: number;
   view_count: number;
@@ -323,10 +334,10 @@ export interface PFEReport {
   stagiaire_comment: string;
   rejection_reason: string;
   pdf_file: string;
-  presentation_file: string | null;
-  additional_files: string | null;
+  presentation_file: string | null | undefined;
+  additional_files: string | null | undefined;
   stagiaire: User;
-  tuteur: User | null;
+  tuteur: User | null | undefined;
 }
 
 
@@ -1413,7 +1424,7 @@ class ApiClient {
     return this.request<{ results: User[]; count: number }>(`/admin/users/?${queryParams}`)
   }
 
-  async createUser(formData: FormData): Promise<User> {
+  async createUser(formData: FormData): Promise<UserCreateResponse> {
     const response = await fetch(`${API_BASE_URL}/admin/users/create/`, {
       method: 'POST',
       headers: {
@@ -1430,7 +1441,7 @@ class ApiClient {
     return response.json()
   }
 
-  async updateUser(id: number, formData: FormData): Promise<User> {
+  async updateUser(id: number, formData: FormData): Promise<UserUpdateResponse> {
     const response = await fetch(`${API_BASE_URL}/admin/users/${id}/update/`, {
       method: 'PUT',
       headers: {

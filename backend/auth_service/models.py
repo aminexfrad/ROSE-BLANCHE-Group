@@ -67,17 +67,18 @@ class User(AbstractUser):
         _('rôle'),
         max_length=20,
         choices=Role.choices,
-        default=Role.STAGIAIRE
+        default=Role.STAGIAIRE,
+        db_index=True
     )
     
     # Academic/Professional information
     departement = models.CharField(_('département'), max_length=100, blank=True)
-    institut = models.CharField(_('institut'), max_length=200, blank=True)
+    institut = models.CharField(_('institut'), max_length=200, blank=True, db_index=True)
     specialite = models.CharField(_('spécialité'), max_length=200, blank=True)
     bio = models.TextField(_('biographie'), blank=True)
     
     # Company association (for RH users)
-    entreprise = models.ForeignKey('shared.Entreprise', on_delete=models.SET_NULL, null=True, blank=True, related_name='users', verbose_name=_('filiale'))
+    entreprise = models.ForeignKey('shared.Entreprise', on_delete=models.SET_NULL, null=True, blank=True, related_name='users', verbose_name=_('filiale'), db_index=True)
     
     # Application tracking (for candidates)
     max_applications = models.PositiveIntegerField(_('nombre maximum de candidatures'), default=3)

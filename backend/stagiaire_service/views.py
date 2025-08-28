@@ -80,11 +80,11 @@ class InternshipStepsView(APIView):
 
     def get(self, request):
         try:
-            # Get the user's active internship
+            # Get the user's active internship with optimized queries
             internship = Stage.objects.filter(
                 stagiaire=request.user,
                 status='active'
-            ).first()
+            ).prefetch_related('steps', 'steps__documents').first()
             
             if not internship:
                 return Response(
@@ -92,7 +92,7 @@ class InternshipStepsView(APIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-            # Get all steps for this internship
+            # Get all steps for this internship (already prefetched)
             steps = internship.steps.all().order_by('order')
             
             steps_data = []
@@ -132,11 +132,11 @@ class InternshipDocumentsView(APIView):
 
     def get(self, request):
         try:
-            # Get the user's active internship
+            # Get the user's active internship with optimized queries
             internship = Stage.objects.filter(
                 stagiaire=request.user,
                 status='active'
-            ).first()
+            ).prefetch_related('documents', 'documents__step').first()
             
             if not internship:
                 return Response(
@@ -144,7 +144,7 @@ class InternshipDocumentsView(APIView):
                     status=status.HTTP_404_NOT_FOUND
                 )
             
-            # Get all documents for this internship
+            # Get all documents for this internship (already prefetched)
             documents = internship.documents.all().order_by('-created_at')
             
             documents_data = []

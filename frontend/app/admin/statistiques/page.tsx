@@ -7,7 +7,7 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { apiClient, User, Demande, Stage } from "@/lib/api"
+import { apiClient, User, Application, Stage } from "@/lib/api"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { KPIChart } from "@/components/kpi-chart"
@@ -18,7 +18,7 @@ export default function AdminStatistiquesPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [users, setUsers] = useState<User[]>([])
-  const [demandes, setDemandes] = useState<Demande[]>([])
+  const [demandes, setDemandes] = useState<Application[]>([])
   const [stages, setStages] = useState<Stage[]>([])
 
   useEffect(() => {
@@ -51,7 +51,7 @@ export default function AdminStatistiquesPage() {
   const stagiaireUsers = users.filter(u => u.role === "stagiaire").length
 
   const totalDemandes = demandes.length
-  const demandesAcceptees = demandes.filter(d => d.status === "accepted").length
+  const demandesAcceptees = demandes.filter(d => d.status === "approved").length
   const demandesEnAttente = demandes.filter(d => d.status === "pending").length
   const demandesRejetees = demandes.filter(d => d.status === "rejected").length
   const tauxAcceptation = totalDemandes > 0 ? ((demandesAcceptees / totalDemandes) * 100).toFixed(1) : "0"
@@ -72,10 +72,10 @@ export default function AdminStatistiquesPage() {
   // Real demandes evolution data
   const demandesEvolution = demandes.slice(0, 6).map((d, index) => ({
     label: `Demande ${index + 1}`,
-    value: d.status === "accepted" ? 100 : d.status === "rejected" ? 0 : 50,
+    value: d.status === "approved" ? 100 : d.status === "rejected" ? 0 : 50,
     target: 80,
-    trend: d.status === "accepted" ? "up" as const : "down" as const,
-    color: d.status === "accepted" ? "bg-green-500" : d.status === "rejected" ? "bg-red-500" : "bg-yellow-500",
+    trend: d.status === "approved" ? "up" as const : "down" as const,
+    color: d.status === "approved" ? "bg-green-500" : d.status === "rejected" ? "bg-red-500" : "bg-yellow-500",
   }))
 
   // Real stages progression data

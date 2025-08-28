@@ -319,7 +319,6 @@ export default function CandidateDashboardPage() {
                     }, 2000)
                   }
                 }}
-                disabled={isLoggingOut}
                 className="flex items-center gap-2 text-red-600 border-red-300 hover:bg-red-50"
               >
                 <LogOut className="h-4 w-4" />

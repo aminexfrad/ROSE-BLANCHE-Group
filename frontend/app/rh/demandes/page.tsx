@@ -457,14 +457,14 @@ export default function RHDemandesPage() {
                         </div>
 
                         {/* Selected Offer Summary (shown only in details) */}
-                        {false && application.offres && application.offres.length > 0 ? (
+                        {false && (application.offres?.length ?? 0) > 0 ? (
                           <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
                             <div className="flex items-center gap-2 mb-3">
                               <MapPinIcon className="h-4 w-4 text-blue-600" />
                               <span className="font-semibold text-sm text-blue-900">Offre sélectionnée</span>
                             </div>
                             <div className="space-y-2">
-                              {application.offres.slice(0, 1).map((offre) => (
+                              {application.offres?.slice(0, 1).map((offre) => (
                                 <div key={offre.id} className="flex items-center justify-between text-sm p-2 bg-white rounded border">
                                   <div className="flex items-center gap-2">
                                     <div className="w-2 h-2 bg-blue-500 rounded-full"></div>

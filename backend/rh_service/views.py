@@ -488,10 +488,11 @@ class RHStagesView(APIView):
 
     def get(self, request):
         try:
-            # Use company-based filtering
+            # Use company-based filtering with optimized queries
             stages = get_company_filtered_queryset(
                 request, 
-                Stage.objects.all(),
+                Stage.objects.select_related('stagiaire', 'tuteur', 'company_entreprise')
+                .prefetch_related('steps', 'documents', 'evaluations'),
                 'company_entreprise'
             ).order_by('-created_at')
             
@@ -553,7 +554,11 @@ class RHStageDetailView(APIView):
 
     def get(self, request, pk):
         try:
-            stage = get_object_or_404(Stage, id=pk)
+            stage = get_object_or_404(
+                Stage.objects.select_related('stagiaire', 'tuteur', 'company_entreprise')
+                .prefetch_related('steps', 'documents', 'evaluations'), 
+                id=pk
+            )
             
             # Validate company access for RH users
             if request.user.role == 'rh':
@@ -567,7 +572,7 @@ class RHStageDetailView(APIView):
                         status=status.HTTP_403_FORBIDDEN
                     )
             
-            # Get steps
+            # Get steps (already prefetched)
             steps = stage.steps.all().order_by('order')
             steps_data = []
             for step in steps:

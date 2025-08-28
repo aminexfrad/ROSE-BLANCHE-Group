@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
-import { apiClient } from "@/lib/api"
+import { apiClient, PFEReport } from "@/lib/api"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -28,28 +28,7 @@ import {
   BookOpen,
 } from "lucide-react"
 
-interface PFEReport {
-  id: number;
-  title: string;
-  stagiaire: {
-    nom: string;
-    prenom: string;
-    email: string;
-  };
-  tuteur?: {
-    nom: string;
-    prenom: string;
-  };
-  status: string;
-  year: number;
-  speciality: string;
-  created_at: string;
-  submitted_at?: string;
-  approved_at?: string;
-  archived_at?: string;
-  download_count: number;
-  view_count: number;
-}
+
 
 export default function AdminPFEReports() {
   const { user } = useAuth()
@@ -374,9 +353,7 @@ export default function AdminPFEReports() {
                             {report.approved_at && (
                               <span>Approuvé: {new Date(report.approved_at).toLocaleDateString()}</span>
                             )}
-                            {report.archived_at && (
-                              <span>Archivé: {new Date(report.archived_at).toLocaleDateString()}</span>
-                            )}
+
                           </div>
                         </div>
                       </div>

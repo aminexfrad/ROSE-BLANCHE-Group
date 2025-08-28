@@ -83,26 +83,27 @@ class Stage(models.Model):
     
     # Basic information
     demande = models.OneToOneField(Demande, on_delete=models.CASCADE, related_name='stage')
-    stagiaire = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stages_stagiaire')
-    tuteur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stages_tuteur', null=True, blank=True)
+    stagiaire = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stages_stagiaire', db_index=True)
+    tuteur = models.ForeignKey(User, on_delete=models.CASCADE, related_name='stages_tuteur', null=True, blank=True, db_index=True)
     
     # Stage details
     title = models.CharField(_('titre'), max_length=200)
     description = models.TextField(_('description'), blank=True)
-    company_entreprise = models.ForeignKey(Entreprise, on_delete=models.SET_NULL, null=True, blank=True, related_name='stages', verbose_name=_('filiale'))
+    company_entreprise = models.ForeignKey(Entreprise, on_delete=models.SET_NULL, null=True, blank=True, related_name='stages', verbose_name=_('filiale'), db_index=True)
     company_name = models.CharField(_('nom filiale'), max_length=200, blank=True)  # Keep for backward compatibility
     location = models.CharField(_('localisation'), max_length=200)
     
     # Dates
-    start_date = models.DateField(_('date de début'))
-    end_date = models.DateField(_('date de fin'))
+    start_date = models.DateField(_('date de début'), db_index=True)
+    end_date = models.DateField(_('date de fin'), db_index=True)
     
     # Status and progress
     status = models.CharField(
         _('statut'),
         max_length=20,
         choices=Status.choices,
-        default=Status.ACTIVE
+        default=Status.ACTIVE,
+        db_index=True
     )
     progress = models.IntegerField(_('progression'), default=0)  # 0-100
     
@@ -158,17 +159,18 @@ class Step(models.Model):
         VALIDATED = 'validated', _('Validé')
         REJECTED = 'rejected', _('Rejeté')
     
-    stage = models.ForeignKey(Stage, on_delete=models.CASCADE, related_name='steps')
+    stage = models.ForeignKey(Stage, on_delete=models.CASCADE, related_name='steps', db_index=True)
     title = models.CharField(_('titre'), max_length=200)
     description = models.TextField(_('description'), blank=True)
-    order = models.IntegerField(_('ordre'))
+    order = models.IntegerField(_('ordre'), db_index=True)
     
     # Status and validation
     status = models.CharField(
         _('statut'),
         max_length=20,
         choices=Status.choices,
-        default=Status.PENDING
+        default=Status.PENDING,
+        db_index=True
     )
     due_date = models.DateField(_('date limite'), null=True, blank=True)
     completed_date = models.DateField(_('date de completion'), null=True, blank=True)

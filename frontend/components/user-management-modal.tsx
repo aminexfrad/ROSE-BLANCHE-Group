@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { User, UserPlus, Edit, Loader2, AlertCircle } from "lucide-react"
-import { apiClient, User as UserType } from "@/lib/api"
+import { apiClient, User as UserType, UserCreateResponse, UserUpdateResponse } from "@/lib/api"
 import { useToast } from "@/hooks/use-toast"
 
 interface UserManagementModalProps {
@@ -93,12 +93,12 @@ export function UserManagementModal({
         formDataObj.append('specialite', formData.specialite)
         formDataObj.append('bio', formData.bio)
         
-        const response = await apiClient.updateUser(user.id, formDataObj)
+        const response: UserUpdateResponse = await apiClient.updateUser(user.id, formDataObj)
         toast({
           title: "Succès",
           description: "Utilisateur mis à jour avec succès",
         })
-        onUserUpdated?.(response.user)
+        onUserUpdated?.(response)
       } else {
         const formDataObj = new FormData()
         formDataObj.append('email', formData.email)
@@ -111,7 +111,7 @@ export function UserManagementModal({
         formDataObj.append('specialite', formData.specialite)
         formDataObj.append('bio', formData.bio)
         
-        const response = await apiClient.createUser(formDataObj)
+        const response: UserCreateResponse = await apiClient.createUser(formDataObj)
         
         let description = `Utilisateur créé avec succès. Mot de passe: ${response.password}`
         
@@ -126,7 +126,7 @@ export function UserManagementModal({
           title: "Succès",
           description: description,
         })
-        onUserCreated?.(response.user)
+        onUserCreated?.(response)
       }
       onClose()
     } catch (error: any) {

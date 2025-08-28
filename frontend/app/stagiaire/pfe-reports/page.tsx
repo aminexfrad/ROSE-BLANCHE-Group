@@ -35,41 +35,7 @@ import {
 } from "lucide-react"
 import { apiClient } from '@/lib/api'
 
-interface PFEReport {
-  id: number
-  title: string
-  abstract: string
-  keywords: string
-  speciality: string
-  year: number
-  status: 'draft' | 'submitted' | 'under_review' | 'approved' | 'rejected' | 'archived'
-  submitted_at: string | null
-  reviewed_at: string | null
-  approved_at: string | null
-  version: number
-  download_count: number
-  view_count: number
-  created_at: string
-  updated_at: string
-  tuteur_feedback: string
-  stagiaire_comment: string
-  rejection_reason: string
-  pdf_file: string
-  presentation_file: string | null
-  additional_files: string | null
-  stagiaire: {
-    id: number
-    first_name: string
-    last_name: string
-    email: string
-  }
-  tuteur: {
-    id: number
-    first_name: string
-    last_name: string
-    email: string
-  } | null
-}
+import { PFEReport } from '@/lib/api'
 
 export default function StagiairePFEReportsPage() {
   const { user } = useAuth()
@@ -423,7 +389,7 @@ export default function StagiairePFEReportsPage() {
                           {report.tuteur && (
                             <>
                               <span>•</span>
-                              <span>Tuteur: {report.tuteur.first_name} {report.tuteur.last_name}</span>
+                              <span>Tuteur: {report.tuteur.prenom} {report.tuteur.nom}</span>
                             </>
                           )}
                         </div>

@@ -26,7 +26,11 @@ interface Notification {
   created_at: string
 }
 
-export function NotificationBell() {
+interface NotificationBellProps {
+  className?: string
+}
+
+export function NotificationBell({ className }: NotificationBellProps) {
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(false)
   const [open, setOpen] = useState(false)
@@ -107,7 +111,8 @@ export function NotificationBell() {
   }
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <div className={className}>
+      <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
@@ -231,6 +236,7 @@ export function NotificationBell() {
           </div>
         </div>
       </PopoverContent>
-    </Popover>
+      </Popover>
+    </div>
   )
 }

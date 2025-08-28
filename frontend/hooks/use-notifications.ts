@@ -52,7 +52,7 @@ export function useNotifications() {
 
   // Initialize WebSocket connection
   useEffect(() => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated()) {
       const connectWebSocket = async () => {
         try {
           setConnectionState('connecting')
@@ -79,7 +79,7 @@ export function useNotifications() {
 
   // Setup WebSocket event handlers
   useEffect(() => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated()) return
 
     // Handle new notifications
     const handleNewNotification = (data: NotificationMessage) => {
@@ -129,7 +129,7 @@ export function useNotifications() {
 
   // Fetch notifications from API
   const fetchNotifications = useCallback(async () => {
-    if (!isAuthenticated) return
+    if (!isAuthenticated()) return
 
     try {
       setLoading(true)

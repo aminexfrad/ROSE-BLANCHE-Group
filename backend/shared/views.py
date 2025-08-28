@@ -161,19 +161,19 @@ class UsersListView(generics.ListAPIView):
     def get_queryset(self):
         user = self.request.user
         
-        # Role-based access control
+        # Role-based access control with optimized queries
         if user.role == 'admin':
-            return User.objects.all()
+            return User.objects.select_related('entreprise').all()
         elif user.role == 'rh':
-            return User.objects.filter(role__in=['stagiaire', 'tuteur'])
+            return User.objects.select_related('entreprise').filter(role__in=['stagiaire', 'tuteur'])
         elif user.role == 'tuteur':
             # Tuteurs can see their assigned stagiaires
-            return User.objects.filter(
+            return User.objects.select_related('entreprise').filter(
                 stages_stagiaire__tuteur=user
             ).distinct()
         else:
             # Stagiaires can only see themselves
-            return User.objects.filter(id=user.id)
+            return User.objects.select_related('entreprise').filter(id=user.id)
 
 class StagesListView(generics.ListAPIView):
     permission_classes = [IsAuthenticated]
@@ -289,15 +289,15 @@ class DocumentsListView(generics.ListAPIView):
         if stage_id:
             queryset = queryset.filter(stage_id=stage_id)
         
-        # Role-based access control
+        # Role-based access control with optimized queries
         if user.role == 'admin':
-            return queryset
+            return queryset.select_related('stage', 'stage__stagiaire', 'stage__tuteur', 'uploaded_by')
         elif user.role == 'rh':
-            return queryset
+            return queryset.select_related('stage', 'stage__stagiaire', 'stage__tuteur', 'uploaded_by')
         elif user.role == 'tuteur':
-            return queryset.filter(stage__tuteur=user)
+            return queryset.select_related('stage', 'stage__stagiaire', 'uploaded_by').filter(stage__tuteur=user)
         elif user.role == 'stagiaire':
-            return queryset.filter(stage__stagiaire=user)
+            return queryset.select_related('stage', 'stage__tuteur', 'uploaded_by').filter(stage__stagiaire=user)
         else:
             return Document.objects.none()
 
@@ -316,15 +316,15 @@ class DocumentDetailView(generics.RetrieveUpdateDestroyAPIView):
     def get_queryset(self):
         user = self.request.user
         
-        # Role-based access control
+        # Role-based access control with optimized queries
         if user.role == 'admin':
-            return Document.objects.all()
+            return Document.objects.select_related('stage', 'stage__stagiaire', 'stage__tuteur', 'uploaded_by').all()
         elif user.role == 'rh':
-            return Document.objects.all()
+            return Document.objects.select_related('stage', 'stage__stagiaire', 'stage__tuteur', 'uploaded_by').all()
         elif user.role == 'tuteur':
-            return Document.objects.filter(stage__tuteur=user)
+            return Document.objects.select_related('stage', 'stage__stagiaire', 'uploaded_by').filter(stage__tuteur=user)
         elif user.role == 'stagiaire':
-            return Document.objects.filter(stage__stagiaire=user)
+            return Document.objects.select_related('stage', 'stage__tuteur', 'uploaded_by').filter(stage__stagiaire=user)
         else:
             return Document.objects.none()
 
@@ -346,15 +346,15 @@ class EvaluationsListView(generics.ListAPIView):
         if stage_id:
             queryset = queryset.filter(stage_id=stage_id)
         
-        # Role-based access control
+        # Role-based access control with optimized queries
         if user.role == 'admin':
-            return queryset
+            return queryset.select_related('stage', 'evaluator', 'evaluated')
         elif user.role == 'rh':
-            return queryset
+            return queryset.select_related('stage', 'evaluator', 'evaluated')
         elif user.role == 'tuteur':
-            return queryset.filter(Q(evaluator=user) | Q(evaluated=user))
+            return queryset.select_related('stage', 'evaluator', 'evaluated').filter(Q(evaluator=user) | Q(evaluated=user))
         elif user.role == 'stagiaire':
-            return queryset.filter(Q(evaluator=user) | Q(evaluated=user))
+            return queryset.select_related('stage', 'evaluator', 'evaluated').filter(Q(evaluator=user) | Q(evaluated=user))
         else:
             return Evaluation.objects.none()
 
@@ -417,10 +417,18 @@ class KPISystemView(APIView):
 
     def get_rh_kpi_data(self):
         """Get comprehensive KPI data for RH dashboard"""
-        # Calculate KPI data
-        total_stages = Stage.objects.count()
-        completed_stages = Stage.objects.filter(status='completed').count()
-        active_stages = Stage.objects.filter(status='active').count()
+        # Calculate KPI data with optimized queries
+        stages_data = Stage.objects.aggregate(
+            total=Count('id'),
+            completed=Count('id', filter=Q(status='completed')),
+            active=Count('id', filter=Q(status='active')),
+            abandoned=Count('id', filter=Q(status='cancelled'))
+        )
+        
+        total_stages = stages_data['total']
+        completed_stages = stages_data['completed']
+        active_stages = stages_data['active']
+        abandoned_stages = stages_data['abandoned']
         
         # Calculate success rate
         taux_reussite = round((completed_stages / total_stages * 100), 1) if total_stages > 0 else 0
@@ -429,11 +437,15 @@ class KPISystemView(APIView):
         avg_satisfaction = Evaluation.objects.aggregate(avg=Avg('overall_score'))['avg'] or 4.5
         satisfaction_moyenne = round(avg_satisfaction, 1)
         
-        # Calculate average stage duration (in months)
-        stages_with_dates = Stage.objects.filter(start_date__isnull=False, end_date__isnull=False)
+        # Calculate average stage duration (in months) - optimized
+        stages_with_dates = Stage.objects.filter(
+            start_date__isnull=False, 
+            end_date__isnull=False
+        ).values('start_date', 'end_date')
+        
         if stages_with_dates.exists():
             total_duration = sum([
-                (stage.end_date - stage.start_date).days / 30 
+                (stage['end_date'] - stage['start_date']).days / 30 
                 for stage in stages_with_dates
             ])
             temps_moyen_stage = round(total_duration / stages_with_dates.count(), 1)
@@ -441,7 +453,6 @@ class KPISystemView(APIView):
             temps_moyen_stage = 3.2
         
         # Calculate abandonment rate
-        abandoned_stages = Stage.objects.filter(status='cancelled').count()
         taux_abandon = round((abandoned_stages / total_stages * 100), 1) if total_stages > 0 else 0
         
         # Get total stagiaires
@@ -484,7 +495,7 @@ class KPISystemView(APIView):
                 "surveys_active": True,
                 "last_survey_date": "2024-12-15",
                 "next_survey_date": "2024-12-22",
-                "total_responses": Evaluation.objects.count(),
+                "total_responses": total_stages,  # Reuse already calculated value
                 "response_rate": 85
             }
         })
@@ -499,8 +510,8 @@ class KPISystemView(APIView):
                     'error': 'Aucun stage actif trouvé'
                 }, status=status.HTTP_404_NOT_FOUND)
             
-            # Get user's evaluations
-            evaluations = Evaluation.objects.filter(evaluated=user)
+            # Get user's evaluations with optimized query
+            evaluations = Evaluation.objects.filter(evaluated=user).select_related('stage')
             
             # Calculate KPI scores
             kpi_scores = self.calculate_stagiaire_kpi_scores(evaluations)
@@ -508,10 +519,16 @@ class KPISystemView(APIView):
             # Get KPI questions
             kpi_questions = KPIQuestion.objects.filter(is_active=True)
             
-            # Calculate overall statistics
-            total_evaluations = evaluations.count()
-            completed_evaluations = evaluations.filter(is_completed=True).count()
-            average_score = evaluations.aggregate(avg=Avg('overall_score'))['avg'] or 0
+            # Calculate overall statistics with single aggregation
+            evaluation_stats = evaluations.aggregate(
+                total=Count('id'),
+                completed=Count('id', filter=Q(is_completed=True)),
+                avg_score=Avg('overall_score')
+            )
+            
+            total_evaluations = evaluation_stats['total']
+            completed_evaluations = evaluation_stats['completed']
+            average_score = evaluation_stats['avg_score'] or 0
             
             # Generate recommendations
             recommendations = self.generate_stagiaire_recommendations(kpi_scores, stage)
@@ -540,19 +557,26 @@ class KPISystemView(APIView):
     def get_tuteur_kpi_data(self, user):
         """Get KPI data for a tuteur"""
         try:
-            # Get stages assigned to this tuteur
-            stages = Stage.objects.filter(tuteur=user)
+            # Get stages assigned to this tuteur with optimized query
+            stages = Stage.objects.filter(tuteur=user).select_related('stagiaire')
             
-            # Calculate tuteur-specific KPIs
-            total_stagiaires = stages.count()
-            active_stagiaires = stages.filter(status='active').count()
-            completed_stagiaires = stages.filter(status='completed').count()
+            # Calculate tuteur-specific KPIs with single aggregation
+            stage_stats = stages.aggregate(
+                total=Count('id'),
+                active=Count('id', filter=Q(status='active')),
+                completed=Count('id', filter=Q(status='completed')),
+                avg_progress=Avg('progress')
+            )
             
-            # Calculate average progress
-            avg_progress = stages.aggregate(avg=Avg('progress'))['avg'] or 0
+            total_stagiaires = stage_stats['total']
+            active_stagiaires = stage_stats['active']
+            completed_stagiaires = stage_stats['completed']
+            avg_progress = stage_stats['avg_progress'] or 0
             
-            # Get evaluations for tuteur's stagiaires
-            evaluations = Evaluation.objects.filter(evaluated__in=stages.values_list('stagiaire', flat=True))
+            # Get evaluations for tuteur's stagiaires with optimized query
+            evaluations = Evaluation.objects.filter(
+                evaluated__in=stages.values_list('stagiaire', flat=True)
+            ).select_related('evaluated', 'stage')
             avg_satisfaction = evaluations.aggregate(avg=Avg('overall_score'))['avg'] or 0
             
             return Response({

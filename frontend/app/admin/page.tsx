@@ -8,7 +8,7 @@
 
 import { useEffect, useState } from "react"
 import { useAuth } from "@/contexts/auth-context"
-import { apiClient, User } from "@/lib/api"
+import { apiClient, User, PFEReport } from "@/lib/api"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -53,21 +53,7 @@ interface RecentUser extends User {
   // Extends the User interface which already has the correct field names
 }
 
-interface PFEReport {
-  id: number;
-  title: string;
-  stagiaire: {
-    nom: string;
-    prenom: string;
-  };
-  status: string;
-  year: number;
-  speciality: string;
-  created_at: string;
-  submitted_at?: string;
-  approved_at?: string;
-  archived_at?: string;
-}
+
 
 const quickActions = [
   {

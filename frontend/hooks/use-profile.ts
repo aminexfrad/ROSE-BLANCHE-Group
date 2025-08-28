@@ -5,6 +5,7 @@
  */
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
+import { useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
 import { apiClient } from "@/lib/api"
 import { User } from "@/lib/api"
@@ -43,7 +44,11 @@ export function useProfile() {
       }
       return failureCount < 2
     },
-    onError: (error) => {
+  })
+
+  // Handle errors separately
+  useEffect(() => {
+    if (error) {
       console.error('Profile query error:', error)
       if (error instanceof Error) {
         if (error.message.includes('401') || error.message.includes('403')) {
@@ -66,8 +71,8 @@ export function useProfile() {
           })
         }
       }
-    },
-  })
+    }
+  }, [error, toast])
 
   // Update profile mutation
   const updateProfileMutation = useMutation({
