@@ -10,6 +10,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator
 from auth_service.models import User
 from shared.models import Stage
 from django.utils import timezone
+from decimal import Decimal
 
 class InternKpiEvaluation(models.Model):
     """
@@ -128,10 +129,19 @@ class InternKpiEvaluation(models.Model):
         verbose_name_plural = _('évaluations KPI stagiaires')
         db_table = 'intern_kpi_evaluations'
         ordering = ['-evaluation_date', '-created_at']
-        unique_together = ['intern', 'stage', 'evaluation_date']
+        # Only one evaluation per intern (regardless of stage or date)
+        unique_together = ['intern']
     
     def __str__(self):
         return f"Évaluation KPI de {self.intern.get_full_name()} - {self.evaluation_date}"
+    
+    @classmethod
+    def get_existing_evaluation(cls, intern):
+        """Get existing evaluation for an intern if it exists"""
+        try:
+            return cls.objects.get(intern=intern)
+        except cls.DoesNotExist:
+            return None
     
     def save(self, *args, **kwargs):
         """Calculer automatiquement le score total et l'interprétation"""
@@ -143,12 +153,12 @@ class InternKpiEvaluation(models.Model):
         """Calculer le score total pondéré"""
         # Poids des KPIs selon le fichier Excel
         weights = {
-            'delivery_satisfaction_rate': 0.25,  # 25%
-            'deadline_respect_rate': 0.20,       # 20%
-            'learning_capacity': 0.15,           # 15%
-            'initiative_taking': 0.10,           # 10%
-            'professional_behavior': 0.15,       # 15%
-            'adaptability': 0.15                 # 15%
+            'delivery_satisfaction_rate': Decimal('0.25'),  # 25%
+            'deadline_respect_rate': Decimal('0.20'),       # 20%
+            'learning_capacity': Decimal('0.15'),           # 15%
+            'initiative_taking': Decimal('0.10'),           # 10%
+            'professional_behavior': Decimal('0.15'),       # 15%
+            'adaptability': Decimal('0.15')                 # 15%
         }
         
         # Calcul du score pondéré
@@ -165,11 +175,11 @@ class InternKpiEvaluation(models.Model):
     
     def determine_interpretation(self):
         """Déterminer l'interprétation basée sur le score total"""
-        if self.total_score >= 4.5:
+        if self.total_score >= Decimal('4.5'):
             self.interpretation = self.PotentialCategory.HIGH
-        elif self.total_score >= 3.5:
+        elif self.total_score >= Decimal('3.5'):
             self.interpretation = self.PotentialCategory.GOOD
-        elif self.total_score >= 2.5:
+        elif self.total_score >= Decimal('2.5'):
             self.interpretation = self.PotentialCategory.AVERAGE
         else:
             self.interpretation = self.PotentialCategory.TO_STRENGTHEN
@@ -178,12 +188,12 @@ class InternKpiEvaluation(models.Model):
     def get_weights_summary(self):
         """Retourner un résumé des poids pour l'affichage"""
         return {
-            'delivery_satisfaction_rate': {'weight': 0.25, 'percentage': '25%'},
-            'deadline_respect_rate': {'weight': 0.20, 'percentage': '20%'},
-            'learning_capacity': {'weight': 0.15, 'percentage': '15%'},
-            'initiative_taking': {'weight': 0.10, 'percentage': '10%'},
-            'professional_behavior': {'weight': 0.15, 'percentage': '15%'},
-            'adaptability': {'weight': 0.15, 'percentage': '15%'}
+            'delivery_satisfaction_rate': {'weight': Decimal('0.25'), 'percentage': '25%'},
+            'deadline_respect_rate': {'weight': Decimal('0.20'), 'percentage': '20%'},
+            'learning_capacity': {'weight': Decimal('0.15'), 'percentage': '15%'},
+            'initiative_taking': {'weight': Decimal('0.10'), 'percentage': '10%'},
+            'professional_behavior': {'weight': Decimal('0.15'), 'percentage': '15%'},
+            'adaptability': {'weight': Decimal('0.15'), 'percentage': '15%'}
         }
     
     @property
@@ -192,32 +202,32 @@ class InternKpiEvaluation(models.Model):
         return {
             'delivery_satisfaction_rate': {
                 'score': self.delivery_satisfaction_rate,
-                'weight': 0.25,
-                'weighted_score': self.delivery_satisfaction_rate * 0.25
+                'weight': Decimal('0.25'),
+                'weighted_score': self.delivery_satisfaction_rate * Decimal('0.25')
             },
             'deadline_respect_rate': {
                 'score': self.deadline_respect_rate,
-                'weight': 0.20,
-                'weighted_score': self.deadline_respect_rate * 0.20
+                'weight': Decimal('0.20'),
+                'weighted_score': self.deadline_respect_rate * Decimal('0.20')
             },
             'learning_capacity': {
                 'score': self.learning_capacity,
-                'weight': 0.15,
-                'weighted_score': self.learning_capacity * 0.15
+                'weight': Decimal('0.15'),
+                'weighted_score': self.learning_capacity * Decimal('0.15')
             },
             'initiative_taking': {
                 'score': self.initiative_taking,
-                'weight': 0.10,
-                'weighted_score': self.initiative_taking * 0.10
+                'weight': Decimal('0.10'),
+                'weighted_score': self.initiative_taking * Decimal('0.10')
             },
             'professional_behavior': {
                 'score': self.professional_behavior,
-                'weight': 0.15,
-                'weighted_score': self.professional_behavior * 0.15
+                'weight': Decimal('0.15'),
+                'weighted_score': self.professional_behavior * Decimal('0.15')
             },
             'adaptability': {
                 'score': self.adaptability,
-                'weight': 0.15,
-                'weighted_score': self.adaptability * 0.15
+                'weight': Decimal('0.15'),
+                'weighted_score': self.adaptability * Decimal('0.15')
             }
         }

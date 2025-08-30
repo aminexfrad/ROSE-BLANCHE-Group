@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Loader2, Download, Eye, Edit, Filter, Search, BarChart3 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { apiClient } from '@/lib/api';
 
 interface KpiEvaluation {
   id: number;
@@ -26,9 +27,10 @@ interface KpiEvaluation {
 interface KpiEvaluationsListProps {
   onEdit?: (evaluation: KpiEvaluation) => void;
   onView?: (evaluation: KpiEvaluation) => void;
+  refreshTrigger?: number; // Add this to trigger refreshes
 }
 
-export default function KpiEvaluationsList({ onEdit, onView }: KpiEvaluationsListProps) {
+export default function KpiEvaluationsList({ onEdit, onView, refreshTrigger }: KpiEvaluationsListProps) {
   const [evaluations, setEvaluations] = useState<KpiEvaluation[]>([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -39,32 +41,41 @@ export default function KpiEvaluationsList({ onEdit, onView }: KpiEvaluationsLis
 
   // Charger les évaluations
   useEffect(() => {
+    console.log('KpiEvaluationsList useEffect triggered');
     fetchEvaluations();
-  }, []);
+  }, [refreshTrigger]); // Add refreshTrigger to dependencies
 
   const fetchEvaluations = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/rh/kpi-evaluations/');
-      if (response.ok) {
-        const data = await response.json();
-        setEvaluations(data.results || []);
-      } else {
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger les évaluations",
-          variant: "destructive"
-        });
+      console.log('Chargement des évaluations KPI...');
+      
+      // Utiliser l'API client pour charger les évaluations
+      const response = await apiClient.getKpiEvaluations();
+      console.log('Évaluations KPI chargées:', response);
+      console.log('Nombre d\'évaluations:', response.results?.length || 0);
+      
+      if (response.results && response.results.length > 0) {
+        console.log('Première évaluation:', response.results[0]);
       }
-    } catch (error) {
-      console.error('Erreur lors du chargement:', error);
+      
+      setEvaluations(response.results || []);
+      console.log('État des évaluations mis à jour:', response.results || []);
+    } catch (error: any) {
+      console.error('Erreur lors du chargement des évaluations KPI:', error);
+      console.error('Error details:', {
+        message: error?.message || 'Unknown error',
+        stack: error?.stack || 'No stack trace',
+        name: error?.name || 'Unknown error type'
+      });
       toast({
         title: "Erreur",
-        description: "Erreur lors du chargement des évaluations",
+        description: "Impossible de charger les évaluations KPI. Vérifiez votre connexion et vos permissions.",
         variant: "destructive"
       });
     } finally {
       setLoading(false);
+      console.log('Chargement terminé, loading = false');
     }
   };
 
@@ -72,35 +83,31 @@ export default function KpiEvaluationsList({ onEdit, onView }: KpiEvaluationsLis
   const handleExportExcel = async () => {
     try {
       setExporting(true);
-      const response = await fetch('/api/rh/kpi-evaluations/export_excel/');
+      console.log('Export des évaluations KPI en Excel...');
       
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `evaluations_kpi_${new Date().toISOString().split('T')[0]}.xlsx`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        
-        toast({
-          title: "Succès",
-          description: "Export Excel réussi",
-        });
-      } else {
-        toast({
-          title: "Erreur",
-          description: "Erreur lors de l'export",
-          variant: "destructive"
-        });
-      }
+      // Utiliser l'API client pour l'export
+      const response = await apiClient.exportKpiEvaluations();
+      
+      // Créer le blob et télécharger
+      const blob = new Blob([response], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `evaluations_kpi_${new Date().toISOString().split('T')[0]}.xlsx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Succès",
+        description: "Export Excel des évaluations KPI réussi",
+      });
     } catch (error) {
-      console.error('Erreur lors de l\'export:', error);
+      console.error('Erreur lors de l\'export des évaluations KPI:', error);
       toast({
         title: "Erreur",
-        description: "Erreur lors de l'export Excel",
+        description: "Erreur lors de l'export Excel des évaluations KPI",
         variant: "destructive"
       });
     } finally {
@@ -152,6 +159,32 @@ export default function KpiEvaluationsList({ onEdit, onView }: KpiEvaluationsLis
     );
   }
 
+  // Show message if no evaluations found
+  if (!loading && evaluations.length === 0) {
+    return (
+      <Card className="w-full">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BarChart3 className="h-5 w-5" />
+            Évaluations KPI des Stagiaires
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-12">
+            <BarChart3 className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold mb-2">Aucune évaluation KPI trouvée</h3>
+            <p className="text-muted-foreground mb-4">
+              Il n'y a pas encore d'évaluations KPI dans le système.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Les évaluations apparaîtront ici une fois qu'elles auront été créées.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -200,21 +233,21 @@ export default function KpiEvaluationsList({ onEdit, onView }: KpiEvaluationsLis
               </div>
             </div>
 
-                         <div className="space-y-2">
-               <Label htmlFor="interpretation-filter">Interprétation</Label>
-               <Select value={interpretationFilter} onValueChange={setInterpretationFilter}>
-                 <SelectTrigger>
-                   <SelectValue placeholder="Toutes les interprétations" />
-                 </SelectTrigger>
-                 <SelectContent>
-                   <SelectItem value="all">Toutes les interprétations</SelectItem>
-                   <SelectItem value="Potentiel élevé">Potentiel élevé</SelectItem>
-                   <SelectItem value="Bon potentiel">Bon potentiel</SelectItem>
-                   <SelectItem value="Potentiel moyen">Potentiel moyen</SelectItem>
-                   <SelectItem value="Potentiel à renforcer">Potentiel à renforcer</SelectItem>
-                 </SelectContent>
-               </Select>
-             </div>
+            <div className="space-y-2">
+              <Label htmlFor="interpretation-filter">Interprétation</Label>
+              <Select value={interpretationFilter} onValueChange={setInterpretationFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Toutes les interprétations" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Toutes les interprétations</SelectItem>
+                  <SelectItem value="Potentiel élevé">Potentiel élevé</SelectItem>
+                  <SelectItem value="Bon potentiel">Bon potentiel</SelectItem>
+                  <SelectItem value="Potentiel moyen">Potentiel moyen</SelectItem>
+                  <SelectItem value="Potentiel à renforcer">Potentiel à renforcer</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             <div className="space-y-2">
               <Label htmlFor="date-filter">Date d'évaluation</Label>
@@ -297,19 +330,19 @@ export default function KpiEvaluationsList({ onEdit, onView }: KpiEvaluationsLis
                               <div className="grid grid-cols-2 gap-4">
                                 <div>
                                   <Label className="text-sm font-medium">Stagiaire</Label>
-                                  <p className="text-sm">{evaluation.intern_name}</p>
+                                  <p className="text-sm text-muted-foreground">{evaluation.intern_name}</p>
                                 </div>
                                 <div>
                                   <Label className="text-sm font-medium">Stage</Label>
-                                  <p className="text-sm">{evaluation.stage_title || 'N/A'}</p>
+                                  <p className="text-sm text-muted-foreground">{evaluation.stage_title || 'N/A'}</p>
                                 </div>
                                 <div>
                                   <Label className="text-sm font-medium">Date d'évaluation</Label>
-                                  <p className="text-sm">{formatDate(evaluation.evaluation_date)}</p>
+                                  <p className="text-sm text-muted-foreground">{formatDate(evaluation.evaluation_date)}</p>
                                 </div>
                                 <div>
-                                  <Label className="text-sm font-medium">Score total</Label>
-                                  <p className="text-sm font-semibold">{evaluation.total_score}/5</p>
+                                  <Label className="text-sm font-medium">Score Total</Label>
+                                  <p className="text-sm text-muted-foreground">{evaluation.total_score}/5</p>
                                 </div>
                                 <div>
                                   <Label className="text-sm font-medium">Interprétation</Label>
@@ -319,22 +352,22 @@ export default function KpiEvaluationsList({ onEdit, onView }: KpiEvaluationsLis
                                 </div>
                                 <div>
                                   <Label className="text-sm font-medium">Évaluateur</Label>
-                                  <p className="text-sm">{evaluation.evaluator_name}</p>
+                                  <p className="text-sm text-muted-foreground">{evaluation.evaluator_name}</p>
                                 </div>
                               </div>
                             </div>
                           </DialogContent>
                         </Dialog>
-
-                        {onEdit && (
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onEdit(evaluation)}
-                          >
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        )}
+                        
+                        {/* Edit button */}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onEdit?.(evaluation)}
+                          className="text-blue-600 hover:text-blue-800"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -343,37 +376,6 @@ export default function KpiEvaluationsList({ onEdit, onView }: KpiEvaluationsLis
             </TableBody>
           </Table>
         </div>
-
-        {/* Statistiques rapides */}
-        {evaluations.length > 0 && (
-          <div className="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="bg-muted p-4 rounded-lg text-center">
-              <div className="text-2xl font-bold">{evaluations.length}</div>
-              <div className="text-sm text-muted-foreground">Total évaluations</div>
-            </div>
-            
-            <div className="bg-muted p-4 rounded-lg text-center">
-              <div className="text-2xl font-bold">
-                {(evaluations.reduce((sum, evaluation) => sum + evaluation.total_score, 0) / evaluations.length).toFixed(2)}
-              </div>
-              <div className="text-sm text-muted-foreground">Score moyen</div>
-            </div>
-            
-            <div className="bg-muted p-4 rounded-lg text-center">
-              <div className="text-2xl font-bold">
-                {evaluations.filter(evaluation => evaluation.interpretation_display === 'Potentiel élevé').length}
-              </div>
-              <div className="text-sm text-muted-foreground">Potentiel élevé</div>
-            </div>
-            
-            <div className="bg-muted p-4 rounded-lg text-center">
-              <div className="text-2xl font-bold">
-                {evaluations.filter(evaluation => evaluation.interpretation_display === 'Potentiel à renforcer').length}
-              </div>
-              <div className="text-sm text-muted-foreground">À renforcer</div>
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

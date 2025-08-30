@@ -13,6 +13,7 @@ drf-yasg==1.21.7
 # File handling and media
 Pillow==10.1.0
 django-storages==1.14.2
+openpyxl==3.1.2
 
 # Environment and configuration
 python-decouple==3.8

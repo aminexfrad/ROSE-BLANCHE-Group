@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { apiClient } from '@/lib/api';
 
 interface Stagiaire {
   id: number;
@@ -112,48 +113,27 @@ export default function KpiEvaluationForm({ onSuccess, onCancel }: KpiEvaluation
         setLoading(true);
         console.log('Chargement des stagiaires...');
         
-        // Test avec différents endpoints
-        const endpoints = [
-          '/api/rh/stagiaires',
-          '/api/stagiaires',
-          '/api/users?role=stagiaire'
-        ];
-        
-        let stagiairesData = [];
-        for (const endpoint of endpoints) {
-          try {
-            console.log(`Tentative avec: ${endpoint}`);
-            const response = await fetch(endpoint);
-            console.log(`Réponse ${endpoint}:`, response.status, response.ok);
-            
-            if (response.ok) {
-              const data = await response.json();
-              console.log(`Données ${endpoint}:`, data);
-              stagiairesData = data.results || data || [];
-              if (stagiairesData.length > 0) break;
-            }
-          } catch (error) {
-            console.log(`Erreur avec ${endpoint}:`, error);
-          }
-        }
+        // Utiliser l'API client approprié
+        const response = await apiClient.getRHStagiaires();
+        const stagiairesData = response.results || [];
         
         setStagiaires(stagiairesData);
         console.log('Stagiaires chargés:', stagiairesData);
         
         if (stagiairesData.length === 0) {
-          toast({
-            title: "Attention",
-            description: "Aucun stagiaire trouvé. Vérifiez que l'API fonctionne.",
-            variant: "destructive"
-          });
+                      toast({
+              title: "Attention",
+              description: "Aucun stagiaire trouvé dans votre filiale. Vérifiez que vous avez des stagiaires assignés à votre entreprise.",
+              variant: "destructive"
+            });
         }
       } catch (error) {
         console.error('Erreur lors du chargement des stagiaires:', error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger la liste des stagiaires",
-          variant: "destructive"
-        });
+                  toast({
+            title: "Erreur",
+            description: "Impossible de charger la liste des stagiaires. Vérifiez votre connexion et vos permissions.",
+            variant: "destructive"
+          });
       } finally {
         setLoading(false);
       }
@@ -192,35 +172,77 @@ export default function KpiEvaluationForm({ onSuccess, onCancel }: KpiEvaluation
 
     try {
       setSubmitting(true);
-      const response = await fetch('/api/rh/kpi-evaluations/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData),
-      });
-
-      if (response.ok) {
+      
+      // Debug: Log the data being sent
+      console.log('Submitting KPI evaluation data:', formData);
+      
+      // Check if intern already has an evaluation
+      const existingEvaluation = await apiClient.checkExistingKpiEvaluation(formData.intern_id);
+      if (existingEvaluation) {
         toast({
-          title: "Succès",
-          description: "Évaluation KPI créée avec succès",
+          title: "Évaluation existante",
+          description: `Ce stagiaire a déjà une évaluation KPI. Vous pouvez la modifier au lieu d'en créer une nouvelle.`,
+          variant: "destructive"
         });
-        onSuccess?.();
+        setSubmitting(false);
+        return;
+      }
+      
+      // Test if server is running first
+      try {
+        console.log('Testing server connectivity...');
+        const testResponse = await apiClient.getKpiEvaluations();
+        console.log('Server is running, KPI evaluations endpoint accessible:', testResponse);
+      } catch (serverError) {
+        console.error('Server connectivity test failed:', serverError);
+        toast({
+          title: "Erreur de connexion",
+          description: "Le serveur n'est pas accessible. Vérifiez que le serveur Django est démarré.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Test JSON parsing
+      try {
+        const testResponse = await apiClient.testKpiJsonParsing({ test: 'data' });
+        console.log('JSON parsing test successful:', testResponse);
+      } catch (testError) {
+        console.error('JSON parsing test failed:', testError);
+        toast({
+          title: "Erreur de test",
+          description: "Le test de parsing JSON a échoué. Vérifiez que le serveur fonctionne.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Utiliser l'API client pour créer l'évaluation KPI
+      await apiClient.createKpiEvaluation(formData);
+      
+      toast({
+        title: "Succès",
+        description: "Évaluation KPI créée avec succès",
+      });
+      onSuccess?.();
+    } catch (error: any) {
+      console.error('Erreur lors de la soumission:', error);
+      console.error('Error details:', error.message, error.response);
+      
+      // Handle duplicate evaluation error specifically
+      if (error.message && error.message.includes('existe déjà')) {
+        toast({
+          title: "Évaluation existante",
+          description: "Ce stagiaire a déjà une évaluation KPI. Vous pouvez la modifier au lieu d'en créer une nouvelle.",
+          variant: "destructive"
+        });
       } else {
-        const errorData = await response.json();
         toast({
           title: "Erreur",
-          description: errorData.error || "Erreur lors de la création de l'évaluation",
+          description: error.message || "Erreur lors de la soumission de l'évaluation",
           variant: "destructive"
         });
       }
-    } catch (error) {
-      console.error('Erreur lors de la soumission:', error);
-      toast({
-        title: "Erreur",
-        description: "Erreur lors de la soumission de l'évaluation",
-        variant: "destructive"
-      });
     } finally {
       setSubmitting(false);
     }

@@ -12,12 +12,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 export default function KpiEvaluationsPage() {
   const [activeTab, setActiveTab] = useState('list');
   const [showForm, setShowForm] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0); // Add refresh trigger
 
   const handleFormSuccess = () => {
     setShowForm(false);
     setActiveTab('list');
-    // Recharger la liste des évaluations
-    window.location.reload();
+    // Trigger a refresh of the evaluations list instead of reloading the page
+    setRefreshTrigger(prev => prev + 1);
   };
 
   const handleFormCancel = () => {
@@ -107,7 +108,7 @@ export default function KpiEvaluationsPage() {
         </TabsList>
 
         <TabsContent value="list" className="space-y-4">
-          <KpiEvaluationsList />
+          <KpiEvaluationsList refreshTrigger={refreshTrigger} />
         </TabsContent>
 
         <TabsContent value="create" className="space-y-4">

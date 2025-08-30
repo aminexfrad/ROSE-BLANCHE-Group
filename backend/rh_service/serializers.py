@@ -73,19 +73,45 @@ class InternKpiEvaluationSerializer(serializers.ModelSerializer):
 
 class InternKpiEvaluationCreateSerializer(serializers.ModelSerializer):
     """Serializer pour la création d'évaluations KPI"""
+    intern_id = serializers.IntegerField(write_only=True, required=True)
     
     class Meta:
         model = InternKpiEvaluation
         fields = [
-            'intern', 'stage', 'evaluation_date', 'delivery_satisfaction_rate',
+            'intern_id', 'stage', 'evaluation_date', 'delivery_satisfaction_rate',
             'deadline_respect_rate', 'learning_capacity', 'initiative_taking',
             'professional_behavior', 'adaptability', 'comments'
         ]
     
+    def validate_intern_id(self, value):
+        """Valider que l'intern_id correspond à un stagiaire valide"""
+        from auth_service.models import User
+        try:
+            intern = User.objects.get(id=value, role='stagiaire')
+            return value
+        except User.DoesNotExist:
+            raise serializers.ValidationError("Stagiaire non trouvé")
+    
     def create(self, validated_data):
         """Créer l'évaluation avec l'évaluateur automatiquement"""
+        from auth_service.models import User
+        
+        # Récupérer l'intern à partir de l'intern_id
+        intern_id = validated_data.pop('intern_id')
+        intern = User.objects.get(id=intern_id, role='stagiaire')
+        
+        # Vérifier si une évaluation existe déjà pour ce stagiaire
+        existing_evaluation = InternKpiEvaluation.get_existing_evaluation(intern)
+        if existing_evaluation:
+            raise serializers.ValidationError(
+                f"Une évaluation KPI existe déjà pour le stagiaire {intern.get_full_name()}. "
+                "Vous pouvez modifier l'évaluation existante au lieu d'en créer une nouvelle."
+            )
+        
         # L'évaluateur est automatiquement l'utilisateur connecté
         validated_data['evaluator'] = self.context['request'].user
+        validated_data['intern'] = intern
+        
         return super().create(validated_data)
 
 class InternKpiEvaluationUpdateSerializer(serializers.ModelSerializer):

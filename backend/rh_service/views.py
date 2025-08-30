@@ -23,6 +23,13 @@ from demande_service.models import Demande as DemandeModel
 from shared.models import Stage, Testimonial, Evaluation, Notification, Entreprise
 from auth_service.models import User
 
+from rest_framework import viewsets, permissions
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework import serializers
+
 
 def _get_excel_styles():
     """Helper function to get common Excel styles"""
@@ -1110,9 +1117,6 @@ class RHCreateStageForStagiaireView(APIView):
 # VUES POUR LES ÉVALUATIONS KPI DES STAGIAIRES
 # ============================================================================
 
-from rest_framework import viewsets, permissions
-from rest_framework.parsers import MultiPartParser, FormParser
-from rest_framework.decorators import action
 from .models import InternKpiEvaluation
 from .serializers import (
     InternKpiEvaluationSerializer,
@@ -1129,7 +1133,7 @@ class InternKpiEvaluationViewSet(viewsets.ModelViewSet):
     """
     queryset = InternKpiEvaluation.objects.all()
     permission_classes = [permissions.IsAuthenticated, IsRHUser]
-    parser_classes = [MultiPartParser, FormParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     
     def get_serializer_class(self):
         """Retourner le serializer approprié selon l'action"""
@@ -1183,6 +1187,47 @@ class InternKpiEvaluationViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         """Créer l'évaluation avec l'évaluateur automatiquement"""
         serializer.save(evaluator=self.request.user)
+
+    def create(self, request, *args, **kwargs):
+        """Override create method to handle existing evaluations"""
+        try:
+            return super().create(request, *args, **kwargs)
+        except serializers.ValidationError as e:
+            # If it's a duplicate evaluation error, return a helpful response
+            if "existe déjà" in str(e):
+                return Response({
+                    'error': 'Duplicate evaluation',
+                    'message': str(e),
+                    'detail': 'This intern already has a KPI evaluation. You can edit the existing one instead.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+            raise e
+
+    def list(self, request, *args, **kwargs):
+        """Override list method to add debugging"""
+        print(f"KPI evaluations list called by user: {request.user.email} (role: {request.user.role})")
+        print(f"User entreprise: {request.user.entreprise}")
+        
+        # Get the queryset
+        queryset = self.get_queryset()
+        print(f"Queryset count: {queryset.count()}")
+        
+        # Show some sample data
+        for evaluation in queryset[:3]:
+            print(f"  - Evaluation {evaluation.id}: {evaluation.intern.get_full_name()} - Score: {evaluation.total_score}")
+        
+        return super().list(request, *args, **kwargs)
+
+    @action(detail=False, methods=['post'])
+    def test_json(self, request):
+        """Test endpoint to check if JSON parsing is working"""
+        print(f"test_json called")
+        print(f"Request content type: {request.content_type}")
+        print(f"Request data: {request.data}")
+        return Response({
+            'message': 'JSON parsing is working',
+            'received_data': request.data,
+            'content_type': request.content_type
+        }, status=status.HTTP_200_OK)
     
     @action(detail=False, methods=['get'])
     def statistics(self, request):

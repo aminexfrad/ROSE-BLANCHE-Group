@@ -1413,7 +1413,86 @@ class ApiClient {
     })
   }
 
+  async getKpiEvaluations(params: { limit?: number; offset?: number } = {}): Promise<{ results: any[]; count: number }> {
+    const queryString = new URLSearchParams(params as Record<string, string>).toString()
+    const url = queryString ? `/rh/kpi-evaluations/?${queryString}` : `/rh/kpi-evaluations/`
+    return this.request<{ results: any[]; count: number }>(url)
+  }
 
+  async getKpiEvaluation(id: number): Promise<any> {
+    return this.request<any>(`/rh/kpi-evaluations/${id}/`)
+  }
+
+  async checkExistingKpiEvaluation(internId: number): Promise<any> {
+    try {
+      // Get all evaluations and check if one exists for this intern
+      const response = await this.getKpiEvaluations()
+      const existingEvaluation = response.results.find((evaluation: any) => evaluation.intern === internId)
+      return existingEvaluation || null
+    } catch (error) {
+      console.error('Error checking existing KPI evaluation:', error)
+      return null
+    }
+  }
+
+  async updateKpiEvaluation(id: number, evaluationData: any): Promise<any> {
+    return this.request<any>(`/rh/kpi-evaluations/${id}/`, {
+      method: 'PUT',
+      body: JSON.stringify(evaluationData),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+  }
+
+  async deleteKpiEvaluation(id: number): Promise<void> {
+    return this.request<void>(`/rh/kpi-evaluations/${id}/`, {
+      method: 'DELETE'
+    })
+  }
+
+  async exportKpiEvaluations(): Promise<Blob> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/rh/kpi-evaluations/export_excel/`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${this.token}`,
+          'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, application/octet-stream, */*'
+        },
+      })
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Excel export failed:', response.status, errorText)
+        throw new Error(`Export failed: ${response.status} ${response.statusText}`)
+      }
+      
+      return await response.blob()
+    } catch (error) {
+      console.error('Error in exportKpiEvaluations:', error)
+      throw error
+    }
+  }
+
+  async testKpiJsonParsing(testData: any): Promise<any> {
+    return this.request<any>('/rh/kpi-evaluations/test_json/', {
+      method: 'POST',
+      body: JSON.stringify(testData),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+  }
+
+  async createKpiEvaluation(evaluationData: any): Promise<any> {
+    return this.request<any>('/rh/kpi-evaluations/', {
+      method: 'POST',
+      body: JSON.stringify(evaluationData),
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+  }
 
   // Admin methods
   async getUsers(params: { limit?: number; role?: string } = {}): Promise<{ results: User[]; count: number }> {

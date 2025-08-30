@@ -16,7 +16,7 @@ class InternKpiEvaluationAdmin(admin.ModelAdmin):
     """Interface d'administration pour les évaluations KPI des stagiaires"""
     
     list_display = [
-        'intern_name', 'evaluator_name', 'stage_title', 'evaluation_date', 
+        'intern_name', 'evaluator_name', 'stage_display', 'evaluation_date', 
         'total_score_display', 'interpretation_display', 'created_at'
     ]
     
@@ -81,14 +81,13 @@ class InternKpiEvaluationAdmin(admin.ModelAdmin):
     evaluator_name.short_description = 'Évaluateur'
     evaluator_name.admin_order_field = 'evaluator__nom'
     
-    def stage_title(self, obj):
-        """Afficher le titre du stage avec lien"""
+    def stage_display(self, obj):
+        """Afficher le titre du stage"""
         if obj.stage:
-            url = reverse('admin:shared_stage_change', args=[obj.stage.id])
-            return format_html('<a href="{}">{}</a>', url, obj.stage.title)
+            return obj.stage.title
         return '-'
-    stage_title.short_description = 'Stage'
-    stage_title.admin_order_field = 'stage__title'
+    stage_display.short_description = 'Stage'
+    stage_display.admin_order_field = 'stage__title'
     
     def total_score_display(self, obj):
         """Afficher le score total avec couleur selon l'interprétation"""
